@@ -1,0 +1,243 @@
+.hero_slider {
+    padding            : 0 15px;
+    background-size    : cover;
+    background-position: center;
+    background-repeat  : no-repeat;
+    transition         : background-image 0.5s ease-in-out;
+}
+
+.hero_content {
+    position      : relative;
+    z-index       : 2;
+    max-width     : 1280px;
+    width         : 100%;
+    margin        : 0 auto;
+    color         : #fff;
+    padding-top   : 116px;
+    padding-bottom: 80px;
+
+    .hero_content_info {
+        max-width: 768px;
+    }
+
+    h1 {
+        font-size    : 72px;
+        line-height  : 90px;
+        margin-bottom: 20px;
+        font-weight  : 700;
+        margin       : 0;
+    }
+
+    p {
+        font-size    : 24px;
+        line-height  : 39px;
+        margin-bottom: 25px;
+        color        : #d1d5db;
+    }
+
+    ul {
+        list-style: none;
+        padding   : 0;
+        margin    : 0 0 35px;
+
+        li {
+            margin-bottom: 12px;
+            font-size    : 18px;
+            line-height  : 28px;
+            display      : flex;
+            align-items  : center;
+
+            &::before {
+                content     : "✓";
+                color       : #18e0cc;
+                margin-right: 10px;
+                font-weight : bold;
+            }
+        }
+    }
+}
+
+.cta_group {
+    display  : flex;
+    gap      : 16px;
+    flex-wrap: wrap;
+}
+
+.primary_btn,
+.secondary_btn {
+    display      : inline-flex;
+    align-items  : center;
+    justify-content: center;
+    padding      : 14px 28px;
+    border-radius: 6px;
+    cursor       : pointer;
+    font-size    : 16px;
+    transition   : 0.3s;
+    text-decoration: none;
+}
+
+.primary_btn {
+    background: #EF8E29;
+    border    : none;
+    color     : #fff;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+}
+
+.secondary_btn {
+    background: transparent;
+    border    : 1px solid #fff;
+    color     : #fff;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.slider_dots {
+    justify-content: center;
+    display        : flex;
+    gap            : 10px;
+    padding-bottom : 32px;
+
+    span {
+        width        : 8px;
+        height       : 8px;
+        border-radius: 50%;
+        background   : rgba(255, 255, 255, 0.4);
+        cursor       : pointer;
+    }
+
+    .active {
+        background: #18e0cc;
+    }
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+
+    .hero_content {
+        h1 {
+            font-size: 44px;
+        }
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+    .hero_content {
+        padding-top   : 40px;
+        padding-bottom: 30px;
+
+        h1 {
+            font-size  : 34px;
+            line-height: 40px;
+        }
+
+        p {
+            font-size: 16px;
+        }
+
+        ul {
+            li {
+                font-size  : 14px;
+                line-height: 24px;
+            }
+        }
+
+    }
+
+    .cta_group {
+        flex-direction: column;
+
+        button {
+            width: 100%;
+        }
+    }
+
+    .slider_dots {
+        left  : 20px;
+        bottom: 20px;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity  : 0;
+        transform: translateX(-80px);
+    }
+
+    to {
+        opacity  : 1;
+        transform: translateX(0);
+    }
+}
+
+.hero_content_info {
+
+    h1,
+    p,
+    ul,
+    .cta_group {
+        opacity  : 0;
+        animation: slideInLeft 0.8s ease forwards;
+    }
+
+    h1 {
+        animation-delay: 0.2s;
+    }
+
+    p {
+        animation-delay: 0.4s;
+    }
+
+    ul {
+        animation-delay: 0.6s;
+    }
+
+    .cta_group {
+        animation-delay: 0.8s;
+    }
+}
+
+.hero_content_info {
+    ul {
+        li {
+            opacity  : 0;
+            animation: slideInLeft 0.6s ease forwards;
+
+            &:nth-child(1) {
+                animation-delay: 0.8s;
+            }
+
+            &:nth-child(2) {
+                animation-delay: 1s;
+            }
+
+            &:nth-child(3) {
+                animation-delay: 1.2s;
+            }
+        }
+    }
+
+    .cta_group {
+        opacity        : 0;
+        animation      : slideInLeft 0.8s ease forwards;
+        animation-delay: 1.4s;
+    }
+}
+
+@keyframes slideInLeft {
+    0% {
+        opacity  : 0;
+        transform: translateX(-100px);
+    }
+
+    100% {
+        opacity  : 1;
+        transform: translateX(0);
+    }
+}

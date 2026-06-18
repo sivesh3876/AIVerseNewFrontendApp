@@ -1,0 +1,170 @@
+.footer {
+    background: #231F20;
+
+    .footer_container {
+        max-width: 1280px;
+        margin   : 0 auto;
+        padding  : 80px 15px 40px;
+        color    : #fff;
+
+        .footer_list {
+            display        : flex;
+            align-items    : flex-start;
+            justify-content: space-between;
+            gap            : 30px;
+            flex-wrap      : wrap;
+
+            .list_column {
+                flex     : 1;
+                min-width: 160px;
+
+                h5 {
+                    font-size  : 14px;
+                    line-height: 20px;
+                    font-weight: 700;
+                    color      : #18E0CC;
+                    margin     : 0 0 8px;
+                }
+
+                ul {
+                    list-style: none;
+                    margin    : 0;
+                    padding   : 0;
+
+                    li {
+                        a {
+                            color          : #fff;
+                            text-decoration: none;
+                            font-size      : 14px;
+                            line-height    : 20px;
+                            font-weight    : 300;
+                            display        : block;
+                            margin-bottom  : 5px;
+                            transition     : 0.5s;
+
+                            &:hover {
+                                color          : #18E0CC;
+                                text-decoration: underline;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .social_media {
+            display   : flex;
+            gap       : 10px;
+            flex-wrap : wrap;
+            margin-top: 10px;
+        }
+
+        .footer_copyright {
+            text-align : center;
+            padding-top: 30px;
+            margin-top : 30px;
+            border-top : 1px solid rgba(255, 255, 255, 0.2);
+
+            p {
+                font-size  : 14px;
+                line-height: 20px;
+                margin     : 0;
+            }
+        }
+    }
+}
+
+/* ==========================
+   Tablet
+========================== */
+
+@media (max-width: 1024px) {
+    .footer {
+        .footer_container {
+            .footer_list {
+                justify-content: flex-start;
+                gap            : 40px;
+
+                .list_column {
+                    flex: 0 0 calc(33.33% - 30px);
+                }
+            }
+        }
+    }
+}
+
+/* ==========================
+   Mobile
+========================== */
+
+@media (max-width: 768px) {
+    .footer {
+        .footer_container {
+            padding: 50px 20px 30px;
+
+            .footer_list {
+                flex-direction: column;
+                gap           : 25px;
+                align-items   : center;
+                text-align    : center;
+
+                .list_column {
+                    width    : 100%;
+                    min-width: unset;
+                }
+            }
+
+            .social_media {
+                justify-content: center;
+            }
+
+            .footer_copyright {
+                p {
+                    font-size  : 13px;
+                    line-height: 22px;
+                }
+            }
+        }
+    }
+}
+
+/* ==========================
+   Small Mobile
+========================== */
+
+@media (max-width: 480px) {
+    .footer {
+        .footer_container {
+            padding: 40px 15px 25px;
+
+            .footer_list {
+                gap: 20px;
+
+                .list_column {
+                    h5 {
+                        font-size: 15px;
+                    }
+
+                    ul li a {
+                        font-size: 13px;
+                    }
+                }
+            }
+
+            .social_media {
+                gap: 12px;
+
+                img {
+                    width : 20px;
+                    height: 20px;
+                }
+            }
+
+            .footer_copyright {
+                p {
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}

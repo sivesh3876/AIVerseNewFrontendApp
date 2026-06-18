@@ -1,0 +1,133 @@
+.trusted_leaders {
+    background: #f3f4f6;
+    padding   : 64px 0 72px;
+    overflow  : hidden;
+
+    &__container {
+        // max-width: 1280px;
+        margin : 0 auto;
+        padding: 0 20px;
+
+        h2 {
+            margin     : 0 0 40px;
+            text-align : center;
+            font-size  : 36px;
+            font-weight: 700;
+            line-height: 1.2;
+            color      : #0d1e32;
+        }
+    }
+
+    &__marquee {
+        position: relative;
+        overflow: hidden;
+        width   : 100%;
+        mask-image: linear-gradient(to right,
+                transparent,
+                #000 8%,
+                #000 92%,
+                transparent);
+
+        &:hover .trusted_leaders__track {
+            animation-play-state: paused;
+        }
+    }
+
+    &__track {
+        display    : flex;
+        align-items: center;
+        gap        : 24px;
+        width      : max-content;
+        animation  : trusted-leaders-scroll 35s linear infinite;
+        will-change: transform;
+    }
+
+    &__card {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        min-width      : 180px;
+        height         : 72px;
+        padding        : 0 28px;
+        background     : #fff;
+        border         : 1px solid #e5e7eb;
+        border-radius  : 10px;
+        box-shadow     : 0 1px 3px rgba(13, 30, 50, 0.04);
+        flex-shrink    : 0;
+
+        span {
+            font-size  : 18px;
+            font-weight: 700;
+            color      : #374151;
+            white-space: nowrap;
+        }
+    }
+}
+
+@keyframes trusted-leaders-scroll {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+    .trusted_leaders {
+        padding: 56px 0 64px;
+
+        &__container h2 {
+            font-size    : 30px;
+            margin-bottom: 32px;
+        }
+
+        &__card {
+            min-width: 160px;
+            height   : 64px;
+            padding  : 0 24px;
+
+            span {
+                font-size: 16px;
+            }
+        }
+    }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+    .trusted_leaders {
+        padding: 48px 0 56px;
+
+        &__container {
+            padding: 0 15px;
+
+            h2 {
+                font-size    : 26px;
+                margin-bottom: 28px;
+            }
+        }
+
+        &__track {
+            gap: 16px;
+        }
+
+        &__card {
+            min-width: 140px;
+            height   : 56px;
+            padding  : 0 20px;
+
+            span {
+                font-size: 15px;
+            }
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .trusted_leaders__track {
+        animation: none;
+    }
+}
