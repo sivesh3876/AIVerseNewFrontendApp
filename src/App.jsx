@@ -5,6 +5,7 @@ import Footer from "./components/Footer/Footer";
 import HomePage from "./pages/HomePage";
 import GetStarted from "./pages/GetStarted";
 import ExploreSolutions from "./pages/ExploreSolutions";
+import Solutions from "./pages/Solutions";
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -25,6 +26,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
         <Route path="/get-started" element={<GetStarted />} />
+        <Route path="/solutions" element={<Solutions />} />
       </Routes>
       <Footer />
     </BrowserRouter>

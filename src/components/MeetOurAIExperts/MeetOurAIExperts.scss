@@ -1,10 +1,12 @@
 .ai_experts {
     background: #f3f4f6;
-    padding   : 72px 20px 80px;
+    padding   : 72px 0 80px;
+    overflow  : hidden;
 
     &__container {
         max-width: 1280px;
         margin   : 0 auto;
+        padding  : 0 20px;
 
         h2 {
             margin        : 0 0 48px;
@@ -18,14 +20,36 @@
         }
     }
 
-    &__grid {
-        display              : grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap                  : 24px;
+    &__marquee {
+        position: relative;
+        overflow: hidden;
+        width   : 100%;
+        mask-image: linear-gradient(
+            to right,
+            transparent,
+            #000 6%,
+            #000 94%,
+            transparent
+        );
+
+        &:hover .ai_experts__track {
+            animation-play-state: paused;
+        }
+    }
+
+    &__track {
+        display    : flex;
+        align-items: flex-start;
+        gap        : 32px;
+        width      : max-content;
+        animation  : ai-experts-scroll 60s linear infinite;
+        will-change: transform;
     }
 
     &__card {
-        text-align: center;
+        flex-shrink: 0;
+        width      : 200px;
+        text-align : center;
     }
 
     &__avatar-wrap {
@@ -34,9 +58,7 @@
         margin       : 0 auto 16px;
         border-radius: 50%;
         overflow     : hidden;
-        opacity      : 0;
-        transform    : rotate(-12deg) scale(0.6);
-        clip-path    : circle(0% at 50% 50%);
+        background   : #e5e7eb;
     }
 
     &__avatar-wrap img {
@@ -44,11 +66,6 @@
         height    : 100%;
         object-fit: cover;
         display   : block;
-    }
-
-    &__info {
-        opacity  : 0;
-        transform: translateY(16px);
     }
 
     &__info h3 {
@@ -70,16 +87,6 @@
         .ai_experts__container h2 {
             animation: ai-experts-title-track 0.9s ease forwards;
         }
-
-        .ai_experts__avatar-wrap {
-            animation: ai-experts-avatar-reveal 0.85s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
-            animation-delay: var(--avatar-delay, 0s);
-        }
-
-        .ai_experts__info {
-            animation: ai-experts-info-rise 0.6s ease forwards;
-            animation-delay: var(--text-delay, 0.35s);
-        }
     }
 }
 
@@ -95,37 +102,26 @@
     }
 }
 
-@keyframes ai-experts-avatar-reveal {
+@keyframes ai-experts-scroll {
     from {
-        opacity  : 0;
-        transform: rotate(-12deg) scale(0.6);
-        clip-path: circle(0% at 50% 50%);
+        transform: translateX(0);
     }
 
     to {
-        opacity  : 1;
-        transform: rotate(0) scale(1);
-        clip-path: circle(50% at 50% 50%);
-    }
-}
-
-@keyframes ai-experts-info-rise {
-    to {
-        opacity  : 1;
-        transform: translateY(0);
+        transform: translateX(-50%);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .ai_experts {
-        &__container h2,
-        &__avatar-wrap,
-        &__info {
+        &__container h2 {
             opacity       : 1;
-            transform     : none;
-            clip-path     : none;
             letter-spacing: normal;
             animation     : none;
+        }
+
+        &__track {
+            animation: none;
         }
     }
 }
@@ -133,16 +129,15 @@
 /* Tablet */
 @media (max-width: 992px) {
     .ai_experts {
-        padding: 64px 20px 72px;
+        padding: 64px 0 72px;
 
         &__container h2 {
             font-size    : 30px;
             margin-bottom: 40px;
         }
 
-        &__grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap                  : 32px 24px;
+        &__card {
+            width: 180px;
         }
 
         &__avatar-wrap {
@@ -155,16 +150,23 @@
 /* Mobile */
 @media (max-width: 576px) {
     .ai_experts {
-        padding: 48px 15px 56px;
+        padding: 48px 0 56px;
 
-        &__container h2 {
-            font-size    : 26px;
-            margin-bottom: 32px;
+        &__container {
+            padding: 0 15px;
+
+            h2 {
+                font-size    : 26px;
+                margin-bottom: 32px;
+            }
         }
 
-        &__grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap                  : 28px 16px;
+        &__track {
+            gap: 24px;
+        }
+
+        &__card {
+            width: 160px;
         }
 
         &__avatar-wrap {
