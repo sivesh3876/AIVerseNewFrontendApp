@@ -298,6 +298,10 @@
   opacity: 1;
 }
 
+.solution-card--clickable {
+  cursor: pointer;
+}
+
 /* Card Header */
 .solution-card-header {
   display: flex;

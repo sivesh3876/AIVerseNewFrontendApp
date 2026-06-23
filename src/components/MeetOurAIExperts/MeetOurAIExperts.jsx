@@ -178,6 +178,7 @@ const MeetOurAIExperts = ({
 
   return (
     <section
+      id="meet-our-ai-experts"
       className={`ai_experts ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >

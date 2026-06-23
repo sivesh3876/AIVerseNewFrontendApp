@@ -634,7 +634,7 @@ const AddNewAISolution = () => {
           <strong>{submitStatus.type === "success" ? "Success" : "Error"}</strong>
           <p>{submitStatus.message}</p>
           {submitStatus.type === "success" && (
-            <Link to="/solutions" className="add_ai_solution__status-link">
+            <Link to="/explore-solutions" className="add_ai_solution__status-link">
               View saved solutions
             </Link>
           )}
