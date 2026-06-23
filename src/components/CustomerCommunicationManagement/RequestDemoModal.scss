@@ -115,6 +115,12 @@
             &.has-error {
                 border-color: #dc2626;
             }
+
+            &.is-readonly {
+                background: #f3f4f6;
+                color     : #4b5563;
+                cursor    : default;
+            }
         }
 
         textarea {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   isRequestDemoEmailConfigured,
   REQUEST_DEMO_EMAIL_SETUP_MESSAGE,
+  sendContactEmail,
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";
 import "./RequestDemoModal.scss";
@@ -14,12 +15,18 @@ const INITIAL_FORM = {
   message: "",
 };
 
-const RequestDemoModal = ({ capability, onClose }) => {
+const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
+  const isContactMode = mode === "contact";
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [isSending, setIsSending] = useState(false);
   const [successPopupMessage, setSuccessPopupMessage] = useState("");
   const isEmailApiReady = isRequestDemoEmailConfigured();
+
+  const modalTitle = isContactMode ? "Contact Us" : "Request Demo";
+  const modalSubtitle = isContactMode
+    ? "Send us a message and our team will get back to you."
+    : capability?.title || "";
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -62,7 +69,10 @@ const RequestDemoModal = ({ capability, onClose }) => {
       setErrors({});
       setSuccessPopupMessage("");
 
-      const result = await sendRequestDemoEmail({ capability, form });
+      const result = isContactMode
+        ? await sendContactEmail({ form })
+        : await sendRequestDemoEmail({ capability, form });
+
       setSuccessPopupMessage(
         result.successMessage || "Mail sent successfully.",
       );
@@ -86,132 +96,151 @@ const RequestDemoModal = ({ capability, onClose }) => {
         aria-labelledby="request-demo-title"
         onClick={onClose}
       >
-      <div
-        className="request_demo_modal"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="request_demo_modal__header">
-          <div>
-            <h3 id="request-demo-title">Request Demo</h3>
-            <p>{capability.title}</p>
-          </div>
-          <button
-            type="button"
-            className="request_demo_modal__close"
-            onClick={onClose}
-            aria-label="Close request demo form"
-            disabled={isSending}
-          >
-            &times;
-          </button>
-        </div>
-
-        {!isEmailApiReady && (
-          <div className="request_demo_modal__setup-note" role="status">
-            {REQUEST_DEMO_EMAIL_SETUP_MESSAGE}
-          </div>
-        )}
-
-        <form className="request_demo_modal__form" onSubmit={handleSubmit} noValidate>
-          <label className="request_demo_modal__field">
-            <span>
-              Full Name <strong>*</strong>
-            </span>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter your full name"
-              className={errors.name ? "has-error" : ""}
-              disabled={isSending}
-            />
-            {errors.name && (
-              <small className="request_demo_modal__error">{errors.name}</small>
-            )}
-          </label>
-
-          <label className="request_demo_modal__field">
-            <span>
-              Email <strong>*</strong>
-            </span>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Enter your email address"
-              className={errors.email ? "has-error" : ""}
-              disabled={isSending}
-            />
-            {errors.email && (
-              <small className="request_demo_modal__error">{errors.email}</small>
-            )}
-          </label>
-
-          <label className="request_demo_modal__field">
-            <span>Company</span>
-            <input
-              type="text"
-              name="company"
-              value={form.company}
-              onChange={handleChange}
-              placeholder="Enter your company name"
-              disabled={isSending}
-            />
-          </label>
-
-          <label className="request_demo_modal__field">
-            <span>Phone</span>
-            <input
-              type="tel"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="Enter your phone number"
-              disabled={isSending}
-            />
-          </label>
-
-          <label className="request_demo_modal__field">
-            <span>Message</span>
-            <textarea
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              rows={4}
-              placeholder="Tell us what you would like to see in the demo"
-              disabled={isSending}
-            />
-          </label>
-
-          {errors.form && (
-            <p className="request_demo_modal__form-error">{errors.form}</p>
-          )}
-
-          <div className="request_demo_modal__actions">
+        <div
+          className="request_demo_modal"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="request_demo_modal__header">
+            <div>
+              <h3 id="request-demo-title">{modalTitle}</h3>
+              {modalSubtitle && <p>{modalSubtitle}</p>}
+            </div>
             <button
               type="button"
-              className="request_demo_modal__btn request_demo_modal__btn--secondary"
+              className="request_demo_modal__close"
               onClick={onClose}
+              aria-label="Close form"
               disabled={isSending}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="request_demo_modal__btn request_demo_modal__btn--primary"
-              disabled={isSending || !isEmailApiReady}
-              title={
-                isEmailApiReady ? "Send demo request email" : REQUEST_DEMO_EMAIL_SETUP_MESSAGE
-              }
-            >
-              {isSending ? "Sending..." : "Send Mail"}
+              &times;
             </button>
           </div>
-        </form>
+
+          {!isEmailApiReady && (
+            <div className="request_demo_modal__setup-note" role="status">
+              {REQUEST_DEMO_EMAIL_SETUP_MESSAGE}
+            </div>
+          )}
+
+          <form className="request_demo_modal__form" onSubmit={handleSubmit} noValidate>
+            {!isContactMode && capability?.title && (
+              <label className="request_demo_modal__field">
+                <span>
+                  Solution Title <strong>*</strong>
+                </span>
+                <input
+                  type="text"
+                  value={capability.title}
+                  readOnly
+                  disabled
+                  className="is-readonly"
+                />
+              </label>
+            )}
+
+            <label className="request_demo_modal__field">
+              <span>
+                Full Name <strong>*</strong>
+              </span>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                className={errors.name ? "has-error" : ""}
+                disabled={isSending}
+              />
+              {errors.name && (
+                <small className="request_demo_modal__error">{errors.name}</small>
+              )}
+            </label>
+
+            <label className="request_demo_modal__field">
+              <span>
+                Email <strong>*</strong>
+              </span>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Enter your email address"
+                className={errors.email ? "has-error" : ""}
+                disabled={isSending}
+              />
+              {errors.email && (
+                <small className="request_demo_modal__error">{errors.email}</small>
+              )}
+            </label>
+
+            <label className="request_demo_modal__field">
+              <span>Company</span>
+              <input
+                type="text"
+                name="company"
+                value={form.company}
+                onChange={handleChange}
+                placeholder="Enter your company name"
+                disabled={isSending}
+              />
+            </label>
+
+            <label className="request_demo_modal__field">
+              <span>Phone</span>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+                disabled={isSending}
+              />
+            </label>
+
+            <label className="request_demo_modal__field">
+              <span>Message</span>
+              <textarea
+                name="message"
+                value={form.message}
+                onChange={handleChange}
+                rows={4}
+                placeholder={
+                  isContactMode
+                    ? "How can we help you?"
+                    : "Tell us what you would like to see in the demo"
+                }
+                disabled={isSending}
+              />
+            </label>
+
+            {errors.form && (
+              <p className="request_demo_modal__form-error">{errors.form}</p>
+            )}
+
+            <div className="request_demo_modal__actions">
+              <button
+                type="button"
+                className="request_demo_modal__btn request_demo_modal__btn--secondary"
+                onClick={onClose}
+                disabled={isSending}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="request_demo_modal__btn request_demo_modal__btn--primary"
+                disabled={isSending || !isEmailApiReady}
+                title={
+                  isEmailApiReady ? "Send email" : REQUEST_DEMO_EMAIL_SETUP_MESSAGE
+                }
+              >
+                {isSending ? "Sending..." : "Send Mail"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
 
       {successPopupMessage && (
         <div
