@@ -2,38 +2,38 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Solutions.css";
 import {
-  FiBriefcase,
-  FiDatabase,
-  FiDollarSign,
-  FiFileText,
-  FiHeart,
-  FiMessageCircle,
-  FiPackage,
-  FiShield,
-  FiTrendingUp,
-  FiDownload,
-  FiExternalLink,
-  FiPlay,
-  FiFile,
-  FiEdit2,
-  FiTrash2,
-  FiChevronDown, 
-  FiChevronRight,
-} from "react-icons/fi";
+  BriefcaseIcon,
+  DatabaseIcon,
+  DollarSignIcon,
+  FileTextIcon,
+  HeartIcon,
+  MessageCircleIcon,
+  PackageIcon,
+  ShieldIcon,
+  TrendingUpIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  PlayIcon,
+  FileIcon,
+  EditIcon,
+  TrashIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "../components/icons/FeatherIcons";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
 const iconMap = {
-  shield: FiShield,
-  contract: FiFileText,
-  package: FiPackage,
-  health: FiHeart,
-  finance: FiDollarSign,
-  briefcase: FiBriefcase,
-  growth: FiTrendingUp,
-  concierge: FiMessageCircle,
-  metadata: FiDatabase,
+  shield: ShieldIcon,
+  contract: FileTextIcon,
+  package: PackageIcon,
+  health: HeartIcon,
+  finance: DollarSignIcon,
+  briefcase: BriefcaseIcon,
+  growth: TrendingUpIcon,
+  concierge: MessageCircleIcon,
+  metadata: DatabaseIcon,
 };
 
 // Default icon mapping based on domain
@@ -244,7 +244,7 @@ useEffect(() => {
   const getIconForDomain = (domainCode) => {
     const domainName = getDomainName(domainCode);
     const iconKey = domainIconMap[domainName] || 'shield';
-    return iconMap[iconKey] || FiShield;
+    return iconMap[iconKey] || ShieldIcon;
   };
 
   const handleEdit = (solutionId) => {
@@ -321,7 +321,7 @@ useEffect(() => {
         onClick={() => toggleGroup(groupKey)}
       >
         <span>{group.name}</span>
-        {expandedGroups[groupKey] ? <FiChevronDown /> : <FiChevronRight />}
+        {expandedGroups[groupKey] ? <ChevronDownIcon /> : <ChevronRightIcon />}
       </button>
 
       {expandedGroups[groupKey] &&
@@ -401,8 +401,8 @@ useEffect(() => {
                         <span className="solution-domain-badge">{getDomainName(solution.BusinessDomain)}</span>
                       </div>
                       <div className="solution-card-controls">
-                        <button type="button" className="solution-control-btn solution-edit-btn" onClick={() => handleEdit(solution.ID)} aria-label={`Edit ${solution.Title}`} title="Edit"><FiEdit2 /></button>
-                        <button type="button" className="solution-control-btn solution-delete-btn" onClick={() => handleDelete(solution)} disabled={deletingId === solution.ID} aria-label={`Delete ${solution.Title}`} title="Delete"><FiTrash2 /></button>
+                        <button type="button" className="solution-control-btn solution-edit-btn" onClick={() => handleEdit(solution.ID)} aria-label={`Edit ${solution.Title}`} title="Edit"><EditIcon /></button>
+                        <button type="button" className="solution-control-btn solution-delete-btn" onClick={() => handleDelete(solution)} disabled={deletingId === solution.ID} aria-label={`Delete ${solution.Title}`} title="Delete"><TrashIcon /></button>
                       </div>
                     </div>
 
@@ -474,12 +474,12 @@ useEffect(() => {
                       <div className="solution-demo-actions">
                         {hasLiveDemo && (
                           <a href={solution.DemoLink} target="_blank" rel="noopener noreferrer" className="demo-button demo-live">
-                            <FiExternalLink /><span>Live Demo</span>
+                            <ExternalLinkIcon /><span>Live Demo</span>
                           </a>
                         )}
                         {hasRecordedDemo && (
                           <a href={solution.DemoRecordedVideoLink} target="_blank" rel="noopener noreferrer" className="demo-button demo-recorded">
-                            <FiPlay /><span>Recorded Demo</span>
+                            <PlayIcon /><span>Recorded Demo</span>
                           </a>
                         )}
                         {!hasLiveDemo && !hasRecordedDemo && (
@@ -495,7 +495,7 @@ useEffect(() => {
 
             {filteredSolutions.length === 0 && (
               <div className="solutions-empty">
-                <FiPackage className="empty-icon" />
+                <PackageIcon className="empty-icon" />
                 <p>No solutions found matching your criteria.</p>
                 {(searchQuery || activeDomain) && (
                   <button
@@ -525,7 +525,7 @@ useEffect(() => {
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
             <div className="delete-modal-header">
               <div className="delete-modal-icon" aria-hidden="true">
-                <FiTrash2 />
+                <TrashIcon />
               </div>
               <h3 id="delete-modal-title" className="delete-modal-title">
                 Delete solution?

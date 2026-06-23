@@ -1,0 +1,210 @@
+.contact {
+    &__hero {
+        background: linear-gradient(90deg, #1a4a8e 0%, #0d1e32 100%);
+        color     : #fff;
+        padding   : 56px 20px 64px;
+    }
+
+    &__hero-inner {
+        max-width: 1280px;
+        margin   : 0 auto;
+        padding  : 0 20px;
+    }
+
+    &__eyebrow {
+        margin        : 0 0 12px;
+        font-size     : 12px;
+        font-weight   : 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color         : #18E0CC;
+    }
+
+    &__hero h1 {
+        margin     : 0 0 16px;
+        font-size  : 36px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    &__hero p {
+        margin     : 0;
+        max-width  : 720px;
+        font-size  : 16px;
+        line-height: 1.7;
+        color      : #94a3b8;
+    }
+
+    &__main {
+        padding: 64px 0 80px;
+    }
+
+    &__container {
+        max-width: 1280px;
+        margin   : 0 auto;
+        padding  : 0 20px;
+    }
+
+    &__grid {
+        display              : grid;
+        grid-template-columns: 1fr 1fr;
+        gap                  : 48px;
+        align-items          : start;
+    }
+
+    &__info h2,
+    &__form h2 {
+        margin     : 0 0 16px;
+        font-size  : 24px;
+        font-weight: 700;
+        color      : #0d1e32;
+    }
+
+    &__info > p {
+        margin     : 0 0 24px;
+        font-size  : 15px;
+        line-height: 1.7;
+        color      : #4b5563;
+    }
+
+    &__details {
+        list-style: none;
+        margin    : 0 0 32px;
+        padding   : 0;
+        display   : flex;
+        flex-direction: column;
+        gap       : 16px;
+
+        li {
+            display       : flex;
+            flex-direction: column;
+            gap           : 4px;
+        }
+
+        strong {
+            font-size  : 13px;
+            font-weight: 700;
+            color      : #0d1e32;
+        }
+
+        a {
+            font-size      : 15px;
+            color          : #3A8D9D;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__offices {
+        display              : grid;
+        grid-template-columns: 1fr;
+        gap                  : 16px;
+
+        article {
+            padding      : 20px;
+            border       : 1px solid #e8ecf0;
+            border-radius: 12px;
+            background   : #f9fafb;
+        }
+
+        h3 {
+            margin     : 0 0 8px;
+            font-size  : 15px;
+            font-weight: 700;
+            color      : #0d1e32;
+        }
+
+        p {
+            margin     : 0 0 8px;
+            font-size  : 14px;
+            line-height: 1.6;
+            color      : #6b7280;
+        }
+
+        a {
+            font-size      : 14px;
+            color          : #3A8D9D;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__form {
+        padding      : 32px;
+        border       : 1px solid #e8ecf0;
+        border-radius: 14px;
+        background   : #fff;
+        box-shadow   : 0 4px 16px rgba(13, 30, 50, 0.05);
+
+        label {
+            display       : flex;
+            flex-direction: column;
+            gap           : 8px;
+            margin-bottom : 18px;
+            font-size     : 13px;
+            font-weight   : 600;
+            color         : #374151;
+        }
+
+        input,
+        select,
+        textarea {
+            padding      : 12px 14px;
+            border       : 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size    : 14px;
+            font-family  : inherit;
+            color        : #0d1e32;
+
+            &:focus {
+                outline     : none;
+                border-color: #18E0CC;
+            }
+        }
+    }
+
+    &__submit {
+        width        : 100%;
+        padding      : 14px 20px;
+        border       : none;
+        border-radius: 8px;
+        background   : #18E0CC;
+        font-size    : 15px;
+        font-weight  : 700;
+        color        : #0d1e32;
+        cursor       : pointer;
+        transition   : background 0.3s;
+
+        &:hover {
+            background: #14c4b2;
+        }
+    }
+
+    &__success {
+        margin     : 0;
+        padding    : 20px;
+        border-radius: 8px;
+        background : #ecfdf5;
+        font-size  : 15px;
+        line-height: 1.6;
+        color      : #065f46;
+    }
+}
+
+@media (max-width: 900px) {
+    .contact__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact__hero h1 {
+        font-size: 28px;
+    }
+}

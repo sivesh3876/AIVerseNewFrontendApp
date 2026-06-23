@@ -46,6 +46,12 @@
         justify-content: center;
         flex-shrink    : 0;
         height         : 36px;
+        text-decoration: none;
+        transition     : opacity 0.3s;
+
+        &:hover {
+            opacity: 0.8;
+        }
 
         img {
             height    : 100%;

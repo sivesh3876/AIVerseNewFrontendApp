@@ -121,6 +121,7 @@ const EnterpriseTransformationServices = ({
 
   return (
     <section
+      id="enterprise-transformation"
       className={`enterprise_services ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >

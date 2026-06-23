@@ -1,49 +1,11 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import "./InsightsThoughtLeadership.scss";
 import insigts from "../../assets/images/insigts.svg";
-
-const defaultFeaturedArticle = {
-  badge: "FEATURED ARTICLE",
-  title:
-    "The Future of Enterprise AI: Agentic Systems and Autonomous Workflows",
-  description:
-    "Explore how autonomous AI agents are transforming enterprise operations, from customer service to complex decision-making processes. Learn about the latest developments in agentic AI.",
-  image: insigts,
-  linkText: "Read Full Article",
-};
-
-const defaultInsights = [
-  {
-    badge: "INDUSTRY REPORT",
-    badgeColor: "#4D90E3",
-    title: "AI Adoption in Financial Services 2026",
-  },
-  {
-    badge: "WHITEPAPER",
-    badgeColor: "#3A8D9D",
-    title: "Building Responsible AI: Ethics Framework",
-  },
-  {
-    badge: "CASE STUDY",
-    badgeColor: "#EF8E29",
-    title: "How Education Leaders Transform with AI",
-  },
-  {
-    badge: "TRENDS REPORT",
-    badgeColor: "#F5B800",
-    title: "Generative AI in Enterprise",
-  },
-  {
-    badge: "RESEARCH",
-    badgeColor: "#18E0CC",
-    title: "The Economics of AI",
-  },
-  {
-    badge: "GUIDE",
-    badgeColor: "#4D90E3",
-    title: "AI Readiness Assessment",
-  },
-];
+import {
+  featuredArticle as defaultFeaturedArticle,
+  homeInsights as defaultInsights,
+} from "../LearnExplore/learnExploreData";
 
 const getCardAnimation = (index) => {
   const columns = 3;
@@ -56,10 +18,8 @@ const getCardAnimation = (index) => {
 };
 
 const InsightsThoughtLeadership = ({
-  featuredArticle = defaultFeaturedArticle,
+  featuredArticle = { ...defaultFeaturedArticle, image: insigts },
   insights = defaultInsights,
-  onReadFeatured,
-  onReadInsight,
 }) => {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -83,6 +43,7 @@ const InsightsThoughtLeadership = ({
 
   return (
     <section
+      id="success-stories"
       className={`insights_leadership ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >
@@ -105,13 +66,12 @@ const InsightsThoughtLeadership = ({
             <h3>{featuredArticle.title}</h3>
             <p>{featuredArticle.description}</p>
 
-            <button
-              type="button"
+            <Link
+              to={`/learn-explore?article=${featuredArticle.id}`}
               className="insights_leadership__featured-link"
-              onClick={() => onReadFeatured?.(featuredArticle)}
             >
               {featuredArticle.linkText} &rarr;
-            </button>
+            </Link>
           </div>
         </article>
 
@@ -122,26 +82,25 @@ const InsightsThoughtLeadership = ({
             return (
               <article
                 className="insights_leadership__card"
-                key={insight.title}
+                key={insight.id}
                 style={{ animationDelay }}
               >
-              <span
-                className="insights_leadership__card-badge"
-                style={{ background: insight.badgeColor }}
-              >
-                {insight.badge}
-              </span>
+                <span
+                  className="insights_leadership__card-badge"
+                  style={{ background: insight.badgeColor }}
+                >
+                  {insight.badge}
+                </span>
 
-              <h4>{insight.title}</h4>
+                <h4>{insight.title}</h4>
 
-              <button
-                type="button"
-                className="insights_leadership__card-link"
-                onClick={() => onReadInsight?.(insight)}
-              >
-                Read More &gt;
-              </button>
-            </article>
+                <Link
+                  to={`/learn-explore?article=${insight.id}`}
+                  className="insights_leadership__card-link"
+                >
+                  Read More &gt;
+                </Link>
+              </article>
             );
           })}
         </div>
