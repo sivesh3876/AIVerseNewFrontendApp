@@ -7,6 +7,7 @@ const CaseStudiesPage = () => {
       <Breadcrumb
         items={[
           { label: "AI Verse", to: "/" },
+          { label: "Resources", to: "/learn-explore" },
           { label: "Case Studies" },
         ]}
       />

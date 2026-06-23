@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
+import Breadcrumb from "../components/Breadcrumb";
 import { getServiceIdForDomain } from "../utils/solutionMapper";
 import { navigateToSiteSearch } from "../utils/siteSearch";
 import "./Solutions.css";
@@ -82,7 +83,14 @@ export default function Solutions() {
   };
 
   return (
-    <section className="solutions-page">
+    <>
+      <Breadcrumb
+        items={[
+          { label: "AI Verse", to: "/" },
+          { label: "Solutions" },
+        ]}
+      />
+      <section className="solutions-page">
       <aside className="solutions-sidebar" aria-label="Business domains">
         <form className="solutions-search-wrap" onSubmit={handleSearchSubmit}>
           <input
@@ -144,5 +152,6 @@ export default function Solutions() {
         </div>
       </div>
     </section>
+    </>
   );
 }

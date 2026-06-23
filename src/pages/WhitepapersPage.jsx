@@ -7,6 +7,7 @@ const WhitepapersPage = () => {
       <Breadcrumb
         items={[
           { label: "AI Verse", to: "/" },
+          { label: "Resources", to: "/learn-explore" },
           { label: "Whitepapers" },
         ]}
       />

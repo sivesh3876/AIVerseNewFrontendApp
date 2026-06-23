@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
 import "./Footer.scss";
 
@@ -10,31 +11,19 @@ import { footerSections } from "./footerData";
 const Footer = () => {
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
 
-  const handleFooterLinkClick = (event, link) => {
-    if (link !== "Contact") return;
-
-    event.preventDefault();
-    setIsContactFormOpen(true);
-  };
-
   return (
     <>
       <footer className="footer">
         <div className="footer_container">
           <div className="footer_list">
-            {footerData.map((section) => (
+            {footerSections.map((section) => (
               <div className="list_column" key={section.title}>
                 <h5>{section.title}</h5>
 
                 <ul>
                   {section.links.map((link) => (
-                    <li key={link}>
-                      <a
-                        href={link === "Contact" ? "#contact" : "#"}
-                        onClick={(event) => handleFooterLinkClick(event, link)}
-                      >
-                        {link}
-                      </a>
+                    <li key={link.label}>
+                      <Link to={link.to}>{link.label}</Link>
                     </li>
                   ))}
                 </ul>
@@ -58,19 +47,34 @@ const Footer = () => {
                 <li>
                   <ul className="social_media">
                     <li>
-                      <a href="#" title="LinkedIn">
+                      <a
+                        href="https://linkedin.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        title="LinkedIn"
+                      >
                         <img src={linkdIn} alt="LinkedIn" />
                       </a>
                     </li>
 
                     <li>
-                      <a href="#" title="Twitter">
+                      <a
+                        href="https://twitter.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Twitter"
+                      >
                         <img src={twitter} alt="Twitter" />
                       </a>
                     </li>
 
                     <li>
-                      <a href="#" title="Facebook">
+                      <a
+                        href="https://facebook.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Facebook"
+                      >
                         <img src={facebook} alt="Facebook" />
                       </a>
                     </li>

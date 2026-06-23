@@ -1,5 +1,5 @@
-import { Link, useLocation, useNavigate, useMemo } from "react-router-dom";
-import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import "./Navigation.scss";
 import logo from "../../assets/images/logo.svg";
 import search from "../../assets/images/search.svg";
@@ -143,7 +143,7 @@ const Navigation = () => {
             </p>
           )}
         </div>
-      )}{" "}
+      )}
     </>
   );
 };

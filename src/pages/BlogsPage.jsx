@@ -7,6 +7,7 @@ const BlogsPage = () => {
       <Breadcrumb
         items={[
           { label: "AI Verse", to: "/" },
+          { label: "Resources", to: "/learn-explore" },
           { label: "Blogs" },
         ]}
       />
