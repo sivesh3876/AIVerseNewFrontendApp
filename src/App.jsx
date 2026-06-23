@@ -10,6 +10,7 @@ import AICapabilitiesPage from "./pages/AICapabilitiesPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import ClientsPage from "./pages/ClientsPage";
 import IndustrySolutionsPage from "./pages/IndustrySolutionsPage";
+import SolutionDetails from "./pages/SolutionDetails";
 import Solutions from "./pages/Solutions";
 import ContactPage from "./pages/ContactPage";
 import CareersPage from "./pages/CareersPage";
@@ -44,6 +45,7 @@ function App() {
       <Navigation />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
         <Route path="/learn-explore" element={<LearnExplorePage />} />
         <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />

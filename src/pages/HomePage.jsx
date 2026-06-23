@@ -16,8 +16,7 @@ const HomePage = () => {
       <HeroBannerSlider />
       <ClientsLogoBar />
       <StatsSection />
-      <ExploreAISolutions />
-      <ComprehensiveAICapabilities />
+      <ExploreAISolutions />      <ComprehensiveAICapabilities />
       <EnterpriseTransformationServices />
       <IndustrySpecificAISolutions />
       <TrustedByGlobalLeaders />

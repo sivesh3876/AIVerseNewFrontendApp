@@ -45,6 +45,12 @@
         }
     }
 
+    &__nav--industries {
+        margin-top : 16px;
+        padding-top: 16px;
+        border-top : 1px solid #e5e7eb;
+    }
+
     &__nav-item {
         display        : flex;
         align-items    : center;
@@ -246,6 +252,10 @@
             border-color: rgba(58, 141, 157, 0.45);
             background  : linear-gradient(180deg, #f8fdff 0%, #fff 100%);
             position    : relative;
+        }
+
+        &.is-clickable {
+            cursor: pointer;
         }
 
         &.is-highlighted {
@@ -593,6 +603,10 @@
         margin    : 12px 0 0;
         font-size : 14px;
         color     : #6b7280;
+
+        &--error {
+            color: #dc2626;
+        }
     }
 
     &__action-btn {

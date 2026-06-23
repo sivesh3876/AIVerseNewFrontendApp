@@ -5,7 +5,11 @@ import { getEnterpriseServiceById } from "../components/CustomerCommunicationMan
 
 const ExploreSolutions = () => {
   const [searchParams] = useSearchParams();
+  const domainCode = searchParams.get("domain");
   const activeService = getEnterpriseServiceById(searchParams.get("service"));
+  const pageLabel = domainCode
+    ? domainCode.replace(/([a-z])([A-Z])/g, "$1 $2")
+    : activeService.label;
 
   return (
     <>
@@ -13,7 +17,7 @@ const ExploreSolutions = () => {
         items={[
           { label: "AI Verse", to: "/" },
           { label: "Enterprise Services", to: "/explore-solutions" },
-          { label: activeService.label },
+          { label: pageLabel },
         ]}
       />
       <CustomerCommunicationManagement />

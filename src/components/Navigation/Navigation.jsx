@@ -1,16 +1,21 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useMemo } from "react-router-dom";
 import { useState } from "react";
 import "./Navigation.scss";
 import logo from "../../assets/images/logo.svg";
 import search from "../../assets/images/search.svg";
-import user from "../../assets/images/user.svg";
 import { HOME_NAV_LINKS, scrollToHomeSection } from "../../utils/homeSections";
+import {
+  buildSearchNavigationTarget,
+  navigateToSearchPath,
+  searchSite,
+} from "../../utils/siteSearch";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSectionNav = (sectionId) => {
     setMobileMenu(false);
@@ -28,6 +33,30 @@ const Navigation = () => {
     navigate(`/#${sectionId}`);
   };
 
+  const searchResults = useMemo(
+    () => (showSearch ? searchSite(searchQuery) : []),
+    [showSearch, searchQuery],
+  );
+
+  const goToSearchResult = (path) => {
+    setShowSearch(false);
+    setSearchQuery("");
+    setMobileMenu(false);
+    navigateToSearchPath(navigate, path);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+
+    goToSearchResult(buildSearchNavigationTarget(trimmed));
+  };
+
+  const closeSearch = () => {
+    setShowSearch(false);
+    setSearchQuery("");
+  };
   return (
     <>
       <div className="navigation">
@@ -36,10 +65,7 @@ const Navigation = () => {
             <img src={logo} alt="Logo" />
           </Link>
 
-          <div
-            className="hamburger"
-            onClick={() => setMobileMenu(!mobileMenu)}
-          >
+          <div className="hamburger" onClick={() => setMobileMenu(!mobileMenu)}>
             ☰
           </div>
 
@@ -68,31 +94,56 @@ const Navigation = () => {
             >
               <img src={search} alt="Search" />
             </button>
-
-            <div className="user">
-              <img src={user} alt="User" />
-              <span>John Doe</span>
-            </div>
           </div>
         </nav>
       </div>
-
       {showSearch && (
         <div className="search-dropdown">
-          <input
-            type="text"
-            placeholder="Search..."
-            autoFocus
-          />
+          <form className="search-dropdown__form" onSubmit={handleSearchSubmit}>
+            <input
+              type="search"
+              placeholder="Search capabilities, services, industries..."
+              autoFocus
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              aria-label="Search site"
+            />
+            <button
+              type="button"
+              className="close-btn"
+              onClick={closeSearch}
+              aria-label="Close search"
+            >
+              ✕
+            </button>
+          </form>
 
-          <button
-            className="close-btn"
-            onClick={() => setShowSearch(false)}
-          >
-            ✕
-          </button>
+          {searchQuery.trim() && searchResults.length > 0 && (
+            <ul className="search-dropdown__results">
+              {searchResults.map((result) => (
+                <li key={`${result.type}-${result.title}-${result.path}`}>
+                  <button
+                    type="button"
+                    className="search-dropdown__result"
+                    onClick={() => goToSearchResult(result.path)}
+                  >
+                    <strong>{result.title}</strong>
+                    <span>
+                      {result.subtitle || result.description || result.type}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {searchQuery.trim() && searchResults.length === 0 && (
+            <p className="search-dropdown__empty">
+              No direct match found. Press Enter to search all solutions.
+            </p>
+          )}
         </div>
-      )}
+      )}{" "}
     </>
   );
 };

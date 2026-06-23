@@ -59,8 +59,16 @@ export const getServiceIdForDomain = (domainCode) => {
     return domainCodeToServiceId[domainCode];
   }
 
+  const normalizedCode = normalizeKey(domainCode);
+  const mappedEntry = Object.entries(domainCodeToServiceId).find(
+    ([code]) => normalizeKey(code) === normalizedCode,
+  );
+  if (mappedEntry) {
+    return mappedEntry[1];
+  }
+
   const serviceByLabel = enterpriseServicesData.find(
-    (service) => normalizeKey(service.label) === normalizeKey(domainCode),
+    (service) => normalizeKey(service.label) === normalizedCode,
   );
   if (serviceByLabel) {
     return serviceByLabel.id;
@@ -69,10 +77,26 @@ export const getServiceIdForDomain = (domainCode) => {
   return null;
 };
 
+export const solutionMatchesExploreFilter = ({
+  businessDomain,
+  activeServiceId,
+  activeDomainCode = null,
+}) => {
+  if (!businessDomain) return false;
+
+  if (activeDomainCode) {
+    return businessDomain === activeDomainCode;
+  }
+
+  return getServiceIdForDomain(businessDomain) === activeServiceId;
+};
+
 const getAvatarColor = (index) => AVATAR_COLORS[index % AVATAR_COLORS.length];
 
-const parsePersonName = (value = "") => {
-  const trimmed = value.trim();
+const toText = (value) => (value == null ? "" : String(value));
+
+const parsePersonName = (value) => {
+  const trimmed = toText(value).trim();
   if (!trimmed || trimmed === PLACEHOLDER_EVANGELIST) {
     return null;
   }
@@ -81,8 +105,8 @@ const parsePersonName = (value = "") => {
   return withoutEmail || trimmed;
 };
 
-const parseEmailFromValue = (value = "") => {
-  const match = value.match(/\(([^)]+@[^)]+)\)/);
+const parseEmailFromValue = (value) => {
+  const match = toText(value).match(/\(([^)]+@[^)]+)\)/);
   return match ? match[1].trim() : "";
 };
 
@@ -92,15 +116,21 @@ const resolveRecordedDemoLink = (solution = {}) => {
   return recordedVideoLink || demoLink;
 };
 
-const parseTechStack = (techHighlights = "") =>
-  techHighlights
+const parseTechStack = (techHighlights) => {
+  const value =
+    techHighlights === null || techHighlights === undefined
+      ? ""
+      : String(techHighlights);
+
+  return value
     .split(/[,;|]/)
     .map((item) => item.trim())
     .filter(Boolean)
     .map((name) => ({ name, label: "Technology" }));
+};
 
-const parseEvangelists = (value = "", evangelistDirectory = []) => {
-  const items = value
+const parseEvangelists = (value, evangelistDirectory = []) => {
+  const items = toText(value)
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
@@ -126,8 +156,9 @@ const parseEvangelists = (value = "", evangelistDirectory = []) => {
     .filter(Boolean);
 };
 
-const parseCoe = (ownershipDetails = "", solutionOwners = []) => {
-  const name = parsePersonName(ownershipDetails);
+const parseCoe = (ownershipDetails, solutionOwners = []) => {
+  const details = toText(ownershipDetails);
+  const name = parsePersonName(details);
   if (!name) {
     return {
       name: "Not assigned",
@@ -139,15 +170,15 @@ const parseCoe = (ownershipDetails = "", solutionOwners = []) => {
 
   const owner = solutionOwners.find(
     (entry) =>
-      ownershipDetails.includes(entry.Email) ||
-      ownershipDetails.startsWith(entry.Name),
+      details.includes(entry.Email) ||
+      details.startsWith(entry.Name),
   );
 
   return {
     name,
     title: owner?.Title || owner?.Department || "Solution Owner",
     color: "teal",
-    email: parseEmailFromValue(ownershipDetails) || owner?.Email || "",
+    email: parseEmailFromValue(details) || owner?.Email || "",
   };
 };
 
@@ -365,29 +396,54 @@ export const shouldDeleteCapabilityFromApi = (capability, apiCapabilities = []) 
 };
 
 const SUBMITTED_SOLUTIONS_STORAGE_KEY = "aiVerseSubmittedSolutions";
+const DELETED_SOLUTIONS_STORAGE_KEY = "aiVerseDeletedSolutionIds";
 const LEGACY_SESSION_STORAGE_KEY = SUBMITTED_SOLUTIONS_STORAGE_KEY;
 
-const dedupeCapabilities = (capabilities = []) => {
-  const seenIds = new Set();
-  const seenTitles = new Set();
+export const getDeletedSolutionIds = () => {
+  try {
+    const raw = localStorage.getItem(DELETED_SOLUTIONS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+};
 
-  return capabilities.filter((capability) => {
-    const id = capability?.id;
-    const title = capability?.title?.trim().toLowerCase();
+export const markSolutionAsDeleted = (solutionId) => {
+  if (solutionId == null || solutionId === "") return;
 
-    if (id && seenIds.has(id)) return false;
-    if (title && seenTitles.has(title)) return false;
+  const id = String(solutionId);
+  const deletedIds = new Set(getDeletedSolutionIds());
+  deletedIds.add(id);
+  localStorage.setItem(
+    DELETED_SOLUTIONS_STORAGE_KEY,
+    JSON.stringify([...deletedIds]),
+  );
+};
 
-    if (id) seenIds.add(id);
-    if (title) seenTitles.add(title);
-    return true;
+export const filterOutDeletedSolutions = (solutions = []) => {
+  const deletedIds = new Set(getDeletedSolutionIds());
+  if (deletedIds.size === 0) return solutions;
+
+  return solutions.filter((solution) => !deletedIds.has(String(solution.ID)));
+};
+
+const dedupeCapabilitiesById = (capabilities = []) => {
+  const byId = new Map();
+
+  capabilities.forEach((capability) => {
+    if (capability?.id && !byId.has(capability.id)) {
+      byId.set(capability.id, capability);
+    }
   });
+
+  return [...byId.values()];
 };
 
 const savePersistedSubmittedCapabilities = (capabilities) => {
   localStorage.setItem(
     SUBMITTED_SOLUTIONS_STORAGE_KEY,
-    JSON.stringify(dedupeCapabilities(capabilities)),
+    JSON.stringify(dedupeCapabilitiesById(capabilities)),
   );
 };
 
@@ -437,14 +493,7 @@ export const persistSubmittedCapability = (capability) => {
   if (!serialized?.id) return;
 
   const existing = getPersistedSubmittedCapabilities();
-  const next = [
-    serialized,
-    ...existing.filter(
-      (item) =>
-        item.id !== serialized.id &&
-        item.title.trim().toLowerCase() !== serialized.title.trim().toLowerCase(),
-    ),
-  ];
+  const next = [serialized, ...existing.filter((item) => item.id !== serialized.id)];
 
   savePersistedSubmittedCapabilities(next);
 };
@@ -474,27 +523,26 @@ export const mergeSubmittedCapabilities = ({
   apiCapabilities,
   pendingCapabilities = [],
   activeServiceId,
+  activeDomainCode = null,
 }) => {
-  const fromApi = apiCapabilities.filter(
-    (capability) => getServiceIdForDomain(capability.businessDomain) === activeServiceId,
-  );
+  const matchesFilter = (capability) =>
+    solutionMatchesExploreFilter({
+      businessDomain: capability.businessDomain,
+      activeServiceId,
+      activeDomainCode,
+    });
+
+  const fromApi = apiCapabilities.filter(matchesFilter);
 
   const apiIds = new Set(fromApi.map((capability) => capability.id));
-  const apiTitles = new Set(
-    fromApi.map((capability) => capability.title.trim().toLowerCase()),
-  );
 
   const fromPending = pendingCapabilities.filter((capability) => {
-    if (getServiceIdForDomain(capability.businessDomain) !== activeServiceId) {
+    if (!matchesFilter(capability)) {
       return false;
     }
 
-    if (apiIds.has(capability.id)) {
-      return false;
-    }
-
-    return !apiTitles.has(capability.title.trim().toLowerCase());
+    return capability.id && !apiIds.has(capability.id);
   });
 
-  return [...fromPending, ...fromApi];
+  return dedupeCapabilitiesById([...fromApi, ...fromPending]);
 };
