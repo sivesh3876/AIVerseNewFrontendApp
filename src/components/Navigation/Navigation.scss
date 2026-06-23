@@ -204,10 +204,19 @@
     background     : #0d1e32;
     border-top     : 1px solid rgba(255, 255, 255, 0.1);
     display        : flex;
+    flex-direction : column;
     align-items    : center;
     justify-content: center;
-    gap            : 12px;
-    padding        : 10px 20px;
+    gap            : 0;
+    padding        : 10px 20px 14px;
+
+    &__form {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        gap            : 12px;
+        width          : 100%;
+    }
 
     input {
         width        : 504px;
@@ -231,6 +240,60 @@
         color     : white;
         font-size : 22px;
         cursor    : pointer;
+    }
+
+    &__results {
+        list-style: none;
+        margin    : 10px 0 0;
+        padding   : 0;
+        width     : min(504px, 90%);
+        max-height: 280px;
+        overflow-y: auto;
+        border    : 1px solid rgba(24, 224, 204, 0.25);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    &__result {
+        display       : flex;
+        flex-direction: column;
+        align-items   : flex-start;
+        gap           : 4px;
+        width         : 100%;
+        padding       : 10px 14px;
+        border        : none;
+        border-bottom : 1px solid rgba(255, 255, 255, 0.08);
+        background    : transparent;
+        color         : #fff;
+        text-align    : left;
+        cursor        : pointer;
+        font-family   : inherit;
+
+        &:hover {
+            background: rgba(24, 224, 204, 0.12);
+        }
+
+        strong {
+            font-size  : 14px;
+            font-weight: 600;
+        }
+
+        span {
+            font-size: 12px;
+            color    : rgba(255, 255, 255, 0.65);
+        }
+    }
+
+    &__results li:last-child .search-dropdown__result {
+        border-bottom: none;
+    }
+
+    &__empty {
+        width      : min(504px, 90%);
+        margin     : 10px 0 0;
+        font-size  : 13px;
+        color      : rgba(255, 255, 255, 0.7);
+        text-align : center;
     }
 }
 
