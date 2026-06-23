@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import RequestDemoModal from "./RequestDemoModal";
@@ -119,7 +119,7 @@ const CapabilityCard = ({
             aria-label={`Edit ${capability.title}`}
             title="Edit"
           >
-            <FiEdit2 />
+            <EditIcon />
           </button>
           <button
             type="button"
@@ -132,7 +132,7 @@ const CapabilityCard = ({
             aria-label={`Delete ${capability.title}`}
             title="Delete"
           >
-            <FiTrash2 />
+            <TrashIcon />
           </button>
         </div>
       )}

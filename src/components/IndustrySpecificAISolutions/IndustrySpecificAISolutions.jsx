@@ -1,75 +1,8 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { homeIndustries } from "../IndustryExplore/industrySolutionsData";
+import { CheckIcon } from "./IndustryIcons";
 import "./IndustrySpecificAISolutions.scss";
-import educationImage from "../../assets/images/industries01.svg";
-import healthcareImage from "../../assets/images/industries02.svg";
-import financialServicesImage from "../../assets/images/industries03.svg";
-import retailImage from "../../assets/images/industries04.svg";
-import {
-  CheckIcon,
-  EducationIcon,
-  FinancialServicesIcon,
-  HealthcareIcon,
-  RetailIcon,
-} from "./IndustryIcons";
-
-const defaultIndustries = [
-  {
-    icon: EducationIcon,
-    iconBg: "#4D90E3",
-    accentColor: "#4D90E3",
-    title: "Education",
-    image: educationImage,
-    features: [
-      "Student Success AI",
-      "Administrative Automation",
-      "Personalized Learning",
-      "Virtual Assistants",
-    ],
-    metric: "30% Improved Engagement",
-  },
-  {
-    icon: HealthcareIcon,
-    iconBg: "#18E0CC",
-    accentColor: "#18E0CC",
-    title: "Healthcare",
-    image: healthcareImage,
-    features: [
-      "Patient Care AI",
-      "Diagnostic Support",
-      "Clinical Documentation",
-      "Operational Efficiency",
-    ],
-    metric: "50% Reduced Admin Time",
-  },
-  {
-    icon: FinancialServicesIcon,
-    iconBg: "#EF8E29",
-    accentColor: "#EF8E29",
-    title: "Financial Services",
-    image: financialServicesImage,
-    features: [
-      "Risk Modeling",
-      "Fraud Detection",
-      "Compliance Automation",
-      "Customer Insights",
-    ],
-    metric: "40% Faster Decisions",
-  },
-  {
-    icon: RetailIcon,
-    iconBg: "#F5B800",
-    accentColor: "#D4A017",
-    title: "Retail",
-    image: retailImage,
-    features: [
-      "Personalization",
-      "Inventory Optimization",
-      "Visual Search",
-      "Dynamic Pricing",
-    ],
-    metric: "35% Higher Conversion",
-  },
-];
 
 const REVEAL_VARIANTS = [
   "industry_solutions__card--reveal-tl",
@@ -89,10 +22,7 @@ const getCardAnimation = (index) => {
   };
 };
 
-const IndustrySpecificAISolutions = ({
-  industries = defaultIndustries,
-  onExplore,
-}) => {
+const IndustrySpecificAISolutions = ({ industries = homeIndustries }) => {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -115,6 +45,7 @@ const IndustrySpecificAISolutions = ({
 
   return (
     <section
+      id="industries"
       className={`industry_solutions ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >
@@ -130,9 +61,10 @@ const IndustrySpecificAISolutions = ({
             const { className, animationDelay } = getCardAnimation(index);
 
             return (
-              <article
+              <Link
+                to={`/industry-solutions?industry=${industry.id}`}
                 className={`industry_solutions__card ${className}`}
-                key={industry.title}
+                key={industry.id}
                 style={{
                   animationDelay,
                   "--card-delay": animationDelay,
@@ -171,16 +103,12 @@ const IndustrySpecificAISolutions = ({
                       {industry.metric}
                     </p>
 
-                    <button
-                      type="button"
-                      className="industry_solutions__link"
-                      onClick={() => onExplore?.(industry)}
-                    >
+                    <span className="industry_solutions__link">
                       Explore &gt;
-                    </button>
+                    </span>
                   </div>
                 </div>
-              </article>
+              </Link>
             );
           })}
         </div>

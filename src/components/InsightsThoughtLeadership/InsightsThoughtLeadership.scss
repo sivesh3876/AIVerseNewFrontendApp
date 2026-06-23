@@ -99,16 +99,17 @@
     }
 
     &__featured-link {
-        align-self : flex-start;
-        padding    : 0;
-        border     : none;
-        background : transparent;
-        color      : #18E0CC;
-        font-size  : 15px;
-        font-weight: 500;
-        font-family: inherit;
-        cursor     : pointer;
-        transition : color 0.3s;
+        align-self     : flex-start;
+        padding        : 0;
+        border         : none;
+        background     : transparent;
+        color          : #18E0CC;
+        font-size      : 15px;
+        font-weight    : 500;
+        font-family    : inherit;
+        text-decoration: none;
+        cursor         : pointer;
+        transition     : color 0.3s;
 
         &:hover {
             color: #3A8D9D;
@@ -162,17 +163,18 @@
     }
 
     &__card-link {
-        align-self : flex-end;
-        margin-top : 20px;
-        padding    : 0;
-        border     : none;
-        background : transparent;
-        color      : #18E0CC;
-        font-size  : 14px;
-        font-weight: 500;
-        font-family: inherit;
-        cursor     : pointer;
-        transition : color 0.3s;
+        align-self     : flex-end;
+        margin-top     : 20px;
+        padding        : 0;
+        border         : none;
+        background     : transparent;
+        color          : #18E0CC;
+        font-size      : 14px;
+        font-weight    : 500;
+        font-family    : inherit;
+        text-decoration: none;
+        cursor         : pointer;
+        transition     : color 0.3s;
 
         &:hover {
             color: #3A8D9D;

@@ -34,14 +34,25 @@
         padding   : 0;
 
         li {
-            cursor     : pointer;
             font-size  : 14px;
             line-height: 20px;
             transition : 0.3s;
             font-weight: 200;
 
-            &:hover {
-                color: #18E0CC;
+            button,
+            a {
+                background     : transparent;
+                border         : none;
+                padding        : 0;
+                color          : inherit;
+                font           : inherit;
+                text-decoration: none;
+                cursor         : pointer;
+                transition     : color 0.3s;
+
+                &:hover {
+                    color: #18E0CC;
+                }
             }
         }
     }

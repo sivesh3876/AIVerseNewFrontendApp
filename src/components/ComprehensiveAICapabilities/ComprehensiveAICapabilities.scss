@@ -89,16 +89,17 @@
     }
 
     &__link {
-        align-self : flex-start;
-        padding    : 0;
-        border     : none;
-        background : transparent;
-        color      : #3A8D9D;
-        font-size  : 14px;
-        font-weight: 500;
-        font-family: inherit;
-        cursor     : pointer;
-        transition : color 0.3s;
+        align-self     : flex-start;
+        padding        : 0;
+        border         : none;
+        background     : transparent;
+        color          : #3A8D9D;
+        font-size      : 14px;
+        font-weight    : 500;
+        font-family    : inherit;
+        text-decoration: none;
+        cursor         : pointer;
+        transition     : color 0.3s;
 
         &:hover {
             color: #3A8D9D;

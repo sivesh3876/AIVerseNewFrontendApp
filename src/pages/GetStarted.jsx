@@ -4,7 +4,12 @@ import AddNewAISolution from "../components/AddNewAISolution";
 const GetStarted = () => {
   return (
     <>
-      <Breadcrumb />
+      <Breadcrumb
+        items={[
+          { label: "AI Verse", to: "/" },
+          { label: "Get Started" },
+        ]}
+      />
       <AddNewAISolution />
     </>
   );

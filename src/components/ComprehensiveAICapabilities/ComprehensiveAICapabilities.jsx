@@ -1,87 +1,9 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import "./ComprehensiveAICapabilities.scss";
-import {
-  AgenticAIIcon,
-  AdvancedNLPIcon,
-  ComputerVisionIcon,
-  ConversationalAIIcon,
-  DocumentIntelligenceIcon,
-  EnterpriseSearchIcon,
-  GenerativeAIIcon,
-  IntelligentAutomationIcon,
-  KnowledgeAssistantsIcon,
-  MultiLanguageAIIcon,
-  PredictiveAnalyticsIcon,
-  RecommendationEnginesIcon,
-} from "./CapabilityIcons";
+import { homeCapabilities as defaultCapabilities } from "../AICapabilitiesExplore/aiCapabilitiesData";
 
-const defaultCapabilities = [
-  {
-    icon: ConversationalAIIcon,
-    title: "Conversational AI",
-    description: "Natural language interfaces",
-  },
-  {
-    icon: AgenticAIIcon,
-    title: "Agentic AI",
-    description: "Autonomous AI agents",
-  },
-  {
-    icon: AdvancedNLPIcon,
-    title: "Advanced NLP",
-    description: "Language understanding",
-  },
-  {
-    icon: ComputerVisionIcon,
-    title: "Computer Vision",
-    description: "Visual intelligence",
-  },
-  {
-    icon: DocumentIntelligenceIcon,
-    title: "Document Intelligence",
-    description: "Automated processing",
-  },
-  {
-    icon: PredictiveAnalyticsIcon,
-    title: "Predictive Analytics",
-    description: "Data-driven forecasting",
-  },
-  {
-    icon: IntelligentAutomationIcon,
-    title: "Intelligent Automation",
-    description: "Process automation",
-  },
-  {
-    icon: RecommendationEnginesIcon,
-    title: "Recommendation Engines",
-    description: "Personalization",
-  },
-  {
-    icon: MultiLanguageAIIcon,
-    title: "Multi-language AI",
-    description: "Cross-language support",
-  },
-  {
-    icon: KnowledgeAssistantsIcon,
-    title: "Knowledge Assistants",
-    description: "Knowledge management",
-  },
-  {
-    icon: GenerativeAIIcon,
-    title: "Generative AI",
-    description: "Content generation",
-  },
-  {
-    icon: EnterpriseSearchIcon,
-    title: "Enterprise Search",
-    description: "Intelligent search",
-  },
-];
-
-const ComprehensiveAICapabilities = ({
-  capabilities = defaultCapabilities,
-  onLearnMore,
-}) => {
+const ComprehensiveAICapabilities = ({ capabilities = defaultCapabilities }) => {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -104,6 +26,7 @@ const ComprehensiveAICapabilities = ({
 
   return (
     <section
+      id="capabilities"
       className={`ai_capabilities ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >
@@ -123,7 +46,7 @@ const ComprehensiveAICapabilities = ({
             return (
               <article
                 className="ai_capabilities__card"
-                key={capability.title}
+                key={capability.id}
                 style={{ animationDelay: `${index * 0.12}s` }}
               >
                 <div className="ai_capabilities__icon">
@@ -133,13 +56,12 @@ const ComprehensiveAICapabilities = ({
                 <h3>{capability.title}</h3>
                 <p>{capability.description}</p>
 
-                <button
-                  type="button"
+                <Link
+                  to={`/ai-capabilities?capability=${capability.id}`}
                   className="ai_capabilities__link"
-                  onClick={() => onLearnMore?.(capability)}
                 >
                   Learn More &gt;
-                </button>
+                </Link>
               </article>
             );
           })}
