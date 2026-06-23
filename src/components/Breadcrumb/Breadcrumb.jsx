@@ -2,11 +2,7 @@ import { Link } from "react-router-dom";
 import "./Breadcrumb.scss";
 import homeIcon from "../../assets/images/home.svg";
 
-const defaultItems = [
-  { label: "AI Verse", to: "/" },
-  { label: "Enterprise Services", to: "/explore-solutions" },
-  { label: "Customer Communication Management" },
-];
+const defaultItems = [{ label: "AI Verse", to: "/" }];
 
 const Breadcrumb = ({ items = defaultItems }) => {
   return (

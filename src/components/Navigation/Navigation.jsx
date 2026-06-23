@@ -1,8 +1,9 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import "./Navigation.scss";
 import logo from "../../assets/images/logo.svg";
 import search from "../../assets/images/search.svg";
+import { HOME_NAV_LINKS, scrollToHomeSection } from "../../utils/homeSections";
 import {
   buildSearchNavigationTarget,
   navigateToSearchPath,
@@ -11,9 +12,26 @@ import {
 
 const Navigation = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSectionNav = (sectionId) => {
+    setMobileMenu(false);
+
+    if (location.pathname === "/") {
+      scrollToHomeSection(sectionId);
+
+      if (location.hash !== `#${sectionId}`) {
+        navigate(`/#${sectionId}`, { replace: true });
+      }
+
+      return;
+    }
+
+    navigate(`/#${sectionId}`);
+  };
 
   const searchResults = useMemo(
     () => (showSearch ? searchSite(searchQuery) : []),
@@ -43,24 +61,30 @@ const Navigation = () => {
     <>
       <div className="navigation">
         <nav className="navbar">
-          <Link to="/" className="logo">
+          <Link to="/" className="logo" onClick={() => setMobileMenu(false)}>
             <img src={logo} alt="Logo" />
           </Link>
 
-          <div
-            className="hamburger"
-            onClick={() => setMobileMenu(!mobileMenu)}
-          >
+          <div className="hamburger" onClick={() => setMobileMenu(!mobileMenu)}>
             ☰
           </div>
 
           <ul className={`nav-links ${mobileMenu ? "active" : ""}`}>
-            <li>Capabilities</li>
-            <li>Industries</li>
-            <li>Success Stories</li>
-            <li>Partners</li>
-            <li>Learn & Explore</li>
-            <li>About Us</li>
+            {HOME_NAV_LINKS.map((item) => (
+              <li key={item.sectionId}>
+                <button
+                  type="button"
+                  onClick={() => handleSectionNav(item.sectionId)}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+            <li>
+              <Link to="/about-us" onClick={() => setMobileMenu(false)}>
+                About Us
+              </Link>
+            </li>
           </ul>
 
           <div className="nav-right">
@@ -73,8 +97,6 @@ const Navigation = () => {
           </div>
         </nav>
       </div>
-
-      {/* Search Bar Below Navbar */}
       {showSearch && (
         <div className="search-dropdown">
           <form className="search-dropdown__form" onSubmit={handleSearchSubmit}>
@@ -121,7 +143,8 @@ const Navigation = () => {
             </p>
           )}
         </div>
-      )}    </>
+      )}
+    </>
   );
 };
 

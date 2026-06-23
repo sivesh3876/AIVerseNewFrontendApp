@@ -1,0 +1,211 @@
+.about_us {
+    &__hero {
+        background: linear-gradient(90deg, #1a4a8e 0%, #0d1e32 100%);
+        color     : #fff;
+        padding   : 56px 20px 64px;
+    }
+
+    &__hero-inner {
+        max-width: 1280px;
+        margin   : 0 auto;
+        padding  : 0 20px;
+    }
+
+    &__eyebrow {
+        margin        : 0 0 12px;
+        font-size     : 12px;
+        font-weight   : 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color         : #18E0CC;
+    }
+
+    &__hero h1 {
+        margin     : 0 0 16px;
+        font-size  : 36px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    &__hero p {
+        margin     : 0;
+        font-size  : 16px;
+        line-height: 1.7;
+        color      : #94a3b8;
+    }
+
+    &__container {
+        max-width: 1280px;
+        margin   : 0 auto;
+        padding  : 0 20px;
+    }
+
+    &__intro {
+        padding: 64px 0;
+    }
+
+    &__intro-grid {
+        display              : grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap                  : 48px;
+        align-items          : start;
+    }
+
+    &__intro h2,
+    &__values h2,
+    &__cta h2 {
+        margin     : 0 0 16px;
+        font-size  : 28px;
+        font-weight: 700;
+        color      : #0d1e32;
+    }
+
+    &__intro p,
+    &__value-card p,
+    &__cta p {
+        margin     : 0 0 16px;
+        font-size  : 15px;
+        line-height: 1.7;
+        color      : #4b5563;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    &__mission {
+        padding      : 28px;
+        border       : 1px solid #e8ecf0;
+        border-radius: 14px;
+        background   : #f9fafb;
+
+        h3 {
+            margin     : 0 0 8px;
+            font-size  : 16px;
+            font-weight: 700;
+            color      : #0d1e32;
+
+            &:not(:first-child) {
+                margin-top: 20px;
+            }
+        }
+    }
+
+    &__values {
+        padding   : 0 0 64px;
+        background: #fff;
+    }
+
+    &__values header {
+        margin-bottom: 32px;
+
+        p {
+            margin   : 0;
+            font-size: 15px;
+            color    : #6b7280;
+        }
+    }
+
+    &__values-grid {
+        display              : grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap                  : 20px;
+    }
+
+    &__value-card {
+        padding      : 24px;
+        border       : 1px solid #e8ecf0;
+        border-radius: 14px;
+        background   : #fff;
+        box-shadow   : 0 4px 16px rgba(13, 30, 50, 0.05);
+
+        h4 {
+            margin     : 0 0 10px;
+            font-size  : 16px;
+            font-weight: 700;
+            color      : #0d1e32;
+        }
+    }
+
+    &__cta {
+        padding   : 56px 0 80px;
+        background: #f1f6f9;
+        text-align: center;
+
+        p {
+            max-width: 560px;
+            margin   : 0 auto 28px;
+        }
+    }
+
+    &__cta-actions {
+        display        : flex;
+        justify-content: center;
+        gap            : 16px;
+        flex-wrap      : wrap;
+    }
+
+    &__btn {
+        display        : inline-flex;
+        align-items    : center;
+        justify-content: center;
+        padding        : 12px 24px;
+        border-radius  : 10px;
+        font-size      : 14px;
+        font-weight    : 600;
+        text-decoration: none;
+        transition     : background 0.3s, color 0.3s;
+
+        &--primary {
+            background: #18E0CC;
+            color     : #0d1e32;
+
+            &:hover {
+                background: #14c4b2;
+            }
+        }
+
+        &--secondary {
+            border: 1px solid #0d1e32;
+            color : #0d1e32;
+
+            &:hover {
+                background: rgba(13, 30, 50, 0.06);
+            }
+        }
+    }
+}
+
+@media (max-width: 900px) {
+    .about_us {
+        &__intro-grid {
+            grid-template-columns: 1fr;
+            gap                  : 32px;
+        }
+
+        &__values-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+}
+
+@media (max-width: 576px) {
+    .about_us {
+        &__hero {
+            padding: 40px 15px 48px;
+        }
+
+        &__hero h1 {
+            font-size: 28px;
+        }
+
+        &__values-grid {
+            grid-template-columns: 1fr;
+        }
+
+        &__cta-actions {
+            flex-direction: column;
+            align-items   : center;
+        }
+    }
+}
