@@ -32,7 +32,8 @@
                     padding   : 0;
 
                     li {
-                        a {
+                        a,
+                        .footer_contact_button {
                             color          : #fff;
                             text-decoration: none;
                             font-size      : 14px;
@@ -41,6 +42,12 @@
                             display        : block;
                             margin-bottom  : 5px;
                             transition     : 0.5s;
+                            background     : none;
+                            border         : none;
+                            padding        : 0;
+                            cursor         : pointer;
+                            font-family    : inherit;
+                            text-align     : left;
 
                             &:hover {
                                 color          : #18E0CC;
