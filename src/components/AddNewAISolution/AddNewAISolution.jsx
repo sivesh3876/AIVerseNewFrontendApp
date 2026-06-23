@@ -28,23 +28,21 @@ const CHAR_LIMITS = {
   TechHighlights: 150,
 };
 
-const PLACEHOLDER_EVANGELIST = "Undefined";
+const sanitizeEvangelists = (evangelists = []) =>
+  evangelists.filter(
+    (name) => name && name.trim() && name !== "Undefined",
+  );
 
 const initialFormState = {
   Title: "",
   BusinessDomain: "",
   OwnershipDetails: "",
-  AiEvangelists: [PLACEHOLDER_EVANGELIST],
+  AiEvangelists: [],
   SolutionContext: "",
   TechHighlights: "",
   RepositoryUrl: "",
   Client: "",
   DemoLink: "",
-};
-
-const normalizeEvangelists = (evangelists) => {
-  const selected = evangelists.filter((name) => name !== PLACEHOLDER_EVANGELIST);
-  return selected.length > 0 ? selected : [PLACEHOLDER_EVANGELIST];
 };
 
 const isValidUrl = (value) => {
@@ -321,7 +319,7 @@ const AddNewAISolution = () => {
             Title: solution.Title || "",
             BusinessDomain: solution.BusinessDomain || "",
             OwnershipDetails: solution.OwnershipDetails || "",
-            AiEvangelists: normalizeEvangelists(evangelistList),
+            AiEvangelists: sanitizeEvangelists(evangelistList),
             SolutionContext: solution.SolutionContext || "",
             TechHighlights: solution.TechHighlights || "",
             RepositoryUrl: solution.RepositoryUrl || "",
@@ -377,16 +375,14 @@ const AddNewAISolution = () => {
 
   const toggleEvangelist = (name, checked) => {
     setForm((prev) => {
-      const selected = prev.AiEvangelists.filter(
-        (value) => value !== PLACEHOLDER_EVANGELIST,
-      );
+      const selected = sanitizeEvangelists(prev.AiEvangelists);
       const next = checked
         ? [...selected, name]
         : selected.filter((value) => value !== name);
 
       return {
         ...prev,
-        AiEvangelists: normalizeEvangelists(next),
+        AiEvangelists: next,
       };
     });
   };
@@ -394,7 +390,7 @@ const AddNewAISolution = () => {
   const removeEvangelist = (name) => {
     setForm((prev) => ({
       ...prev,
-      AiEvangelists: normalizeEvangelists(
+      AiEvangelists: sanitizeEvangelists(
         prev.AiEvangelists.filter((value) => value !== name),
       ),
     }));
@@ -753,7 +749,7 @@ const AddNewAISolution = () => {
 
           <div className="add_ai_solution__selected-items">
             <span className="add_ai_solution__selected-label">Selected:</span>
-            {form.AiEvangelists.map((name) => (
+            {sanitizeEvangelists(form.AiEvangelists).map((name) => (
               <span key={name} className="add_ai_solution__selected-badge">
                 {name}
                 <button

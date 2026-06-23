@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  isRequestDemoEmailConfigured,
+  REQUEST_DEMO_EMAIL_SETUP_MESSAGE,
+  sendNewsletterSubscribe,
+} from "../../services/requestDemoEmailService";
 import "./NewsletterSubscribe.scss";
 
 const MailIcon = () => (
@@ -49,10 +54,13 @@ const CheckIcon = () => (
   </svg>
 );
 
-const NewsletterSubscribe = ({ onSubscribe }) => {
+const NewsletterSubscribe = () => {
   const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
+  const isEmailApiReady = isRequestDemoEmailConfigured();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -71,9 +79,38 @@ const NewsletterSubscribe = ({ onSubscribe }) => {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    onSubscribe?.(email.trim());
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return;
+
+    if (!isEmailApiReady) {
+      setFeedback({ type: "error", message: REQUEST_DEMO_EMAIL_SETUP_MESSAGE });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setFeedback({ type: "", message: "" });
+
+      const result = await sendNewsletterSubscribe({ email: trimmedEmail });
+
+      setFeedback({
+        type: "success",
+        message: result.successMessage || "You're subscribed!",
+      });
+      setEmail("");
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        message:
+          error.message ||
+          "Failed to subscribe. Please check the API key and try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -100,13 +137,36 @@ const NewsletterSubscribe = ({ onSubscribe }) => {
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (feedback.message) {
+                    setFeedback({ type: "", message: "" });
+                  }
+                }}
                 placeholder="Enter your email address"
                 aria-label="Email address"
                 required
+                disabled={isSubmitting}
               />
-              <button type="submit">Subscribe Now</button>
+              <button type="submit" disabled={isSubmitting || !isEmailApiReady}>
+                {isSubmitting ? "Subscribing..." : "Subscribe Now"}
+              </button>
             </div>
+
+            {!isEmailApiReady && (
+              <p className="newsletter_subscribe__setup-note" role="status">
+                {REQUEST_DEMO_EMAIL_SETUP_MESSAGE}
+              </p>
+            )}
+
+            {feedback.message && (
+              <p
+                className={`newsletter_subscribe__feedback is-${feedback.type}`}
+                role={feedback.type === "error" ? "alert" : "status"}
+              >
+                {feedback.message}
+              </p>
+            )}
 
             <p className="newsletter_subscribe__note">
               <CheckIcon />
