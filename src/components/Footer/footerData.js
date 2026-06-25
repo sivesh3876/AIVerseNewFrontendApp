@@ -11,8 +11,8 @@ export const footerSections = [
     title: "Industries",
     links: [
       { label: "Education", to: "/industry-solutions?industry=education" },
-      { label: "Healthcare", to: "/industry-solutions?industry=healthcare" },
-      { label: "Financial", to: "/industry-solutions?industry=financial-services" },
+      { label: "Insurance", to: "/industry-solutions?industry=insurance" },
+      { label: "Logistics", to: "/industry-solutions?industry=logistics" },
     ],
   },
   {
@@ -20,6 +20,7 @@ export const footerSections = [
     links: [
       { label: "Blogs", to: "/blogs" },
       { label: "Whitepapers", to: "/whitepapers" },
+      { label: "Success Stories", to: "/success-stories" },
       { label: "Case Studies", to: "/case-studies" },
     ],
   },

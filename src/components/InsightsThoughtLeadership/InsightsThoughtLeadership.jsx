@@ -43,13 +43,13 @@ const InsightsThoughtLeadership = ({
 
   return (
     <section
-      id="success-stories"
+      id="learn-explore"
       className={`insights_leadership ${visible ? "animate" : ""}`}
       ref={sectionRef}
     >
       <div className="insights_leadership__container">
         <header className="insights_leadership__header">
-          <h2>Insights &amp; Thought Leadership</h2>
+          <h2>Learn &amp; Explore</h2>
           <p>Stay informed with the latest AI trends and enterprise insights</p>
         </header>
 
@@ -93,6 +93,17 @@ const InsightsThoughtLeadership = ({
                 </span>
 
                 <h4>{insight.title}</h4>
+
+                <p className="insights_leadership__card-description">
+                  {insight.description}
+                </p>
+
+                <time
+                  className="insights_leadership__card-date"
+                  dateTime={insight.date}
+                >
+                  {insight.date}
+                </time>
 
                 <Link
                   to={`/learn-explore?article=${insight.id}`}

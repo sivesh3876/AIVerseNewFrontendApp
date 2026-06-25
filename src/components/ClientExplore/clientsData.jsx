@@ -5,8 +5,229 @@ import clientLogo4 from "../../assets/images/client_logo4.svg";
 import clientLogo5 from "../../assets/images/client_logo5.svg";
 import clientLogo6 from "../../assets/images/client_logo7.svg";
 import clientLogo7 from "../../assets/images/client_logo8.svg";
+import { resolveLogoEntry } from "../../utils/logoResolver";
 
-export const clientsData = [
+export const realClients = [
+  {
+    id: "hh-global",
+    name: "HH Global",
+    logo: resolveLogoEntry({ logoKeywords: ["hhglobal", "hglobal"] }),
+    initials: "HH",
+    tagline: "Global marketing execution at scale",
+    subtitle:
+      "Accelerating multilingual campaign delivery with AI-powered document translation and CCM automation.",
+    contentParagraphs: [
+      "HH Global is a leading marketing execution partner for enterprise brands, managing high volumes of localized collateral across dozens of regions.",
+      "Espire partners with HH Global to automate document translation workflows, enforce brand terminology, and integrate AI quality controls into existing CCM pipelines.",
+      "Together we reduce localization bottlenecks while maintaining audit-ready translation logs for enterprise compliance reviews.",
+    ],
+    highlights: [
+      {
+        title: "AI Document Translation",
+        description: "Automated translation with glossary enforcement and human-in-the-loop review.",
+      },
+      {
+        title: "CCM Integration",
+        description: "Seamless handoff between marketing ops and regional review teams.",
+      },
+      {
+        title: "Compliance Ready",
+        description: "Audit trails and side-by-side comparisons for regulated content.",
+      },
+    ],
+    pocs: [
+      {
+        storyId: "hh-global-ai-translation",
+        title: "Scaling Multilingual Campaigns with AI Document Translation",
+        description:
+          "65% faster localization turnaround across African and European markets with AI-powered quality controls.",
+      },
+    ],
+  },
+  {
+    id: "the-dispute-service",
+    name: "The Dispute Service Limited",
+    logo: resolveLogoEntry({ logoKeywords: ["tds"] }),
+    initials: "TDS",
+    tagline: "Trusted dispute resolution",
+    subtitle:
+      "Improving analyst productivity with AI-powered case insight and semantic search over historical precedents.",
+    contentParagraphs: [
+      "The Dispute Service Limited provides independent dispute resolution services, handling complex cases with extensive evidence across unstructured documents, emails, and submission forms.",
+      "Espire built an Issue Insight Hub using RAG architecture to index case history, enable semantic search, and generate structured summaries with cited sources for analyst review.",
+      "Analysts spend more time on judgment and less on document hunting, with a searchable knowledge base that grows automatically with closed cases.",
+    ],
+    highlights: [
+      {
+        title: "Issue Insight Hub",
+        description: "RAG-powered search across historical cases and evidence repositories.",
+      },
+      {
+        title: "Case Summaries",
+        description: "AI-generated structured summaries with cited sources for faster review.",
+      },
+      {
+        title: "Knowledge Retention",
+        description: "Automatically indexed precedents improve consistency in adjudication.",
+      },
+    ],
+    pocs: [
+      {
+        storyId: "tds-dispute-resolution",
+        title: "AI-Powered Case Insight for Dispute Resolution",
+        description:
+          "35% faster case review cycles with an AI issue insight hub surfacing historical precedents.",
+      },
+    ],
+  },
+  {
+    id: "canopius",
+    name: "Vave MGA (Canopius Insurance Services)",
+    logo: resolveLogoEntry({ logoKeywords: ["canopius"] }),
+    initials: "VM",
+    tagline: "Specialty insurance intelligence",
+    subtitle:
+      "AI-driven claims triage and document classification for MGA operations across specialty insurance lines.",
+    contentParagraphs: [
+      "Canopius Insurance Services operates as a specialty MGA, processing heterogeneous claim submissions with unstructured attachments across multiple insurance lines.",
+      "Espire implemented document intelligence and agentic automation to classify incoming submissions, extract key entities, and route cases based on policy type, severity, and regulatory requirements.",
+      "The solution improves straight-through processing for low-complexity submissions while giving adjusters AI-generated case summaries.",
+    ],
+    highlights: [
+      {
+        title: "Claims Triage",
+        description: "40% faster initial triage with policy-aware routing.",
+      },
+      {
+        title: "Document Intelligence",
+        description: "Automated classification and entity extraction from submissions.",
+      },
+      {
+        title: "Adjuster Productivity",
+        description: "AI-generated summaries reduce rework from misrouted cases.",
+      },
+    ],
+    pocs: [
+      {
+        storyId: "canopius-claims-intelligence",
+        title: "Intelligent Claims Triage for MGA Operations",
+        description:
+          "40% faster claims triage with AI-driven document classification and policy-aware routing.",
+      },
+    ],
+  },
+  {
+    id: "culina",
+    name: "Cullina",
+    logo: resolveLogoEntry({ logoKeywords: ["culina"] }),
+    initials: "CU",
+    tagline: "Supply chain visibility",
+    subtitle:
+      "Intelligent automation and predictive analytics for logistics and distribution operations.",
+    contentParagraphs: [
+      "Cullina operates in logistics and distribution, managing complex supply chain workflows that generate fragmented operational data across warehouses, carriers, and customer channels.",
+      "Espire delivers intelligent automation and predictive analytics to flag delays early, recommend corrective actions, and orchestrate notifications across operations teams.",
+      "Our solutions unify operational dashboards and automate customer updates for high-impact disruptions.",
+    ],
+    highlights: [
+      {
+        title: "Predictive Operations",
+        description: "Early exception detection across multi-leg routes and warehouses.",
+      },
+      {
+        title: "Workflow Automation",
+        description: "Intelligent routing and notifications for supply chain exceptions.",
+      },
+      {
+        title: "Customer Visibility",
+        description: "Automated status updates for high-impact shipment disruptions.",
+      },
+    ],
+    pocs: [
+      {
+        title: "Supply Chain Exception Intelligence",
+        description:
+          "Predictive analytics and intelligent automation to reduce preventable delays and improve operational visibility.",
+        href: "/contact",
+        ctaLabel: "Discuss this POC",
+      },
+    ],
+  },
+  {
+    id: "inspereX",
+    name: "InspereX",
+    logo: resolveLogoEntry({ logoKeywords: ["inspere", "inspereX"] }),
+    initials: "IX",
+    tagline: "Investment & wealth management",
+    subtitle:
+      "Revamping B2C digital platforms with Sitecore AI, personalization, and scalable multi-site capabilities.",
+    contentParagraphs: [
+      "InspereX is a high-growth investment and wealth management firm operating a public-facing digital platform used by investors, partners, and advisors.",
+      "Espire partnered with InspereX to revamp customer-facing digital platforms with modern UX, migrate from Sitecore XP to Sitecore AI, and introduce personalization for more relevant user experiences.",
+      "Proactive monitoring, Content Hub DAM, and Sitecore Search improved platform stability, content agility, and digital scalability during rapid business growth.",
+    ],
+    highlights: [
+      {
+        title: "Sitecore AI Migration",
+        description: "Scalable, future-ready foundation with personalization and search.",
+      },
+      {
+        title: "Multi-Site Platform",
+        description: "Microsite capabilities for flexible, faster digital launches.",
+      },
+      {
+        title: "SLA-Driven Support",
+        description: "Proactive monitoring and analytics-driven journey optimization.",
+      },
+    ],
+    pocs: [
+      {
+        storyId: "insperex-b2c-platform",
+        title: "Revamping B2C Investment & Wealth Management Platform",
+        description:
+          "Modern UX, Sitecore AI migration, and personalization for a scalable investor experience.",
+      },
+    ],
+  },
+  {
+    id: "publicis-groupe",
+    name: "Publicis Groupe",
+    logo: resolveLogoEntry({ logoKeywords: ["publicis"] }),
+    initials: "PG",
+    tagline: "Enterprise customer communications",
+    subtitle:
+      "CCM modernization with AI-assisted content generation, PII remediation, and automated QA.",
+    contentParagraphs: [
+      "Publicis Groupe delivers enterprise customer communications for financial and healthcare clients, facing rising template complexity and strict compliance requirements.",
+      "Espire integrated content assist capabilities, PII remediation pipelines, and agentic QA bots into the existing CCM stack.",
+      "Business users can draft, sanitize, and validate communications faster with full audit trails for compliance confidence.",
+    ],
+    highlights: [
+      {
+        title: "Content Assist",
+        description: "AI-assisted drafting and iteration for regulated templates.",
+      },
+      {
+        title: "PII Remediation",
+        description: "Automated detection and sanitization before production release.",
+      },
+      {
+        title: "Agentic QA",
+        description: "50% reduction in manual QA effort with audit-ready workflows.",
+      },
+    ],
+    pocs: [
+      {
+        storyId: "publicis-ccm-automation",
+        title: "Enterprise CCM Modernization with Agentic Workflows",
+        description:
+          "50% QA time saved with AI-assisted content generation and automated compliance validation.",
+      },
+    ],
+  },
+];
+
+const platformPartners = [
   {
     id: "shopify",
     name: "Shopify",
@@ -387,11 +608,14 @@ export const clientsData = [
   },
 ];
 
-export const homeClients = clientsData
-  .filter(({ id }) =>
-    ["shopify", "hubspot", "kibo", "quadient", "kofax", "sitecore", "microsoft"].includes(id),
-  )
-  .map(({ id, name, logo }) => ({ id, name, logo }));
+export const clientsData = [...realClients, ...platformPartners];
+
+export const homeClients = realClients.map(({ id, name, logo, initials }) => ({
+  id,
+  name,
+  logo,
+  initials,
+}));
 
 const trustedPartnerIds = [
   "microsoft",

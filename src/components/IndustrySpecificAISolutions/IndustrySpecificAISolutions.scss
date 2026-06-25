@@ -30,7 +30,7 @@
 
     &__grid {
         display              : grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap                  : 28px;
     }
 
@@ -248,11 +248,25 @@
         }
 
         &__grid {
-            gap: 24px;
+            grid-template-columns: repeat(2, 1fr);
+            gap                    : 24px;
         }
 
         &__image-wrap {
             height: 200px;
+        }
+
+        &__footer {
+            flex-wrap: wrap;
+            gap      : 12px;
+        }
+
+        &__link {
+            white-space: normal;
+        }
+
+        &__badge-title {
+            font-size: 16px;
         }
     }
 }
@@ -280,7 +294,7 @@
         }
 
         &__image-wrap {
-            height: 200px;
+            height: 180px;
         }
 
         &__content {
@@ -293,6 +307,15 @@
 
         &__metric {
             font-size: 14px;
+        }
+
+        &__badge-title {
+            font-size: 15px;
+        }
+
+        &__footer {
+            flex-direction: column;
+            align-items   : flex-start;
         }
     }
 }

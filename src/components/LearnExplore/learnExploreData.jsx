@@ -152,15 +152,23 @@ export const homeInsights = learnExploreResources
       "ai-readiness-assessment",
     ].includes(resource.id),
   )
-  .map(({ id, badge, badgeColor, title }) => ({ id, badge, badgeColor, title }));
+  .map(({ id, badge, badgeColor, title, description, date }) => ({
+    id,
+    badge,
+    badgeColor,
+    title,
+    description,
+    date,
+  }));
 
 export const featuredArticle = {
   id: "agentic-systems-future",
-  badge: "FEATURED ARTICLE",
-  title: "The Future of Enterprise AI: Agentic Systems and Autonomous Workflows",
+  badge: "Certification",
+  title: "AI-901: Azure AI Fundamentals",
   description:
-    "Explore how autonomous AI agents are transforming enterprise operations, from customer service to complex decision-making processes. Learn about the latest developments in agentic AI.",
+    "Prepare for the AI-901 exam and build a strong foundation in artificial intelligence and Microsoft Azure AI services. Explore core ML concepts, computer vision, natural language processing, and responsible AI principles.",
   linkText: "Read Full Article",
+  linkTo: "/learn-explore?track=all",
 };
 
 export const getResourceById = (resourceId) =>

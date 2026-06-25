@@ -17,6 +17,7 @@ import CareersPage from "./pages/CareersPage";
 import BlogsPage from "./pages/BlogsPage";
 import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
+import SuccessStoriesPage from "./pages/SuccessStoriesPage";
 import { scrollToHomeSection } from "./utils/homeSections";
 
 const RouteScrollManager = () => {
@@ -59,6 +60,7 @@ function App() {
         <Route path="/blogs" element={<BlogsPage />} />
         <Route path="/whitepapers" element={<WhitepapersPage />} />
         <Route path="/case-studies" element={<CaseStudiesPage />} />
+        <Route path="/success-stories" element={<SuccessStoriesPage />} />
       </Routes>
       <Footer />
     </BrowserRouter>

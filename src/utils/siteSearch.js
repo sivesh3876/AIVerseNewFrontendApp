@@ -1,5 +1,4 @@
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
-import { getStaticSolutionId } from "../data/solutionsData";
 
 const normalize = (value = "") =>
   value
@@ -30,31 +29,32 @@ const STATIC_ENTRIES = [
     path: "/#meet-our-ai-experts",
     type: "page",
   },
+  {
+    title: "Success Stories",
+    description: "Real-world enterprise AI transformation stories",
+    keywords: ["success stories", "case study", "customer story", "client story"],
+    path: "/success-stories",
+    type: "page",
+  },
 ];
 
 const INDUSTRY_ENTRIES = [
   {
     title: "Education",
     keywords: ["education", "student", "learning", "school", "university"],
-    path: "/explore-solutions?service=digital-experience",
+    path: "/industry-solutions?industry=education",
     type: "industry",
   },
   {
-    title: "Healthcare",
-    keywords: ["healthcare", "patient", "clinical", "hospital", "medical"],
-    path: "/explore-solutions?service=customer-experience-crm",
+    title: "Insurance",
+    keywords: ["insurance", "claims", "underwriting", "policy", "mga"],
+    path: "/industry-solutions?industry=insurance",
     type: "industry",
   },
   {
-    title: "Financial Services",
-    keywords: ["financial", "finance", "banking", "fraud", "insurance"],
-    path: "/explore-solutions?service=data-management",
-    type: "industry",
-  },
-  {
-    title: "Retail",
-    keywords: ["retail", "commerce", "shopping", "inventory", "pricing"],
-    path: "/explore-solutions?service=digital-experience",
+    title: "Logistics",
+    keywords: ["logistics", "supply chain", "warehouse", "fulfillment", "shipping"],
+    path: "/industry-solutions?industry=logistics",
     type: "industry",
   },
 ];
@@ -97,20 +97,6 @@ const buildSiteSearchIndex = () => {
       keywords: [service.label, service.id.replace(/-/g, " "), ...service.features],
       path: `/explore-solutions?service=${service.id}`,
       type: "service",
-    });
-
-    service.capabilities.forEach((capability) => {
-      items.push({
-        title: capability.title,
-        description: capability.description,
-        subtitle: service.label,
-        keywords: [
-          capability.title,
-          ...capability.techStack.map((tech) => tech.name),
-        ],
-        path: `/explore-solutions/${getStaticSolutionId(service.id, capability.title)}`,
-        type: "capability",
-      });
     });
   });
 

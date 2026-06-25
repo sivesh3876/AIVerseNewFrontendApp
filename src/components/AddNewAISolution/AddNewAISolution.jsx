@@ -209,11 +209,15 @@ const AddNewAISolution = () => {
   const [form, setForm] = useState(initialFormState);
   const [files, setFiles] = useState({
     SolutionDetailsDoc: null,
+    LowLevelDesignDoc: null,
+    ArchitectureDiagram: null,
     OtherDocuments: [],
     DemoRecordedVideo: null,
   });
   const [existingFiles, setExistingFiles] = useState({
     SolutionDetailsDoc: null,
+    LowLevelDesignDoc: null,
+    ArchitectureDiagram: null,
     OtherDocuments: [],
     DemoRecordedVideoLink: null,
   });
@@ -329,6 +333,8 @@ const AddNewAISolution = () => {
 
           setExistingFiles({
             SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
+            LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
+            ArchitectureDiagram: solution.ArchitectureDiagram || null,
             OtherDocuments: Array.isArray(solution.OtherDocuments)
               ? solution.OtherDocuments
               : [],
@@ -440,6 +446,14 @@ const AddNewAISolution = () => {
       newErrors.SolutionDetailsDoc = "Document file size should not exceed 50MB";
     }
 
+    if (files.LowLevelDesignDoc && files.LowLevelDesignDoc.size > 50 * 1024 * 1024) {
+      newErrors.LowLevelDesignDoc = "LLD file size should not exceed 50MB";
+    }
+
+    if (files.ArchitectureDiagram && files.ArchitectureDiagram.size > 50 * 1024 * 1024) {
+      newErrors.ArchitectureDiagram = "Architecture diagram file size should not exceed 50MB";
+    }
+
     const otherDocsCombined = (files.OtherDocuments || []).reduce(
       (sum, file) => sum + (file?.size || 0),
       0,
@@ -458,6 +472,8 @@ const AddNewAISolution = () => {
     setForm(initialFormState);
     setFiles({
       SolutionDetailsDoc: null,
+      LowLevelDesignDoc: null,
+      ArchitectureDiagram: null,
       OtherDocuments: [],
       DemoRecordedVideo: null,
     });
@@ -513,6 +529,14 @@ const AddNewAISolution = () => {
 
       if (files.SolutionDetailsDoc) {
         formDataToSend.append("SolutionDetailsDoc", files.SolutionDetailsDoc);
+      }
+
+      if (files.LowLevelDesignDoc) {
+        formDataToSend.append("LowLevelDesignDoc", files.LowLevelDesignDoc);
+      }
+
+      if (files.ArchitectureDiagram) {
+        formDataToSend.append("ArchitectureDiagram", files.ArchitectureDiagram);
       }
 
       if (files.OtherDocuments.length > 0) {
@@ -601,6 +625,8 @@ const AddNewAISolution = () => {
   const totalUploadSize =
     (files.OtherDocuments || []).reduce((sum, file) => sum + (file?.size || 0), 0) +
     (files.SolutionDetailsDoc?.size || 0) +
+    (files.LowLevelDesignDoc?.size || 0) +
+    (files.ArchitectureDiagram?.size || 0) +
     (files.DemoRecordedVideo?.size || 0);
 
   return (
@@ -927,6 +953,62 @@ const AddNewAISolution = () => {
             </a>
           </p>
         )}
+
+        <div className="add_ai_solution__row">
+          <FileDropzone
+            id="LowLevelDesignDoc"
+            label="Low Level Design (LLD)"
+            accept=".pdf,.doc,.docx,application/pdf"
+            hint="Upload LLD document"
+            formatHint="PDF or Word"
+            files={files.LowLevelDesignDoc}
+            error={errors.LowLevelDesignDoc}
+            onFilesChange={(file) =>
+              setFiles((prev) => ({ ...prev, LowLevelDesignDoc: file }))
+            }
+          />
+
+          <FileDropzone
+            id="ArchitectureDiagram"
+            label="Solution Architecture Diagram"
+            accept=".png,.jpg,.jpeg,.svg,.webp,.pdf,image/*"
+            hint="Upload architecture diagram"
+            formatHint="PNG, JPG, SVG, or PDF"
+            files={files.ArchitectureDiagram}
+            error={errors.ArchitectureDiagram}
+            onFilesChange={(file) =>
+              setFiles((prev) => ({ ...prev, ArchitectureDiagram: file }))
+            }
+          />
+        </div>
+
+        {isEditMode && !files.LowLevelDesignDoc && existingFiles.LowLevelDesignDoc && (
+          <p className="add_ai_solution__existing-file">
+            Current LLD:{" "}
+            <a
+              href={existingFiles.LowLevelDesignDoc}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View attached LLD
+            </a>
+          </p>
+        )}
+
+        {isEditMode &&
+          !files.ArchitectureDiagram &&
+          existingFiles.ArchitectureDiagram && (
+            <p className="add_ai_solution__existing-file">
+              Current diagram:{" "}
+              <a
+                href={existingFiles.ArchitectureDiagram}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View attached architecture diagram
+              </a>
+            </p>
+          )}
 
         <FileDropzone
           id="OtherDocuments"

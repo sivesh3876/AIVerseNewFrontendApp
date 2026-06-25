@@ -7,6 +7,9 @@ import {
   ChartIcon,
 } from "../components/CustomerCommunicationManagement/CapabilityIcons";
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
+import {
+  buildDocumentsFromApiSolution,
+} from "./solutionDocuments";
 
 const capabilityIconMap = {
   brain: BrainIcon,
@@ -85,15 +88,91 @@ export const solutionMatchesExploreFilter = ({
   if (!businessDomain) return false;
 
   if (activeDomainCode) {
-    return businessDomain === activeDomainCode;
+    return normalizeKey(businessDomain) === normalizeKey(activeDomainCode);
   }
 
   return getServiceIdForDomain(businessDomain) === activeServiceId;
 };
 
+export const resolveIndustryDomainCode = (
+  { domainCode, industryId, industryTitle } = {},
+  businessDomains = [],
+) => {
+  const industryDomains = businessDomains.filter(
+    (domain) => domain.ParentDomainCode === "Industries",
+  );
+
+  const normalizedTitle = normalizeKey(industryTitle || "");
+  const normalizedId = normalizeKey(industryId || "");
+  const normalizedCode = normalizeKey(domainCode || "");
+
+  const match = industryDomains.find((domain) => {
+    const code = normalizeKey(domain.DomainCode);
+    const name = normalizeKey(domain.DomainName);
+
+    return (
+      code === normalizedCode ||
+      code === normalizedId ||
+      name === normalizedTitle ||
+      name === normalizedId
+    );
+  });
+
+  return match?.DomainCode || domainCode;
+};
+
 const getAvatarColor = (index) => AVATAR_COLORS[index % AVATAR_COLORS.length];
 
 const toText = (value) => (value == null ? "" : String(value));
+
+const CLIENT_INFERENCE_RULES = [
+  { pattern: /\bhh\s*global\b/i, client: "HH Global" },
+  {
+    pattern: /\b(the\s+)?dispute\s+service\b|\btds\b/i,
+    client: "The Dispute Service Limited",
+  },
+  {
+    pattern: /\bcanopius\b|\bvave\s+mga\b/i,
+    client: "Vave MGA (Canopius Insurance Services)",
+  },
+  { pattern: /\bcullina\b/i, client: "Cullina" },
+  { pattern: /\binsper[ae]x\b|\binspera\b/i, client: "InspereX" },
+  { pattern: /\bpublicis\b/i, client: "Publicis Groupe" },
+  { pattern: /\bfuji\s*xerox\b/i, client: "Fuji Xerox" },
+  { pattern: /\bcharles\s*sturt\b/i, client: "Charles Sturt University" },
+  { pattern: /\bceva\s*logistics\b/i, client: "CEVA Logistics" },
+  { pattern: /\badlm\b|\bdiagnostics\s*&\s*laboratory\b/i, client: "ADLM" },
+];
+
+export const resolveSolutionClient = (solution = {}) => {
+  const explicit = toText(
+    solution.Client ??
+      solution.Clients ??
+      solution.ClientName ??
+      solution.client,
+  ).trim();
+
+  if (explicit && explicit.toLowerCase() !== "null") {
+    return explicit;
+  }
+
+  const searchText = [
+    solution.Title,
+    solution.SolutionContext,
+    solution.title,
+    solution.description,
+    solution.shortDescription,
+    solution.detailedDescription,
+  ]
+    .map(toText)
+    .join(" ");
+
+  const matchedRule = CLIENT_INFERENCE_RULES.find((rule) =>
+    rule.pattern.test(searchText),
+  );
+
+  return matchedRule?.client || "";
+};
 
 const parsePersonName = (value) => {
   const trimmed = toText(value).trim();
@@ -127,6 +206,81 @@ const parseTechStack = (techHighlights) => {
     .map((item) => item.trim())
     .filter(Boolean)
     .map((name) => ({ name, label: "Technology" }));
+};
+
+
+const truncateText = (value, maxLength = 110) => {
+  const text = toText(value).trim();
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength).trim()}…`;
+};
+
+export const getSolutionOrderNumber = (solution = {}) => {
+  const raw =
+    solution.OrderNumber ??
+    solution.orderNumber ??
+    solution.OrderNo ??
+    solution.DisplayOrder;
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
+  [...solutions]
+    .filter((solution) => solution?.IsSolutionActive !== false)
+    .sort((left, right) => {
+      const leftOrder = getSolutionOrderNumber(left);
+      const rightOrder = getSolutionOrderNumber(right);
+
+      if (leftOrder == null && rightOrder == null) {
+        return Number(left?.ID || 0) - Number(right?.ID || 0);
+      }
+
+      if (leftOrder == null) return 1;
+      if (rightOrder == null) return -1;
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+
+      return Number(left?.ID || 0) - Number(right?.ID || 0);
+    })
+    .slice(0, limit);
+
+export const mapApiSolutionToHomeCard = (solution) => {
+  if (!solution) return null;
+
+  const orderNumber = getSolutionOrderNumber(solution);
+  const serviceId =
+    getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation";
+  const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
+  const techStack = parseTechStack(solution.TechHighlights);
+  const solutionApiId = `api-${solution.ID}`;
+  const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
+
+  return {
+    id: solutionApiId,
+    title: solution.Title || "Untitled Solution",
+    description:
+      truncateText(solution.SolutionContext) ||
+      "Explore this enterprise AI solution.",
+    domainLabel: service?.label || solution.BusinessDomain || "Enterprise AI",
+    client: resolveSolutionClient(solution),
+    techHighlight: techStack[0]?.name || null,
+    orderNumber,
+    themeIndex: Math.abs(iconSeed) % 8,
+    recordedDemoLink: resolveRecordedDemoLink(solution) || null,
+    detailUrl: `/explore-solutions?service=${serviceId}&solution=${encodeURIComponent(solutionApiId)}`,
+    capabilityForDemo: {
+      id: solutionApiId,
+      title: solution.Title || "Untitled Solution",
+      description:
+        truncateText(solution.SolutionContext, 200) ||
+        "Explore this enterprise AI solution.",
+      businessDomain: solution.BusinessDomain,
+    },
+  };
 };
 
 const parseEvangelists = (value, evangelistDirectory = []) => {
@@ -214,7 +368,14 @@ export const mapApiSolutionToCapability = (
           ],
     recordedDemoLink,
     businessDomain: solution.BusinessDomain,
-    client: solution.Client || solution.Clients || "",
+    client: resolveSolutionClient(solution),
+    solutionDetailsDoc: solution.SolutionDetailsDoc || null,
+    lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
+    architectureDiagram: solution.ArchitectureDiagram || null,
+    otherDocuments: Array.isArray(solution.OtherDocuments)
+      ? solution.OtherDocuments
+      : [],
+    documents: buildDocumentsFromApiSolution(solution),
   };
 };
 

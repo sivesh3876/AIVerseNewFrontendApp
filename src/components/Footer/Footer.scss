@@ -85,7 +85,7 @@
    Tablet
 ========================== */
 
-@media (max-width: 1024px) {
+@media (max-width: 992px) {
     .footer {
         .footer_container {
             .footer_list {
@@ -138,6 +138,14 @@
 /* ==========================
    Small Mobile
 ========================== */
+
+@media (max-width: 576px) {
+    .footer {
+        .footer_container {
+            padding: 48px 15px 28px;
+        }
+    }
+}
 
 @media (max-width: 480px) {
     .footer {
