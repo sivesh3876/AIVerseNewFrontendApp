@@ -106,7 +106,7 @@ const NewsletterSubscribe = () => {
         type: "error",
         message:
           error.message ||
-          "Failed to subscribe. Please check the API key and try again.",
+          "Failed to subscribe. Please try again.",
       });
     } finally {
       setIsSubmitting(false);

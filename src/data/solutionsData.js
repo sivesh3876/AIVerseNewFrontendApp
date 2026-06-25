@@ -1,20 +1,11 @@
 import {
-  enterpriseServicesData,
   getEnterpriseServiceById,
 } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
 import {
   getServiceIdForDomain,
   mapApiSolutionToCapability,
+  resolveSolutionClient,
 } from "../utils/solutionMapper";
-
-const slugify = (value = "") =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
-export const getStaticSolutionId = (serviceId, capabilityTitle) =>
-  `${serviceId}-${slugify(capabilityTitle)}`;
 
 const mapPerson = (person) => ({
   name: person?.name || "Not assigned",
@@ -23,67 +14,17 @@ const mapPerson = (person) => ({
   color: person?.color || "teal",
 });
 
-const capabilityToCard = (service, capability) => ({
-  id: getStaticSolutionId(service.id, capability.title),
-  title: capability.title,
-  icon: capability.icon,
-  iconKey: capability.iconKey || "brain",
-  description: capability.description,
-  techStack: capability.techStack || [],
-  coe: capability.coe,
-  evangelists: capability.evangelists || [],
-  demoLink: capability.demoLink || "",
-  recordedDemoLink: capability.recordedDemoLink || "",
-  isApiSolution: false,
-});
-
-const buildStaticSolutions = () => {
-  const solutions = [];
-
-  enterpriseServicesData.forEach((service) => {
-    service.capabilities.forEach((capability) => {
-      const id = getStaticSolutionId(service.id, capability.title);
-
-      solutions.push({
-        id,
-        title: capability.title,
-        serviceLine: service.id,
-        serviceLineLabel: service.label,
-        industry: null,
-        shortDescription: capability.description,
-        detailedDescription: capability.description,
-        keyBenefits: service.features,
-        capabilities: service.capabilities.map((item) =>
-          capabilityToCard(service, item),
-        ),
-        techStack: capability.techStack || [],
-        coe: [mapPerson(capability.coe)],
-        aiEvangelists: (capability.evangelists || []).map(mapPerson),
-        demoLink: capability.demoLink || "",
-        recordedDemoLink: capability.recordedDemoLink || "",
-        image: null,
-        icon: capability.icon,
-        iconKey: capability.iconKey || "brain",
-        primaryCapability: capabilityToCard(service, capability),
-      });
-    });
-  });
-
-  return solutions;
-};
-
-export const solutionsCatalog = buildStaticSolutions();
-
-export const getSolutionById = (id) =>
-  solutionsCatalog.find((solution) => solution.id === id) || null;
-
-export const getAllSolutions = () => solutionsCatalog;
-
 export const solutionToCapabilityCard = (solution) => {
   if (!solution) return null;
 
   if (solution.primaryCapability) {
-    return solution.primaryCapability;
+    return {
+      ...solution.primaryCapability,
+      documents:
+        solution.primaryCapability.documents?.length > 0
+          ? solution.primaryCapability.documents
+          : solution.documents || [],
+    };
   }
 
   return {
@@ -119,7 +60,41 @@ export const solutionToCapabilityCard = (solution) => {
           ],
     demoLink: solution.demoLink || "",
     recordedDemoLink: solution.recordedDemoLink || solution.demoLink || "",
+    client: solution.client || "",
+    documents: solution.documents || [],
     isApiSolution: Boolean(solution.isApiSolution),
+  };
+};
+
+export const buildDetailFromCapability = (capability, { businessDomains = [] } = {}) => {
+  if (!capability) return null;
+
+  const serviceLine =
+    getServiceIdForDomain(capability.businessDomain) || "agentic-automation";
+  const service = getEnterpriseServiceById(serviceLine);
+  const domain = businessDomains.find(
+    (entry) => entry.DomainCode === capability.businessDomain,
+  );
+
+  return {
+    id: capability.id,
+    title: capability.title,
+    serviceLine,
+    serviceLineLabel: service.label,
+    industry: domain?.DomainName || capability.businessDomain || null,
+    client: capability.client || "",
+    shortDescription: capability.description || "",
+    detailedDescription: capability.description || "",
+    keyBenefits: service.features,
+    techStack: capability.techStack || [],
+    coe: [mapPerson(capability.coe)],
+    aiEvangelists: (capability.evangelists || []).map(mapPerson),
+    demoLink: capability.recordedDemoLink || "",
+    recordedDemoLink: capability.recordedDemoLink || "",
+    iconKey: capability.iconKey || "brain",
+    primaryCapability: capability,
+    isApiSolution: Boolean(capability.isApiSolution),
+    documents: capability.documents || [],
   };
 };
 
@@ -145,6 +120,7 @@ export const mapApiSolutionToDetail = (
     serviceLine,
     serviceLineLabel: service.label,
     industry: domain?.DomainName || apiSolution.BusinessDomain || null,
+    client: resolveSolutionClient(apiSolution),
     shortDescription: apiSolution.SolutionContext || "",
     detailedDescription: apiSolution.SolutionContext || "",
     keyBenefits: service.features,
@@ -167,5 +143,6 @@ export const mapApiSolutionToDetail = (
       isApiSolution: true,
     },
     isApiSolution: true,
+    documents: capability.documents || [],
   };
 };

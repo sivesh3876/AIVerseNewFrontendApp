@@ -6,7 +6,7 @@ const TalkToExpertCard = ({
   title = "Talk to an Expert",
   description = "Get a personalized walkthrough of CCM solutions tailored to your enterprise.",
   buttonText = "Schedule a Call",
-  to,
+  to = "/contact",
   onClick,
 }) => {
   const buttonContent = (
@@ -31,14 +31,10 @@ const TalkToExpertCard = ({
         <button type="button" className="talk_to_expert_card__btn" onClick={onClick}>
           {buttonContent}
         </button>
-      ) : to ? (
+      ) : (
         <Link to={to} className="talk_to_expert_card__btn">
           {buttonContent}
         </Link>
-      ) : (
-        <button type="button" className="talk_to_expert_card__btn">
-          {buttonContent}
-        </button>
       )}
     </article>
   );

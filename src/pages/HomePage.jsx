@@ -4,6 +4,7 @@ import ComprehensiveAICapabilities from "../components/ComprehensiveAICapabiliti
 import EnterpriseTransformationServices from "../components/EnterpriseTransformationServices";
 import IndustrySpecificAISolutions from "../components/IndustrySpecificAISolutions";
 import TrustedByGlobalLeaders from "../components/TrustedByGlobalLeaders";
+import SuccessStories from "../components/SuccessStories";
 import InsightsThoughtLeadership from "../components/InsightsThoughtLeadership";
 import MeetOurAIExperts from "../components/MeetOurAIExperts";
 import NewsletterSubscribe from "../components/NewsletterSubscribe";
@@ -16,10 +17,12 @@ const HomePage = () => {
       <HeroBannerSlider />
       <ClientsLogoBar />
       <StatsSection />
-      <ExploreAISolutions />      <ComprehensiveAICapabilities />
+      <ExploreAISolutions />
+      <ComprehensiveAICapabilities />
       <EnterpriseTransformationServices />
       <IndustrySpecificAISolutions />
       <TrustedByGlobalLeaders />
+      <SuccessStories />
       <InsightsThoughtLeadership />
       <MeetOurAIExperts />
       <NewsletterSubscribe />

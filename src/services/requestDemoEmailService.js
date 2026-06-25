@@ -1,50 +1,35 @@
-import { getRequestDemoRecipientEmails, getRequestDemoRecipientNames } from "../utils/solutionMapper";
-
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
 
-const EMAIL_ENDPOINT =
+const DEMO_REQUEST_ENDPOINT =
   import.meta.env.VITE_REQUEST_DEMO_EMAIL_ENDPOINT || "send-demo-request";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
-const CONTACT_RECIPIENT_EMAIL =
-  import.meta.env.VITE_CONTACT_EMAIL || "info@aiverse.com";
 
 export const REQUEST_DEMO_EMAIL_SETUP_MESSAGE =
-  "Email API is not configured yet. Add VITE_EMAIL_API_KEY in your .env file and restart the app to enable Send Mail.";
+  "Demo request API is not configured yet. Add VITE_API_BASE_URL in your .env file and restart the app.";
 
-export const isRequestDemoEmailConfigured = () => Boolean(EMAIL_API_KEY.trim());
+export const isRequestDemoEmailConfigured = () => Boolean(API_BASE_URL.trim());
 
-const postEmailPayload = async (payload) => {
-  const response = await fetch(buildRequestUrl(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": EMAIL_API_KEY,
-      "x-functions-key": EMAIL_API_KEY,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  let result = {};
+const parseJsonResponse = async (response) => {
   try {
-    result = await response.json();
+    return await response.json();
   } catch {
-    result = {};
+    return {};
   }
-
-  if (!response.ok || (result.status && result.status !== "success")) {
-    throw new Error(
-      result.message || `Failed to send email. Server returned ${response.status}.`,
-    );
-  }
-
-  return result;
 };
 
-const buildRequestUrl = () => {
-  const url = new URL(`${API_BASE_URL}/${EMAIL_ENDPOINT}`);
+const assertSuccessResponse = (response, result, fallbackMessage) => {
+  if (!response.ok || (result.status && result.status !== "success")) {
+    throw new Error(
+      result.message || fallbackMessage || `Server returned ${response.status}.`,
+    );
+  }
+};
+
+const buildDemoRequestUrl = () => {
+  const url = new URL(`${API_BASE_URL}/${DEMO_REQUEST_ENDPOINT}`);
 
   if (EMAIL_API_KEY) {
     url.searchParams.set("code", EMAIL_API_KEY);
@@ -53,151 +38,164 @@ const buildRequestUrl = () => {
   return url.toString();
 };
 
+const buildLegacyEmailUrl = (endpoint) => {
+  const url = new URL(`${API_BASE_URL}/${endpoint}`);
+
+  if (EMAIL_API_KEY) {
+    url.searchParams.set("code", EMAIL_API_KEY);
+  }
+
+  return url.toString();
+};
+
+export const parseSolutionId = (value) => {
+  if (value == null || value === "") {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+  const withoutPrefix = normalized.toLowerCase().startsWith("api-")
+    ? normalized.slice(4).trim()
+    : normalized;
+
+  if (!/^\d+$/.test(withoutPrefix)) {
+    return null;
+  }
+
+  return Number(withoutPrefix);
+};
+
 export const buildRequestDemoEmailPayload = (capability, form = {}) => {
-  const name = (form.name || "").trim();
-  const email = (form.email || "").trim();
-  const company = (form.company || "").trim();
-  const phone = (form.phone || "").trim();
-  const message = (form.message || "").trim();
-  const cardRecipients = getRequestDemoRecipientEmails(capability);
-  const recipientEmails = [...new Set([email, ...cardRecipients])].filter(Boolean);
+  const solutionId = parseSolutionId(capability?.id);
 
   return {
-    Name: name,
-    Email: email,
-    Company: company,
-    Phone: phone,
-    Message: message,
+    FullName: (form.name || "").trim(),
+    Email: (form.email || "").trim(),
+    Company: (form.company || "").trim(),
+    Phone: (form.phone || "").trim(),
+    Message: (form.message || "").trim(),
     SolutionTitle: capability?.title || "",
-    SolutionId: capability?.id || "",
-    BusinessDomain: capability?.businessDomain || "",
-    Subject: `Demo Request: ${capability?.title || "AI Solution"}`,
-    ToEmails: recipientEmails.join(","),
-    RecipientEmails: recipientEmails,
-    CoeName: capability?.coe?.name || "",
-    CoeEmail: capability?.coe?.email || "",
-    AiEvangelists: (capability?.evangelists || [])
-      .filter((person) => person.name !== "Not assigned")
-      .map((person) => person.name)
-      .join(", "),
+    ...(solutionId != null ? { SolutionId: solutionId } : {}),
   };
 };
 
-export const buildContactEmailPayload = (form = {}) => {
-  const name = (form.name || "").trim();
-  const email = (form.email || "").trim();
-  const company = (form.company || "").trim();
-  const phone = (form.phone || "").trim();
-  const message = (form.message || "").trim();
-  const recipientEmails = [...new Set([CONTACT_RECIPIENT_EMAIL, email])].filter(Boolean);
+export const buildRequestDemoSuccessMessage = (result = {}) => {
+  const toAddresses = result?.data?.notified_to || [];
+  const ccAddresses = result?.data?.notified_cc || [];
 
-  return {
-    Name: name,
-    Email: email,
-    Company: company,
-    Phone: phone,
-    Message: message,
-    SolutionTitle: "Footer Contact Form",
-    SolutionId: "",
-    BusinessDomain: "Contact",
-    Subject: "Contact Inquiry: AI Verse",
-    ToEmails: recipientEmails.join(","),
-    RecipientEmails: recipientEmails,
-    CoeName: "",
-    CoeEmail: CONTACT_RECIPIENT_EMAIL,
-    AiEvangelists: "",
-  };
+  if (toAddresses.length === 0 && ccAddresses.length === 0) {
+    return result?.message || "Demo request submitted successfully.";
+  }
+
+  const parts = [];
+  if (toAddresses.length > 0) {
+    parts.push(`To: ${toAddresses.join(", ")}`);
+  }
+  if (ccAddresses.length > 0) {
+    parts.push(`CC: ${ccAddresses.join(", ")}`);
+  }
+
+  return `Demo request sent (${parts.join("; ")}).`;
 };
 
-export const buildContactSuccessMessage = () =>
-  `Mail sent to ${CONTACT_RECIPIENT_EMAIL}.`;
+const postDemoRequest = async (payload) => {
+  const response = await fetch(buildDemoRequestUrl(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
-const NEWSLETTER_RECIPIENT_EMAIL =
-  import.meta.env.VITE_NEWSLETTER_EMAIL || CONTACT_RECIPIENT_EMAIL;
-
-export const buildNewsletterSubscribePayload = (email = "") => {
-  const trimmedEmail = email.trim();
-  const recipientEmails = [...new Set([NEWSLETTER_RECIPIENT_EMAIL, trimmedEmail])].filter(
-    Boolean,
+  const result = await parseJsonResponse(response);
+  assertSuccessResponse(
+    response,
+    result,
+    `Failed to submit demo request. Server returned ${response.status}.`,
   );
 
-  return {
-    Name: "Newsletter Subscriber",
-    Email: trimmedEmail,
-    Company: "",
-    Phone: "",
-    Message: "Please add this email to the AI Verse newsletter mailing list.",
-    SolutionTitle: "Newsletter Subscription",
-    SolutionId: "",
-    BusinessDomain: "Newsletter",
-    Subject: "Newsletter Subscription: AI Verse",
-    ToEmails: recipientEmails.join(","),
-    RecipientEmails: recipientEmails,
-    CoeName: "",
-    CoeEmail: NEWSLETTER_RECIPIENT_EMAIL,
-    AiEvangelists: "",
-  };
+  return result;
 };
 
-export const buildNewsletterSubscribeSuccessMessage = () =>
-  "You're subscribed! Check your inbox for AI insights.";
+export const buildContactEmailPayload = (form = {}) => ({
+  FullName: (form.name || "").trim(),
+  Email: (form.email || "").trim(),
+  Company: (form.company || "").trim(),
+  Phone: (form.phone || "").trim(),
+  Message: (form.message || "").trim(),
+  Subject: "Contact Inquiry: AI Verse",
+});
+
+export const buildContactSuccessMessage = (result = {}) =>
+  result?.message || "Message sent successfully.";
+
+export const buildNewsletterSubscribePayload = (email = "") => ({
+  Email: email.trim(),
+});
+
+export const buildNewsletterSubscribeSuccessMessage = (result = {}) =>
+  result?.message || "You're subscribed! Check your inbox for AI insights.";
+
+const postJsonRequest = async (endpoint, payload, fallbackMessage) => {
+  const response = await fetch(buildLegacyEmailUrl(endpoint), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await parseJsonResponse(response);
+  assertSuccessResponse(response, result, fallbackMessage);
+  return result;
+};
 
 export const sendNewsletterSubscribe = async ({ email }) => {
-  if (!EMAIL_API_KEY.trim()) {
+  if (!isRequestDemoEmailConfigured()) {
     throw new Error(REQUEST_DEMO_EMAIL_SETUP_MESSAGE);
   }
 
   const payload = buildNewsletterSubscribePayload(email);
-  const result = await postEmailPayload(payload);
+  const result = await postJsonRequest(
+    "subscribe-email",
+    payload,
+    "Failed to subscribe. Please try again.",
+  );
 
   return {
     ...result,
-    successMessage: buildNewsletterSubscribeSuccessMessage(),
+    successMessage: buildNewsletterSubscribeSuccessMessage(result),
   };
 };
 
 export const sendContactEmail = async ({ form }) => {
-  if (!EMAIL_API_KEY.trim()) {
+  if (!isRequestDemoEmailConfigured()) {
     throw new Error(REQUEST_DEMO_EMAIL_SETUP_MESSAGE);
   }
 
   const payload = buildContactEmailPayload(form);
-  const result = await postEmailPayload(payload);
+  const result = await postJsonRequest(
+    "contact-us",
+    payload,
+    "Failed to send message. Please try again.",
+  );
 
   return {
     ...result,
-    successMessage: buildContactSuccessMessage(),
+    successMessage: buildContactSuccessMessage(result),
   };
 };
 
-export const buildRequestDemoSuccessMessage = (capability, form = {}) => {
-  const recipientNames = getRequestDemoRecipientNames(capability);
-
-  if (recipientNames.length === 1) {
-    return `Mail sent to ${recipientNames[0]}.`;
-  }
-
-  if (recipientNames.length > 1) {
-    return `Mail sent to ${recipientNames.join(", ")}.`;
-  }
-
-  const fallbackName = (form.name || form.email || "").trim();
-  return fallbackName
-    ? `Mail sent to ${fallbackName}.`
-    : "Mail sent successfully.";
-};
-
 export const sendRequestDemoEmail = async ({ capability, form }) => {
-  if (!EMAIL_API_KEY.trim()) {
+  if (!isRequestDemoEmailConfigured()) {
     throw new Error(REQUEST_DEMO_EMAIL_SETUP_MESSAGE);
   }
 
   const payload = buildRequestDemoEmailPayload(capability, form);
-  const result = await postEmailPayload(payload);
+  const result = await postDemoRequest(payload);
 
   return {
     ...result,
-    successMessage: buildRequestDemoSuccessMessage(capability, form),
-    recipientNames: getRequestDemoRecipientNames(capability),
+    successMessage: buildRequestDemoSuccessMessage(result),
   };
 };

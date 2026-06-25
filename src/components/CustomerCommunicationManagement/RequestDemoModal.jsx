@@ -80,7 +80,7 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
       setErrors({
         form:
           error.message ||
-          "Failed to send email. Please check the API key and try again.",
+          "Failed to send request. Please try again.",
       });
     } finally {
       setIsSending(false);

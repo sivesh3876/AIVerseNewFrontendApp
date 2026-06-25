@@ -1,18 +1,17 @@
 import educationImage from "../../assets/images/industries01.svg";
-import healthcareImage from "../../assets/images/industries02.svg";
-import financialServicesImage from "../../assets/images/industries03.svg";
-import retailImage from "../../assets/images/industries04.svg";
+import insuranceImage from "../../assets/images/industries03.svg";
+import logisticsImage from "../../assets/images/industries04.svg";
 import {
   EducationIcon,
-  FinancialServicesIcon,
-  HealthcareIcon,
-  RetailIcon,
+  InsuranceIcon,
+  LogisticsIcon,
 } from "../IndustrySpecificAISolutions/IndustryIcons";
 
 export const industrySolutionsData = [
   {
     id: "education",
     title: "Education",
+    domainCode: "Education",
     shortDescription: "AI for learning and administration",
     icon: EducationIcon,
     iconBg: "#4D90E3",
@@ -26,7 +25,7 @@ export const industrySolutionsData = [
     ],
     metric: "30% Improved Engagement",
     subtitle:
-      "Transform teaching, learning, and campus operations with AI built for educational institutions.",
+      "Transforming learning experiences at every level.",
     contentHeading: "Smarter Campuses, Better Outcomes",
     contentParagraphs: [
       "Educational institutions face growing pressure to improve student outcomes while managing complex administrative workloads. AI Verse education solutions help universities, K-12 districts, and ed-tech providers personalize learning paths, automate routine tasks, and support students before challenges escalate.",
@@ -50,215 +49,88 @@ export const industrySolutionsData = [
           "Identify at-risk students with predictive models and trigger timely advisor outreach.",
       },
     ],
-    solutions: [
-      {
-        title: "Student Success Platform",
-        description:
-          "Holistic view of student engagement with AI-driven nudges and advisor dashboards.",
-      },
-      {
-        title: "Campus Virtual Assistant",
-        description:
-          "24/7 conversational support for enrollment, financial aid, and campus services.",
-      },
-      {
-        title: "Learning Analytics",
-        description:
-          "Insights from LMS data to improve curriculum design and instructional effectiveness.",
-      },
-      {
-        title: "Document Automation",
-        description:
-          "Intelligent processing of transcripts, applications, and compliance paperwork.",
-      },
-    ],
   },
   {
-    id: "healthcare",
-    title: "Healthcare",
-    shortDescription: "AI for care and operations",
-    icon: HealthcareIcon,
-    iconBg: "#18E0CC",
-    accentColor: "#18E0CC",
-    image: healthcareImage,
-    features: [
-      "Patient Care AI",
-      "Diagnostic Support",
-      "Clinical Documentation",
-      "Operational Efficiency",
-    ],
-    metric: "50% Reduced Admin Time",
-    subtitle:
-      "Enhance patient care and streamline clinical workflows with secure, compliant healthcare AI.",
-    contentHeading: "AI That Supports Care Teams",
-    contentParagraphs: [
-      "Healthcare organizations need AI that augments clinicians—not replaces them. Our healthcare solutions reduce documentation burden, surface relevant patient insights, and optimize scheduling and revenue cycle operations while meeting HIPAA and regional privacy requirements.",
-      "Clinical documentation assistants capture encounter notes in real time, coding support accelerates billing accuracy, and patient-facing chatbots handle appointment scheduling and pre-visit intake at scale.",
-      "Every deployment is designed with clinical governance, audit trails, and integration into EHR and practice management systems your teams already rely on.",
-    ],
-    highlights: [
-      {
-        title: "Less Documentation Burden",
-        description:
-          "Ambient clinical documentation and structured note generation save hours per clinician per week.",
-      },
-      {
-        title: "Better Patient Access",
-        description:
-          "Self-service scheduling, triage bots, and multilingual support improve patient experience.",
-      },
-      {
-        title: "Operational Intelligence",
-        description:
-          "Predict no-shows, optimize staffing, and reduce claim denials with data-driven insights.",
-      },
-    ],
-    solutions: [
-      {
-        title: "Clinical Documentation AI",
-        description:
-          "Voice-enabled note generation with EHR integration and physician review workflows.",
-      },
-      {
-        title: "Patient Engagement Hub",
-        description:
-          "Omnichannel bots for appointments, reminders, and post-discharge follow-up.",
-      },
-      {
-        title: "Diagnostic Decision Support",
-        description:
-          "Evidence-based suggestions to assist radiology and pathology review workflows.",
-      },
-      {
-        title: "Revenue Cycle Automation",
-        description:
-          "Prior authorization, coding assistance, and denial prediction for faster reimbursement.",
-      },
-    ],
-  },
-  {
-    id: "financial-services",
-    title: "Financial Services",
-    shortDescription: "AI for risk and compliance",
-    icon: FinancialServicesIcon,
+    id: "insurance",
+    title: "Insurance",
+    domainCode: "Insurance",
+    shortDescription: "AI for underwriting and claims",
+    icon: InsuranceIcon,
     iconBg: "#EF8E29",
     accentColor: "#EF8E29",
-    image: financialServicesImage,
+    image: insuranceImage,
     features: [
-      "Risk Modeling",
+      "Claims Automation",
+      "Underwriting Intelligence",
+      "Policy Servicing AI",
       "Fraud Detection",
-      "Compliance Automation",
-      "Customer Insights",
     ],
-    metric: "40% Faster Decisions",
+    metric: "40% Faster Claims Processing",
     subtitle:
-      "Strengthen risk management, fraud prevention, and customer engagement with regulated AI.",
-    contentHeading: "Trusted AI for Financial Institutions",
+      "Modernize underwriting, claims, and customer service with secure AI built for insurers and MGAs.",
+    contentHeading: "Intelligent Insurance Operations",
     contentParagraphs: [
-      "Banks, insurers, and fintech companies operate in one of the most regulated environments in enterprise technology. AI Verse financial services solutions deliver real-time fraud detection, credit risk scoring, and compliance automation with explainability built in for auditors and regulators.",
-      "Customer-facing AI powers personalized product recommendations, intelligent service bots, and faster loan processing—while back-office automation handles KYC document review, regulatory reporting, and anomaly detection across transactions.",
-      "We partner with core banking, payment, and CRM platforms to deploy models that meet SOC 2, PCI, and regional financial compliance standards.",
+      "Insurance carriers and MGAs need AI that accelerates policy lifecycle workflows while maintaining strict compliance and auditability. AI Verse insurance solutions automate document intake, claims triage, and customer communications across broker, policyholder, and internal channels.",
+      "From FNOL chatbots and claims document extraction to underwriting risk scoring and policy renewal assistants, our solutions integrate with core policy admin, CRM, and document management platforms.",
+      "Every deployment is designed with regulatory governance, explainability, and human review gates for high-risk decisions.",
     ],
     highlights: [
       {
-        title: "Real-Time Fraud Defense",
+        title: "Claims Acceleration",
         description:
-          "Score transactions in milliseconds and adapt to emerging fraud patterns automatically.",
+          "Automate FNOL, document classification, and adjuster routing to reduce cycle times.",
       },
       {
-        title: "Explainable Risk Models",
+        title: "Smarter Underwriting",
         description:
-          "Transparent credit and underwriting decisions with reason codes for compliance review.",
+          "Surface risk signals from submissions and third-party data with explainable scoring.",
       },
       {
-        title: "Compliance at Scale",
+        title: "Policyholder Experience",
         description:
-          "Automate AML screening, regulatory reporting, and policy document analysis.",
-      },
-    ],
-    solutions: [
-      {
-        title: "Fraud Detection Engine",
-        description:
-          "Real-time transaction monitoring with adaptive models and investigator dashboards.",
-      },
-      {
-        title: "Credit Risk Analytics",
-        description:
-          "Alternative data and traditional signals combined for faster, fairer lending decisions.",
-      },
-      {
-        title: "Regulatory Compliance Suite",
-        description:
-          "Automated KYC, sanctions screening, and audit-ready documentation workflows.",
-      },
-      {
-        title: "Wealth & Service AI",
-        description:
-          "Personalized advisory insights and secure client service across digital channels.",
+          "24/7 self-service for quotes, endorsements, and status updates across digital channels.",
       },
     ],
   },
   {
-    id: "retail",
-    title: "Retail",
-    shortDescription: "AI for commerce growth",
-    icon: RetailIcon,
-    iconBg: "#F5B800",
-    accentColor: "#D4A017",
-    image: retailImage,
+    id: "logistics",
+    title: "Logistics",
+    domainCode: "Logistics",
+    shortDescription: "AI for supply chain and fulfillment",
+    icon: LogisticsIcon,
+    iconBg: "#18E0CC",
+    accentColor: "#18E0CC",
+    image: logisticsImage,
     features: [
-      "Personalization",
-      "Inventory Optimization",
-      "Visual Search",
-      "Dynamic Pricing",
+      "Route Optimization",
+      "Demand Forecasting",
+      "Warehouse Automation",
+      "Shipment Visibility",
     ],
-    metric: "35% Higher Conversion",
+    metric: "35% Operational Efficiency Gain",
     subtitle:
-      "Drive conversion, loyalty, and supply chain efficiency with retail-ready AI solutions.",
-    contentHeading: "Commerce Intelligence at Every Touchpoint",
+      "Optimize planning, fulfillment, and last-mile delivery with AI for logistics and supply chain teams.",
+    contentHeading: "Supply Chain Intelligence at Scale",
     contentParagraphs: [
-      "Retailers compete on experience as much as price. AI Verse retail solutions personalize every shopper journey—from product discovery and visual search to dynamic pricing and inventory optimization across stores and digital channels.",
-      "Recommendation engines increase basket size, demand forecasting reduces stockouts, and computer vision powers shelf analytics and frictionless checkout experiences in physical locations.",
-      "Integrations with Shopify, Salesforce Commerce Cloud, and major POS systems ensure AI insights flow directly into the tools your merchandising and operations teams use daily.",
+      "Logistics organizations operate on thin margins and tight SLAs. AI Verse logistics solutions improve demand forecasting, route planning, warehouse throughput, and exception management across carriers, 3PLs, and enterprise supply chain teams.",
+      "Computer vision, predictive analytics, and agentic automation connect TMS, WMS, and ERP systems to reduce delays, cut costs, and improve customer delivery experiences.",
+      "We deploy models with real-time monitoring and operational dashboards so teams can trust AI recommendations on the warehouse floor and in the control tower.",
     ],
     highlights: [
       {
-        title: "Higher Conversion",
+        title: "Predictive Planning",
         description:
-          "Personalized product rankings and offers based on real-time shopper behavior.",
+          "Forecast demand and capacity needs by lane, SKU, and season to reduce stockouts and idle assets.",
       },
       {
-        title: "Smarter Inventory",
+        title: "Dynamic Routing",
         description:
-          "Forecast demand by SKU and location to reduce waste and prevent stockouts.",
+          "Optimize dispatch and last-mile routes with live traffic, weather, and SLA constraints.",
       },
       {
-        title: "Omnichannel Experience",
+        title: "Warehouse Intelligence",
         description:
-          "Consistent AI-powered service across web, app, and in-store interactions.",
-      },
-    ],
-    solutions: [
-      {
-        title: "Personalization Engine",
-        description:
-          "Real-time product and content recommendations across web and mobile storefronts.",
-      },
-      {
-        title: "Visual Search & Discovery",
-        description:
-          "Shop by image and similarity search to help customers find products faster.",
-      },
-      {
-        title: "Demand Forecasting",
-        description:
-          "ML-driven planning for inventory, staffing, and promotional campaigns.",
-      },
-      {
-        title: "Store Intelligence",
-        description:
-          "Shelf monitoring, footfall analytics, and planogram compliance via computer vision.",
+          "Automate slotting, pick-path optimization, and anomaly detection across fulfillment operations.",
       },
     ],
   },
@@ -293,3 +165,6 @@ export const getIndustryIndexById = (industryId) => {
 
 export const getIndustryById = (industryId) =>
   industrySolutionsData[getIndustryIndexById(industryId)];
+
+export const getIndustryDomainCode = (industryId) =>
+  getIndustryById(industryId)?.domainCode || "Education";

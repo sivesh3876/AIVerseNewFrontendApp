@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import ClientLogo from "./ClientLogo";
@@ -102,6 +102,32 @@ const ClientExplore = () => {
               ))}
             </div>
           </div>
+
+          {activeClient.pocs?.length > 0 && (
+            <div className="client_explore__pocs">
+              <h3>Proof of Concepts & Success Stories</h3>
+              <div className="client_explore__pocs-grid">
+                {activeClient.pocs.map((poc) => {
+                  const pocKey = poc.storyId ?? poc.title;
+                  const pocLink = poc.storyId
+                    ? `/success-stories?story=${poc.storyId}`
+                    : poc.href;
+
+                  return (
+                    <article key={pocKey} className="client_explore__poc">
+                      <h4>{poc.title}</h4>
+                      <p>{poc.description}</p>
+                      {pocLink && (
+                        <Link to={pocLink} className="client_explore__poc-link">
+                          {poc.ctaLabel ?? "View case study"}
+                        </Link>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>

@@ -82,8 +82,9 @@
     }
 
     .stat_card {
-        i {
-            font-size: 26px;
+        img {
+            max-height: 40px;
+            width     : auto;
         }
 
         h2 {

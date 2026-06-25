@@ -40,6 +40,24 @@ export const RetailIcon = () => (
   </svg>
 );
 
+export const InsuranceIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+export const LogisticsIcon = () => (
+  <svg {...iconProps}>
+    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11" />
+    <path d="M15 18H2" />
+    <path d="M15 18v-3h4l3 3v3h-2" />
+    <circle cx="7" cy="18" r="2" />
+    <circle cx="17" cy="18" r="2" />
+    <path d="M14 9h4l2 2" />
+  </svg>
+);
+
 export const CheckIcon = () => (
   <svg
     width="16"

@@ -28,3 +28,18 @@
     text-decoration: none;
     font-weight: 600;
 }
+
+@media (max-width: 576px) {
+    .solution_details__state {
+        margin: 32px auto;
+        padding: 24px 16px;
+    }
+
+    .solution_details__state--error h1 {
+        font-size: 22px;
+    }
+
+    .solution_details__back-link {
+        width: 100%;
+    }
+}

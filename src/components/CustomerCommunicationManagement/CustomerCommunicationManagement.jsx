@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
+import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapabilityCard";
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
+import SolutionDocuments from "../SolutionDocuments";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -15,13 +17,15 @@ import {
   getEnterpriseServiceIndexById,
 } from "./enterpriseServicesData";
 import {
-  getStaticSolutionId,
+  buildDetailFromCapability,
+  mapApiSolutionToDetail,
   solutionToCapabilityCard,
 } from "../../data/solutionsData";
 import {
   enrichCapabilityContacts,
   extractSolutionIdFromCapabilityId,
   filterOutDeletedSolutions,
+  getServiceIdForDomain,
   hydrateCapability,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
@@ -33,9 +37,12 @@ import {
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
+import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import { useScrollToSection } from "../../utils/pageScroll";
 import {
   deleteUseCase,
   fetchAllUseCases,
+  fetchUseCaseById,
   getUsecasesApiBaseUrl,
 } from "../../services/usecasesService";
 import "./CustomerCommunicationManagement.scss";
@@ -50,6 +57,12 @@ const getInitials = (name) =>
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+const PersonAvatar = ({ name, color }) => (
+  <span className={`ccm_dashboard__avatar ccm_dashboard__avatar--${color}`}>
+    {getInitials(name)}
+  </span>
+);
 
 const CheckIcon = () => (
   <svg
@@ -70,144 +83,127 @@ const CheckIcon = () => (
   </svg>
 );
 
-const PersonAvatar = ({ name, color }) => (
-  <span className={`ccm_dashboard__avatar ccm_dashboard__avatar--${color}`}>
-    {getInitials(name)}
-  </span>
-);
-
-const CapabilityCard = ({
+const SolutionDetailPanel = ({
   capability,
-  isHighlighted = false,
+  detailSolution,
+  documents,
+  onBack,
   onEdit,
   onDelete,
   onRequestDemo,
-  onNavigate,
   isDeleting = false,
 }) => {
-  const CardIcon = resolveCapabilityIcon(capability);
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const isSubmitted = Boolean(capability.isApiSolution);
+  const showAdminActions = Boolean(detailSolution?.isApiSolution);
+  const clientName = (detailSolution?.client || capability.client || "").trim();
 
   return (
-    <article
-      className={`ccm_dashboard__capability${isHighlighted ? " is-highlighted" : ""}${isSubmitted ? " is-submitted" : ""}${onNavigate ? " is-clickable" : ""}`}
-      data-solution-id={capability.id}
-      onClick={() => {
-        if (!onNavigate) return;
-        onNavigate(capability);
-      }}
-      onKeyDown={(event) => {
-        if (!onNavigate) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onNavigate(capability);
-        }
-      }}
-      role={onNavigate ? "button" : undefined}
-      tabIndex={onNavigate ? 0 : undefined}
-    >
-      {isSubmitted && (
-        <div className="ccm_dashboard__capability-controls">
-          <button
-            type="button"
-            className="ccm_dashboard__control-btn ccm_dashboard__control-btn--edit"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit?.(capability);
-            }}
-            aria-label={`Edit ${capability.title}`}
-            title="Edit"
-          >
-            <EditIcon />
-          </button>
-          <button
-            type="button"
-            className="ccm_dashboard__control-btn ccm_dashboard__control-btn--delete"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete?.(capability);
-            }}
-            disabled={isDeleting}
-            aria-label={`Delete ${capability.title}`}
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
+    <section className="ccm_dashboard__content">
+      <div className="ccm_dashboard__content-toolbar">
+        <button type="button" className="ccm_dashboard__back-link" onClick={onBack}>
+          &larr; Back to solutions
+        </button>
+
+        {showAdminActions && (
+          <div className="ccm_dashboard__content-actions">
+            <button
+              type="button"
+              className="ccm_dashboard__control-btn ccm_dashboard__control-btn--edit"
+              onClick={() => onEdit?.(capability)}
+              aria-label={`Edit ${capability.title}`}
+              title="Edit"
+            >
+              <EditIcon />
+            </button>
+            <button
+              type="button"
+              className="ccm_dashboard__control-btn ccm_dashboard__control-btn--delete"
+              onClick={() => onDelete?.(capability)}
+              disabled={isDeleting}
+              aria-label={`Delete ${capability.title}`}
+              title="Delete"
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <h2>About this solution</h2>
+
+      {clientName && (
+        <div className="ccm_dashboard__detail-client">
+          <span className="ccm_dashboard__client-badge">
+            Client: {clientName}
+          </span>
         </div>
       )}
 
-      <div className="ccm_dashboard__capability-body">
-        <div className="ccm_dashboard__capability-head">
-          <span className="ccm_dashboard__capability-icon" aria-hidden="true">
-            <CardIcon />
+      <div className="ccm_dashboard__content-body">
+        <p>{detailSolution.detailedDescription || capability.description}</p>
+      </div>
+
+      {detailSolution.industry && (
+        <div className="ccm_dashboard__detail-meta">
+          <span>
+            <strong>Industry:</strong> {detailSolution.industry}
           </span>
-          <h4>{capability.title}</h4>
+        </div>
+      )}
+
+      <div className="ccm_dashboard__detail-sections">
+        <div className="ccm_dashboard__detail-section">
+          <span className="ccm_dashboard__section-label">
+            <CoeLabelIcon />
+            COE
+          </span>
+          <div className="ccm_dashboard__person">
+            <PersonAvatar name={capability.coe.name} color={capability.coe.color} />
+            <div>
+              <strong>{capability.coe.name}</strong>
+              <span>{capability.coe.title}</span>
+            </div>
+          </div>
         </div>
 
-        <p>{capability.description}</p>
-
-        <div className="ccm_dashboard__meta">
-          <div className="ccm_dashboard__meta-block">
-            <span className="ccm_dashboard__section-label">
-              <CoeLabelIcon />
-              COE
-            </span>
-            <div className="ccm_dashboard__person">
-              <PersonAvatar
-                name={capability.coe.name}
-                color={capability.coe.color}
-              />
-              <div>
-                <strong>{capability.coe.name}</strong>
-                <span>{capability.coe.title}</span>
+        <div className="ccm_dashboard__detail-section">
+          <span className="ccm_dashboard__section-label">
+            <EvangelistLabelIcon />
+            AI Evangelists
+          </span>
+          <div className="ccm_dashboard__evangelists">
+            {capability.evangelists.map((person) => (
+              <div className="ccm_dashboard__person" key={person.name}>
+                <PersonAvatar name={person.name} color={person.color} />
+                <div>
+                  <strong>{person.name}</strong>
+                  <span>{person.title}</span>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="ccm_dashboard__meta-block">
-            <span className="ccm_dashboard__section-label">
-              <EvangelistLabelIcon />
-              AI EVANGELISTS
-            </span>
-            <div className="ccm_dashboard__evangelists">
-              {capability.evangelists.map((person) => (
-                <div className="ccm_dashboard__person" key={person.name}>
-                  <PersonAvatar name={person.name} color={person.color} />
-                  <div>
-                    <strong>{person.name}</strong>
-                    <span>{person.title}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--tech">
-            <span className="ccm_dashboard__section-label">
-              <TechStackLabelIcon />
-              TECH STACK
-            </span>
-            <div className="ccm_dashboard__tags">
-              {capability.techStack.map((tech) => (
-                <div className="ccm_dashboard__tag" key={tech.name}>
-                  <strong>{tech.name}</strong>
-                  <span>{tech.label}</span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="ccm_dashboard__capability-actions">
+      {capability.techStack.length > 0 && (
+        <div className="ccm_dashboard__highlights">
+          <h3>Technology Stack</h3>
+          <div className="ccm_dashboard__highlights-grid">
+            {capability.techStack.map((tech) => (
+              <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
+                <h4>{tech.name}</h4>
+                <p>{tech.label}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="ccm_dashboard__detail-actions">
         <button
           type="button"
           className="ccm_dashboard__action-btn"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRequestDemo?.(capability);
-            }}
+          onClick={() => onRequestDemo?.(capability)}
         >
           Request Demo
         </button>
@@ -217,7 +213,6 @@ const CapabilityCard = ({
             target="_blank"
             rel="noopener noreferrer"
             className="ccm_dashboard__action-btn"
-            onClick={(event) => event.stopPropagation()}
           >
             Recorded Demo
             <VideoCameraIcon />
@@ -229,20 +224,33 @@ const CapabilityCard = ({
           </button>
         )}
       </div>
-    </article>
+
+      {documents.length > 0 && (
+        <SolutionDocuments
+          documents={documents}
+          variant="full"
+          title="Solution Resources & Attachments"
+          subtitle="Review the solution overview, low level design, architecture diagrams, and any supporting documents."
+          className="ccm_dashboard__detail-documents"
+        />
+      )}
+    </section>
   );
 };
 
-const CustomerCommunicationManagement = ({ detailSolution = null }) => {
+const CustomerCommunicationManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
+  const solutionQueryId = searchParams.get("solution");
+  const isDetailView = Boolean(solutionQueryId);
   const activeDomainCode = searchParams.get("domain");
   const highlightId = searchParams.get("highlight");
   const submitted = searchParams.get("submitted") === "1";
+  const mainRef = useRef(null);
   const [activeServiceIndex, setActiveServiceIndex] = useState(() =>
-    getEnterpriseServiceIndexById(detailSolution?.serviceLine || serviceId),
+    getEnterpriseServiceIndexById(serviceId),
   );
   const [apiSolutions, setApiSolutions] = useState([]);
   const [pendingCapabilities, setPendingCapabilities] = useState(() =>
@@ -250,6 +258,9 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
   );
   const [loadingApiSolutions, setLoadingApiSolutions] = useState(true);
   const [solutionsFetchError, setSolutionsFetchError] = useState(null);
+  const [detailSolution, setDetailSolution] = useState(null);
+  const [loadingDetailSolution, setLoadingDetailSolution] = useState(false);
+  const [detailSolutionError, setDetailSolutionError] = useState(null);
   const [aiEvangelists, setAiEvangelists] = useState([]);
   const [solutionOwners, setSolutionOwners] = useState([]);
   const [businessDomains, setBusinessDomains] = useState([]);
@@ -313,13 +324,10 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
   }, [location.state?.submittedSolution]);
 
   useEffect(() => {
-    if (detailSolution?.serviceLine) {
-      setActiveServiceIndex(getEnterpriseServiceIndexById(detailSolution.serviceLine));
-      return;
-    }
-
     setActiveServiceIndex(getEnterpriseServiceIndexById(serviceId));
-  }, [detailSolution?.serviceLine, serviceId]);
+  }, [serviceId]);
+
+  useScrollToSection(mainRef, [solutionQueryId, activeServiceIndex]);
 
   useEffect(() => {
     if (!highlightId || loadingApiSolutions) return;
@@ -431,6 +439,10 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
     setDeleteTarget(null);
     setDeletingCapabilityId(null);
 
+    if (solutionQueryId === capability.id) {
+      handleBackToSolutions();
+    }
+
     if (deleteFromApi && solutionId) {
       try {
         await deleteUseCase(solutionId);
@@ -443,14 +455,19 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
   const handleServiceChange = (index) => {
     setActiveServiceIndex(index);
     navigate(`/explore-solutions?service=${enterpriseServicesData[index].id}`, {
-      replace: Boolean(detailSolution),
+      replace: true,
     });
   };
 
   const handleIndustryChange = (domainCode) => {
     navigate(`/explore-solutions?domain=${domainCode}`, {
-      replace: Boolean(detailSolution),
+      replace: true,
     });
+  };
+
+  const handleBackToSolutions = () => {
+    const serviceLine = detailSolution?.serviceLine || activeService.id;
+    navigate(`/explore-solutions?service=${serviceLine}`, { replace: true });
   };
 
   const apiCapabilities = useMemo(
@@ -481,7 +498,13 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
   const industryDomains = businessDomains.filter(
     (domain) => domain.ParentDomainCode === "Industries",
   );
-  const BannerIcon = detailSolution?.icon || activeService.navIcon;
+  const detailPrimaryCapability = detailSolution
+    ? solutionToCapabilityCard(detailSolution)
+    : null;
+  const BannerIconComponent =
+    isDetailView && detailPrimaryCapability
+      ? resolveCapabilityIcon(detailPrimaryCapability)
+      : activeService.navIcon;
   const bannerTitle =
     detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
   const bannerSubtitle =
@@ -489,11 +512,11 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
     activeIndustryDomain?.Description ||
     activeService.subtitle;
   const bannerFeatures =
-    detailSolution?.keyBenefits ||
-    (activeIndustryDomain ? [] : activeService.features);
-  const detailPrimaryCapability = detailSolution
-    ? solutionToCapabilityCard(detailSolution)
-    : null;
+    isDetailView && detailPrimaryCapability
+      ? detailPrimaryCapability.techStack.map((tech) => tech.name)
+      : activeIndustryDomain
+        ? []
+        : activeService.features;
 
   const submittedCapabilities = useMemo(
     () =>
@@ -506,17 +529,129 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
     [apiCapabilities, pendingCapabilities, activeService.id, activeDomainCode],
   );
 
-  const handleCapabilityNavigate = (capability) => {
-    if (capability.id) {
-      navigate(`/explore-solutions/${capability.id}`);
+  useEffect(() => {
+    if (!solutionQueryId) {
+      setDetailSolution(null);
+      setDetailSolutionError(null);
+      setLoadingDetailSolution(false);
       return;
     }
 
-    const targetId = getStaticSolutionId(activeService.id, capability.title);
-    navigate(`/explore-solutions/${targetId}`);
+    const mapDirectories = {
+      evangelistDirectory: aiEvangelists,
+      solutionOwners,
+      businessDomains,
+    };
+
+    const rawSolution = apiSolutions.find(
+      (solution) => `api-${solution.ID}` === solutionQueryId,
+    );
+
+    if (rawSolution) {
+      setDetailSolution(mapApiSolutionToDetail(rawSolution, mapDirectories));
+      setDetailSolutionError(null);
+      setLoadingDetailSolution(false);
+      return;
+    }
+
+    const matchedCapability = [...apiCapabilities, ...pendingCapabilities].find(
+      (capability) => capability.id === solutionQueryId,
+    );
+
+    if (matchedCapability) {
+      setDetailSolution(
+        buildDetailFromCapability(matchedCapability, mapDirectories),
+      );
+      setDetailSolutionError(null);
+      setLoadingDetailSolution(false);
+      return;
+    }
+
+    const apiMatch = solutionQueryId.match(/^api-(\d+)$/);
+    if (!apiMatch) {
+      setDetailSolution(null);
+      setDetailSolutionError("Solution not found.");
+      setLoadingDetailSolution(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadSolutionDetail = async () => {
+      try {
+        setLoadingDetailSolution(true);
+        setDetailSolutionError(null);
+
+        const fetchedSolution = await fetchUseCaseById(apiMatch[1]);
+        if (!isMounted) return;
+
+        setDetailSolution(
+          mapApiSolutionToDetail(fetchedSolution, mapDirectories),
+        );
+      } catch (error) {
+        console.error("Error loading solution detail:", error);
+        if (isMounted) {
+          setDetailSolution(null);
+          setDetailSolutionError("Solution not found or could not be loaded.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingDetailSolution(false);
+        }
+      }
+    };
+
+    if (!loadingApiSolutions) {
+      loadSolutionDetail();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    solutionQueryId,
+    apiSolutions,
+    apiCapabilities,
+    pendingCapabilities,
+    aiEvangelists,
+    solutionOwners,
+    businessDomains,
+    loadingApiSolutions,
+  ]);
+
+  useEffect(() => {
+    if (detailSolution?.serviceLine) {
+      setActiveServiceIndex(getEnterpriseServiceIndexById(detailSolution.serviceLine));
+    }
+  }, [detailSolution?.serviceLine]);
+
+  useEffect(() => {
+    if (!detailSolution?.serviceLine || !solutionQueryId) return;
+    if (serviceId === detailSolution.serviceLine) return;
+
+    navigate(
+      `/explore-solutions?service=${detailSolution.serviceLine}&solution=${encodeURIComponent(solutionQueryId)}`,
+      { replace: true },
+    );
+  }, [detailSolution?.serviceLine, navigate, serviceId, solutionQueryId]);
+
+  const detailDocuments = useMemo(
+    () => buildDocumentsFromCapability(detailPrimaryCapability || {}),
+    [detailPrimaryCapability],
+  );
+
+  const handleCapabilityNavigate = (capability) => {
+    if (!capability.id) return;
+
+    const serviceForCapability =
+      getServiceIdForDomain(capability.businessDomain) || activeService.id;
+
+    navigate(
+      `/explore-solutions?service=${serviceForCapability}&solution=${encodeURIComponent(capability.id)}`,
+    );
   };
 
-  const totalSolutionCount = detailSolution
+  const totalSolutionCount = isDetailView
     ? 1
     : submittedCapabilities.length;
 
@@ -587,11 +722,15 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
         <TalkToExpertCard />
       </aside>
 
-      <main className="ccm_dashboard__main" key={activeDomainCode || activeService.label}>
+      <main
+        className="ccm_dashboard__main"
+        key={solutionQueryId || activeDomainCode || activeService.id}
+        ref={mainRef}
+      >
         <section className="ccm_dashboard__banner">
           <div className="ccm_dashboard__banner-header">
             <div className="ccm_dashboard__banner-icon" aria-hidden="true">
-              <BannerIcon />
+              <BannerIconComponent />
             </div>
             <div className="ccm_dashboard__banner-copy">
               <h1>{bannerTitle}</h1>
@@ -600,17 +739,47 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
           </div>
 
           <div className="ccm_dashboard__banner-body">
-            <ul className="ccm_dashboard__features">
-              {bannerFeatures.map((feature) => (
-                <li key={feature}>
-                  <CheckIcon />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
+            {bannerFeatures.length > 0 && (
+              <ul className="ccm_dashboard__features">
+                {bannerFeatures.map((feature) => (
+                  <li key={feature}>
+                    <CheckIcon />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
 
+        {isDetailView ? (
+          <>
+            {loadingDetailSolution && (
+              <p className="ccm_dashboard__loading-note">Loading solution details...</p>
+            )}
+
+            {detailSolutionError && !loadingDetailSolution && (
+              <p className="ccm_dashboard__loading-note ccm_dashboard__loading-note--error">
+                {detailSolutionError}
+              </p>
+            )}
+
+            {detailSolution && detailPrimaryCapability && (
+              <SolutionDetailPanel
+                capability={detailPrimaryCapability}
+                detailSolution={detailSolution}
+                documents={detailDocuments}
+                onBack={handleBackToSolutions}
+                onEdit={detailSolution.isApiSolution ? handleEditCapability : undefined}
+                onDelete={
+                  detailSolution.isApiSolution ? handleDeleteCapability : undefined
+                }
+                onRequestDemo={handleRequestDemo}
+                isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
+              />
+            )}
+          </>
+        ) : (
         <section className="ccm_dashboard__capabilities">
           {submitted && (
             <div className="ccm_dashboard__submitted-banner">
@@ -622,11 +791,9 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
             <div>
               <h2>Key Capabilities</h2>
               <p>
-                {detailSolution
-                  ? "Solution details"
-                  : submittedCapabilities.length > 0
-                    ? `${submittedCapabilities.length} submitted solution(s)`
-                    : "Submitted solutions for this enterprise service"}
+                {submittedCapabilities.length > 0
+                  ? `${submittedCapabilities.length} solution(s) available`
+                  : "Submitted solutions for this enterprise service"}
               </p>
             </div>
             <span className="ccm_dashboard__badge">
@@ -634,25 +801,10 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
             </span>
           </div>
 
-          {detailSolution && detailPrimaryCapability && (
-            <div className="ccm_dashboard__grid">
-              <CapabilityCard
-                capability={detailPrimaryCapability}
-                isHighlighted
-                onRequestDemo={handleRequestDemo}
-                onEdit={detailSolution.isApiSolution ? handleEditCapability : undefined}
-                onDelete={
-                  detailSolution.isApiSolution ? handleDeleteCapability : undefined
-                }
-                isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
-              />
-            </div>
-          )}
-
-          {!detailSolution && submittedCapabilities.length > 0 && (
+          {submittedCapabilities.length > 0 && (
             <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted">
               {submittedCapabilities.map((capability) => (
-                <CapabilityCard
+                <SolutionCapabilityCard
                   capability={capability}
                   key={capability.id || capability.title}
                   isHighlighted={
@@ -660,6 +812,7 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
                     (capability.id === `api-${highlightId}` ||
                       capability.id === `api-pending-${highlightId}`)
                   }
+                  showAdminActions
                   onEdit={handleEditCapability}
                   onDelete={handleDeleteCapability}
                   onRequestDemo={handleRequestDemo}
@@ -670,14 +823,13 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
             </div>
           )}
 
-          {!detailSolution && solutionsFetchError && !loadingApiSolutions && (
+          {solutionsFetchError && !loadingApiSolutions && (
             <p className="ccm_dashboard__loading-note ccm_dashboard__loading-note--error">
               {solutionsFetchError}
             </p>
           )}
 
-          {!detailSolution &&
-            !solutionsFetchError &&
+          {!solutionsFetchError &&
             !loadingApiSolutions &&
             submittedCapabilities.length === 0 && (
             <p className="ccm_dashboard__loading-note">
@@ -685,10 +837,11 @@ const CustomerCommunicationManagement = ({ detailSolution = null }) => {
             </p>
           )}
 
-          {!detailSolution && loadingApiSolutions && submittedCapabilities.length === 0 && (
+          {loadingApiSolutions && submittedCapabilities.length === 0 && (
             <p className="ccm_dashboard__loading-note">Loading submitted solutions...</p>
           )}
         </section>
+        )}
       </main>
 
       {demoRequestTarget && (

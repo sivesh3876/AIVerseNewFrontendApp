@@ -1,3 +1,5 @@
+import { selectTopOrderedSolutions } from "../utils/solutionMapper";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
@@ -10,6 +12,26 @@ export const fetchAllUseCases = async () => {
 
   if (!response.ok || result.status !== "success" || !Array.isArray(result.data)) {
     throw new Error(result.message || "Failed to fetch solutions");
+  }
+
+  return result.data;
+};
+
+export const fetchTopOrderedSolutions = async (limit = 8) => {
+  const data = await fetchAllUseCases();
+  return selectTopOrderedSolutions(data, limit);
+};
+
+export const fetchUseCaseById = async (solutionId) => {
+  const response = await fetch(`${API_BASE_URL}/get-usecases?id=${solutionId}`);
+  const result = await response.json();
+
+  if (
+    !response.ok ||
+    result.status !== "success" ||
+    !result.data
+  ) {
+    throw new Error(result.message || "Solution not found");
   }
 
   return result.data;

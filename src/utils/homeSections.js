@@ -4,14 +4,16 @@ export const HOME_SECTIONS = {
   successStories: "success-stories",
   partners: "partners",
   enterpriseTransformation: "enterprise-transformation",
+  learnExplore: "learn-explore",
 };
 
 export const HOME_NAV_LINKS = [
   { label: "Capabilities", sectionId: HOME_SECTIONS.capabilities },
+  { label: "Service Line", sectionId: HOME_SECTIONS.enterpriseTransformation },
   { label: "Industries", sectionId: HOME_SECTIONS.industries },
   { label: "Success Stories", sectionId: HOME_SECTIONS.successStories },
   { label: "Partners", sectionId: HOME_SECTIONS.partners },
-  { label: "Learn & Explore", sectionId: HOME_SECTIONS.enterpriseTransformation },
+  { label: "Learn & Explore", sectionId: HOME_SECTIONS.learnExplore },
 ];
 
 export const HOME_SECTION_SCROLL_OFFSET = 64;

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "node scripts/azure-start.cjs",
+    "deploy:azure": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-aiverse-frontend.ps1",
     "lint": "eslint .",
     "preview": "vite preview",
     "create:component": "node scripts/generate-component.cjs"
@@ -14,7 +16,8 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-icons": "^5.6.0",
-    "react-router-dom": "^7.17.0"
+    "react-router-dom": "^7.17.0",
+    "serve": "^14.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
