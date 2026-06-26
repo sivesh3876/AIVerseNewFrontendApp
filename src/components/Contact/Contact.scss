@@ -100,7 +100,7 @@
 
     &__offices {
         display              : grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap                  : 16px;
 
         article {
@@ -108,13 +108,16 @@
             border       : 1px solid #e8ecf0;
             border-radius: 12px;
             background   : #f9fafb;
+            height       : 100%;
         }
 
         h3 {
-            margin     : 0 0 8px;
-            font-size  : 15px;
+            margin     : 0 0 6px;
+            font-size  : 14px;
             font-weight: 700;
-            color      : #0d1e32;
+            color      : #3A8D9D;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         p {
@@ -126,6 +129,54 @@
 
         a {
             font-size      : 14px;
+            color          : #3A8D9D;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    &__office-company {
+        font-weight: 600 !important;
+        color      : #0d1e32 !important;
+    }
+
+    &__office-address {
+        p {
+            margin: 0 0 4px;
+        }
+    }
+
+    &__office-contact {
+        display       : flex;
+        flex-direction: column;
+        gap           : 6px;
+        margin-top    : 10px;
+    }
+
+    &__locations {
+        padding   : 0 0 80px;
+        background: #f9fafb;
+        border-top: 1px solid #e8ecf0;
+
+        h2 {
+            margin     : 0 0 12px;
+            font-size  : 28px;
+            font-weight: 700;
+            color      : #0d1e32;
+        }
+    }
+
+    &__locations-intro {
+        margin     : 0 0 28px;
+        max-width  : 720px;
+        font-size  : 15px;
+        line-height: 1.7;
+        color      : #4b5563;
+
+        a {
             color          : #3A8D9D;
             text-decoration: none;
 
@@ -201,10 +252,22 @@
     .contact__grid {
         grid-template-columns: 1fr;
     }
+
+    .contact__offices {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 768px) {
     .contact__hero h1 {
         font-size: 28px;
+    }
+
+    .contact__offices {
+        grid-template-columns: 1fr;
+    }
+
+    .contact__locations h2 {
+        font-size: 24px;
     }
 }

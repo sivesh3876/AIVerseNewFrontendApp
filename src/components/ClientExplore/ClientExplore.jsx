@@ -1,55 +1,87 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import ClientLogo from "./ClientLogo";
 import { useScrollToSection } from "../../utils/pageScroll";
-import { clientsData, getClientIndexById } from "./clientsData";
+import {
+  CLIENT_SECTION,
+  getSectionItemById,
+} from "./clientsData";
+import {
+  getStandaloneClientPocs,
+  getSuccessStoriesForClient,
+} from "./clientSuccessStories";
 import "./ClientExplore.scss";
 
 const ClientExplore = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const clientId = searchParams.get("client");
-  const [activeIndex, setActiveIndex] = useState(() =>
-    getClientIndexById(clientId),
-  );
   const mainRef = useRef(null);
 
+  const sectionState = useMemo(
+    () => getSectionItemById(clientId),
+    [clientId],
+  );
+
+  const [activeIndex, setActiveIndex] = useState(sectionState.index);
+
   useEffect(() => {
-    setActiveIndex(getClientIndexById(clientId));
-  }, [clientId]);
+    setActiveIndex(sectionState.index);
+  }, [sectionState.index]);
 
-  useScrollToSection(mainRef, [clientId]);
+  useScrollToSection(mainRef, [clientId, sectionState.section]);
 
-  const activeClient = clientsData[activeIndex];
+  const { section, items: sectionItems } = sectionState;
+  const activeClient = sectionItems[activeIndex] ?? sectionState.item;
+  const isClientSection = section === CLIENT_SECTION;
 
-  const handleClientChange = (index) => {
+  const successStories = useMemo(
+    () => (isClientSection ? getSuccessStoriesForClient(activeClient) : []),
+    [activeClient, isClientSection],
+  );
+
+  const standalonePocs = useMemo(
+    () =>
+      isClientSection
+        ? getStandaloneClientPocs(activeClient, successStories)
+        : [],
+    [activeClient, isClientSection, successStories],
+  );
+
+  const handleItemChange = (index) => {
     setActiveIndex(index);
-    navigate(`/clients?client=${clientsData[index].id}`, { replace: true });
+    navigate(`/clients?client=${sectionItems[index].id}`, { replace: true });
   };
+
+  const navLabel = isClientSection ? "ALL CLIENTS" : "ALL PARTNERS";
+  const overviewTitle = isClientSection ? "Client Overview" : "Partnership Overview";
 
   return (
     <div className="client_explore">
       <aside className="client_explore__sidebar">
-        <nav className="client_explore__nav" aria-label="Clients and partners">
-          <h2>ALL PARTNERS & CLIENTS</h2>
+        <nav
+          className="client_explore__nav"
+          aria-label={isClientSection ? "Clients" : "Partners"}
+        >
+          <h2>{navLabel}</h2>
           <ul>
-            {clientsData.map((client, index) => {
+            {sectionItems.map((entry, index) => {
               const isActive = index === activeIndex;
 
               return (
-                <li key={client.id}>
+                <li key={entry.id}>
                   <button
                     type="button"
                     className={`client_explore__nav-item${isActive ? " is-active" : ""}`}
-                    onClick={() => handleClientChange(index)}
+                    onClick={() => handleItemChange(index)}
                     aria-current={isActive ? "page" : undefined}
                   >
                     <span className="client_explore__nav-logo" aria-hidden="true">
-                      <ClientLogo client={client} />
+                      <ClientLogo client={entry} />
                     </span>
-                    <span className="client_explore__nav-label">{client.name}</span>
+                    <span className="client_explore__nav-label">{entry.name}</span>
                     {isActive && (
                       <span className="client_explore__nav-arrow" aria-hidden="true">
                         &rsaquo;
@@ -83,7 +115,7 @@ const ClientExplore = () => {
             <div className="client_explore__content-logo" aria-hidden="true">
               <ClientLogo client={activeClient} />
             </div>
-            <h2>Partnership Overview</h2>
+            <h2>{overviewTitle}</h2>
           </div>
           <div className="client_explore__content-body">
             {activeClient.contentParagraphs.map((paragraph, index) => (
@@ -103,11 +135,51 @@ const ClientExplore = () => {
             </div>
           </div>
 
-          {activeClient.pocs?.length > 0 && (
+          {isClientSection && successStories.length > 0 && (
+            <div className="client_explore__stories">
+              <h3>Success Stories</h3>
+              <div className="client_explore__stories-grid">
+                {successStories.map((story) => (
+                  <article key={story.id} className="client_explore__story">
+                    <div className="client_explore__story-media">
+                      <img src={story.image} alt="" loading="lazy" />
+                      <span
+                        className="client_explore__story-badge"
+                        style={{ backgroundColor: story.badgeColor }}
+                      >
+                        {story.badge}
+                      </span>
+                    </div>
+                    <div className="client_explore__story-body">
+                      <span className="client_explore__story-tag">
+                        {story.industryTag}
+                      </span>
+                      <h4>{story.title}</h4>
+                      <p>{story.description}</p>
+                      {(story.statValue || story.metric) && (
+                        <p className="client_explore__story-metric">
+                          <strong>{story.statValue ?? story.metric}</strong>
+                          {story.statLabel ? ` ${story.statLabel}` : ""}
+                        </p>
+                      )}
+                      <Link
+                        to={`/success-stories?story=${story.id}`}
+                        className="client_explore__poc-link"
+                      >
+                        Read full success story
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isClientSection && standalonePocs.length > 0 && (
             <div className="client_explore__pocs">
-              <h3>Proof of Concepts & Success Stories</h3>
+              <h3>Proof of Concepts</h3>
               <div className="client_explore__pocs-grid">
-                {activeClient.pocs.map((poc) => {
+                {standalonePocs.map((poc) => {
                   const pocKey = poc.storyId ?? poc.title;
                   const pocLink = poc.storyId
                     ? `/success-stories?story=${poc.storyId}`

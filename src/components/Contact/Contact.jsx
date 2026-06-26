@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { contactOffices, contactReasons } from "./contactData";
+import { contactDetails, contactOffices, contactReasons, getOfficePhoneHref } from "./contactData";
 import { useScrollToSection } from "../../utils/pageScroll";
 import "./Contact.scss";
 
@@ -41,23 +41,25 @@ const Contact = () => {
               <ul className="contact__details">
                 <li>
                   <strong>Email</strong>
-                  <a href="mailto:info@aiverse.com">info@aiverse.com</a>
+                  <a href={`mailto:${contactDetails.email}`}>{contactDetails.email}</a>
+                </li>
+                <li>
+                  <strong>India</strong>
+                  <a href={getOfficePhoneHref(contactDetails.indiaPhone)}>
+                    {contactDetails.indiaPhone}
+                  </a>
+                </li>
+                <li>
+                  <strong>United States</strong>
+                  <a href={getOfficePhoneHref(contactDetails.usPhone)}>
+                    {contactDetails.usPhone}
+                  </a>
                 </li>
                 <li>
                   <strong>Ready to start?</strong>
                   <Link to="/get-started">Submit an AI solution request</Link>
                 </li>
               </ul>
-
-              <div className="contact__offices">
-                {contactOffices.map((office) => (
-                  <article key={office.region}>
-                    <h3>{office.region}</h3>
-                    <p>{office.address}</p>
-                    <a href={`tel:${office.phone.replace(/\s/g, "")}`}>{office.phone}</a>
-                  </article>
-                ))}
-              </div>
             </div>
 
             <form className="contact__form" onSubmit={handleSubmit}>
@@ -114,6 +116,40 @@ const Contact = () => {
                 </>
               )}
             </form>
+          </div>
+        </div>
+      </section>
+
+      <section className="contact__locations" aria-labelledby="contact-locations-title">
+        <div className="contact__container">
+          <h2 id="contact-locations-title">Our Global Locations</h2>
+          <p className="contact__locations-intro">
+            Reach the Espire Infolabs team at any of our global offices.
+          </p>
+          <div className="contact__offices">
+            {contactOffices.map((office) => (
+              <article key={office.id}>
+                <h3>{office.region}</h3>
+                <p className="contact__office-company">{office.company}</p>
+                <div className="contact__office-address">
+                  {office.addressLines.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+                {(office.phones?.length > 0 || office.email) && (
+                  <div className="contact__office-contact">
+                    {office.phones?.map((phone) => (
+                      <a key={phone} href={getOfficePhoneHref(phone)}>
+                        {phone}
+                      </a>
+                    ))}
+                    {office.email && (
+                      <a href={`mailto:${office.email}`}>{office.email}</a>
+                    )}
+                  </div>
+                )}
+              </article>
+            ))}
           </div>
         </div>
       </section>
