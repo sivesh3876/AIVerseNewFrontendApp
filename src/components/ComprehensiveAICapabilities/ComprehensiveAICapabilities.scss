@@ -233,7 +233,6 @@
         display        : inline-flex;
         align-items    : center;
         justify-content: center;
-        gap            : 8px;
         min-height     : 40px;
         padding        : 10px 12px;
         border-radius  : 8px;
@@ -244,10 +243,6 @@
         text-decoration: none;
         cursor         : pointer;
         transition     : background 0.25s, color 0.25s, border-color 0.25s;
-
-        svg {
-            flex-shrink: 0;
-        }
 
         &--primary {
             background: var(--theme-primary);

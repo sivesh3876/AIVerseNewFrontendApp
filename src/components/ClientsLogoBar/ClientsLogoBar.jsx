@@ -20,10 +20,18 @@ const ClientsLogoBar = ({ clients = homePageClients }) => {
               );
               const className = "clients_bar__logo";
               const content = (
-                <BrandLogoMark
-                  item={item}
-                  imageClassName="clients_bar__image"
-                />
+                <span
+                  className={`clients_bar__logo-shell${
+                    item.logoOnDarkSurface
+                      ? " clients_bar__logo-shell--dark"
+                      : ""
+                  }`}
+                >
+                  <BrandLogoMark
+                    item={item}
+                    imageClassName="clients_bar__image"
+                  />
+                </span>
               );
 
               if (!hasClientPage) {

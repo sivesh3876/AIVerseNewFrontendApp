@@ -41,8 +41,13 @@ const CardIcon = () => (
   </svg>
 );
 
+const PILLAR_IDS = ["cx", "ex", "bx"];
+
 const IndustryExperienceGrid = ({ industryId }) => {
   const meta = getIndustryExperienceMeta(industryId);
+  const maxRows = Math.max(
+    ...PILLAR_IDS.map((pillarId) => meta.pillars[pillarId]?.length ?? 0),
+  );
 
   return (
     <section className="industry_experience">
@@ -51,8 +56,11 @@ const IndustryExperienceGrid = ({ industryId }) => {
         <p>{meta.intro}</p>
       </header>
 
-      <div className="industry_experience__columns">
-        {["cx", "ex", "bx"].map((pillarId) => {
+      <div
+        className="industry_experience__columns"
+        style={{ "--experience-rows": maxRows }}
+      >
+        {PILLAR_IDS.map((pillarId) => {
           const pillar = experiencePillars[pillarId];
           const items = meta.pillars[pillarId] ?? [];
 
@@ -66,15 +74,27 @@ const IndustryExperienceGrid = ({ industryId }) => {
                 <span>{pillar.label}</span>
               </div>
 
-              <div className="industry_experience__column-body">
-                {items.map((item, index) => (
+              {Array.from({ length: maxRows }, (_, rowIndex) => {
+                const item = items[rowIndex];
+
+                if (!item) {
+                  return (
+                    <div
+                      key={`empty-${pillarId}-${rowIndex}`}
+                      className="industry_experience__card industry_experience__card--empty"
+                      aria-hidden="true"
+                    />
+                  );
+                }
+
+                return (
                   <Link
                     key={item.id}
                     to={`/industry-solutions?industry=${industryId}&solution=${item.id}`}
                     className="industry_experience__card"
                     style={{
                       background: pillar.cardBg,
-                      animationDelay: `${index * 0.05}s`,
+                      animationDelay: `${rowIndex * 0.05}s`,
                     }}
                   >
                     <div
@@ -89,8 +109,8 @@ const IndustryExperienceGrid = ({ industryId }) => {
                     <h3>{item.title}</h3>
                     <p>{item.description}</p>
                   </Link>
-                ))}
-              </div>
+                );
+              })}
             </div>
           );
         })}

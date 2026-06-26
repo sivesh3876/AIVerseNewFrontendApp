@@ -4,30 +4,9 @@ import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
-import {
-  HOME_SOLUTION_ICONS,
-} from "./HomeSolutionCardIcons";
+import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
 
 const HOME_SOLUTION_LIMIT = 8;
-
-const PlayIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
-    <path d="M10 8.5v7l6-3.5-6-3.5Z" fill="currentColor" stroke="none" />
-  </svg>
-);
-
-const ArrowIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path
-      d="M5 12h14M13 6l6 6-6 6"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 const SolutionCardSkeleton = ({ index }) => (
   <article
@@ -45,7 +24,8 @@ const SolutionCardSkeleton = ({ index }) => (
 
 const SolutionCard = ({ solution, index, onRequestDemo }) => {
   const navigate = useNavigate();
-  const Icon = HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
+  const Icon =
+    HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
 
   const handleNavigate = () => {
@@ -80,7 +60,9 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
                 #{String(solution.orderNumber).padStart(2, "0")}
               </span>
             )}
-            <span className="ai_capabilities__domain">{solution.domainLabel}</span>
+            <span className="ai_capabilities__domain">
+              {solution.domainLabel}
+            </span>
           </div>
         </div>
 
@@ -89,7 +71,9 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
 
         <div className="ai_capabilities__meta">
           {solution.techHighlight && (
-            <span className="ai_capabilities__chip">{solution.techHighlight}</span>
+            <span className="ai_capabilities__chip">
+              {solution.techHighlight}
+            </span>
           )}
           {solution.client && (
             <span className="ai_capabilities__client">
@@ -106,7 +90,6 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           onClick={handleNavigate}
         >
           View Solution
-          <ArrowIcon />
         </button>
 
         {hasRecordedDemo ? (
@@ -117,7 +100,6 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             className="ai_capabilities__btn ai_capabilities__btn--demo"
           >
             Watch Demo
-            <PlayIcon />
           </a>
         ) : (
           <button
@@ -126,7 +108,6 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             onClick={() => onRequestDemo(solution.capabilityForDemo)}
           >
             Request Demo
-            <PlayIcon />
           </button>
         )}
       </div>
@@ -166,7 +147,8 @@ const ComprehensiveAICapabilities = () => {
       try {
         setLoading(true);
         setFetchError("");
-        const apiSolutions = await fetchTopOrderedSolutions(HOME_SOLUTION_LIMIT);
+        const apiSolutions =
+          await fetchTopOrderedSolutions(HOME_SOLUTION_LIMIT);
         const cards = apiSolutions
           .map(mapApiSolutionToHomeCard)
           .filter(Boolean);
@@ -202,10 +184,8 @@ const ComprehensiveAICapabilities = () => {
       <div className="ai_capabilities__container">
         <header className="ai_capabilities__header">
           <span className="ai_capabilities__eyebrow">Featured Solutions</span>
-          <h2>Comprehensive AI Capabilities</h2>
-          <p>
-            Top enterprise AI solutions curated for real-world business impact
-          </p>
+          <h2>Espire's AI capabilities, proven in action</h2>
+          <p>Live demos and real-world AI solutions</p>
         </header>
 
         <div className="ai_capabilities__grid">

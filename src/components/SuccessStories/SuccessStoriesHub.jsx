@@ -5,104 +5,25 @@ import TalkToExpertCard from "../TalkToExpertCard";
 import { useScrollToSection } from "../../utils/pageScroll";
 import {
   getSuccessStoryById,
-  isFullCaseStudy,
   successStories,
 } from "./successStoriesData";
 import "./SuccessStoriesHub.scss";
 
-const CaseStudyDetail = ({ story }) => (
-  <article className="success_stories_hub__case-study" key={story.id}>
-    <div className="success_stories_hub__case-layout">
-      <aside className="success_stories_hub__case-sidebar">
-        <div className="success_stories_hub__case-logo">
-          {story.clientLogo ? (
-            <img src={story.clientLogo} alt={story.client} />
-          ) : (
-            <span>{story.client}</span>
-          )}
-        </div>
+const StandardStoryDetail = ({ story }) => {
+  const challengeText = story.clientContext || story.challenge;
+  const solutionText = story.digitalPartnerRole || story.solution;
+  const solutionItems =
+    story.solutionDelivered?.length > 0 ? story.solutionDelivered : null;
+  const resultItems = [
+    ...(story.businessBenefits ?? []),
+    ...(story.results ?? []),
+  ].filter((item, index, items) => items.indexOf(item) === index);
+  const technologyItems =
+    story.partnerTechnologies?.length > 0
+      ? story.partnerTechnologies.map((partner) => partner.name)
+      : story.technologies ?? [];
 
-        <section>
-          <h2>Client Context</h2>
-          <p>{story.clientContext}</p>
-        </section>
-
-        <section>
-          <h2>Our Role as Digital Partner</h2>
-          <p>{story.digitalPartnerRole}</p>
-        </section>
-      </aside>
-
-      <div className="success_stories_hub__case-main">
-        <header
-          className="success_stories_hub__case-banner"
-          style={{ backgroundImage: `url(${story.image})` }}
-        >
-          <div className="success_stories_hub__case-banner-overlay" />
-          <h1>{story.subtitle}</h1>
-        </header>
-
-        <div className="success_stories_hub__case-columns">
-          <section className="success_stories_hub__case-column">
-            <div className="success_stories_hub__case-icon success_stories_hub__case-icon--solution" />
-            <h2>Solution Delivered</h2>
-            <ul>
-              {story.solutionDelivered.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="success_stories_hub__case-column">
-            <div className="success_stories_hub__case-icon success_stories_hub__case-icon--benefits" />
-            <h2>Business Benefits</h2>
-            <ul>
-              {story.businessBenefits.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="success_stories_hub__case-column">
-            <div className="success_stories_hub__case-icon success_stories_hub__case-icon--outcome" />
-            <h2>Outcome</h2>
-            <p>{story.outcome}</p>
-
-            {story.websiteUrl && (
-              <a
-                href={story.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="success_stories_hub__case-url"
-              >
-                {story.websiteUrl}
-              </a>
-            )}
-
-            {story.partnerTechnologies?.length > 0 && (
-              <div className="success_stories_hub__case-partners">
-                {story.partnerTechnologies.map((partner) =>
-                  partner.logo ? (
-                    <img
-                      key={partner.name}
-                      src={partner.logo}
-                      alt={partner.name}
-                      title={partner.name}
-                    />
-                  ) : (
-                    <span key={partner.name}>{partner.name}</span>
-                  ),
-                )}
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
-    </div>
-  </article>
-);
-
-const StandardStoryDetail = ({ story }) => (
+  return (
   <article className="success_stories_hub__detail" key={story.id}>
     <div
       className="success_stories_hub__hero"
@@ -128,34 +49,56 @@ const StandardStoryDetail = ({ story }) => (
     <div className="success_stories_hub__detail-body">
       <section>
         <h2>The Challenge</h2>
-        <p>{story.challenge}</p>
+        <p>{challengeText}</p>
       </section>
 
       <section>
         <h2>The Solution</h2>
-        <p>{story.solution}</p>
+        {solutionItems ? (
+          <ul>
+            {solutionItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>{solutionText}</p>
+        )}
       </section>
 
       <section>
         <h2>Results</h2>
         <ul>
-          {story.results.map((result) => (
+          {resultItems.map((result) => (
             <li key={result}>{result}</li>
           ))}
         </ul>
+        {story.outcome && (
+          <p className="success_stories_hub__outcome">{story.outcome}</p>
+        )}
       </section>
 
       <section>
         <h2>Technologies</h2>
         <div className="success_stories_hub__tech">
-          {story.technologies.map((tech) => (
+          {technologyItems.map((tech) => (
             <span key={tech}>{tech}</span>
           ))}
         </div>
+        {story.websiteUrl && (
+          <a
+            href={story.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="success_stories_hub__case-url"
+          >
+            {story.websiteUrl}
+          </a>
+        )}
       </section>
     </div>
   </article>
-);
+  );
+};
 
 const SuccessStoriesHub = () => {
   const navigate = useNavigate();
@@ -258,8 +201,6 @@ const SuccessStoriesHub = () => {
               ))}
             </div>
           </>
-        ) : isFullCaseStudy(activeStory) ? (
-          <CaseStudyDetail story={activeStory} />
         ) : (
           <StandardStoryDetail story={activeStory} />
         )}
