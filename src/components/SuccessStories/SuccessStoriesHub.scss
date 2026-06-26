@@ -270,6 +270,13 @@
         }
     }
 
+    &__outcome {
+        margin-top : 16px;
+        font-size  : 15px;
+        line-height: 1.7;
+        color      : #4b5563;
+    }
+
     &__tech {
         display  : flex;
         flex-wrap: wrap;

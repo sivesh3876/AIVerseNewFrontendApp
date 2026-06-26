@@ -2,13 +2,17 @@ import { Link } from "react-router-dom";
 import { clientsData } from "../ClientExplore/clientsData";
 import BrandLogoMark from "../BrandLogoMark/BrandLogoMark";
 import { homePagePartners } from "../../data/homeLogoBarData";
+import { isIconOnlyLogo } from "../../utils/logoResolver";
 import "./TrustedByGlobalLeaders.scss";
 
 const TrustedByGlobalLeaders = ({
   partners = homePagePartners,
   title = "Our Partners",
 }) => {
-  const marqueeItems = [...partners, ...partners];
+  const displayPartners = partners.filter(
+    (partner) => partner.logo && !isIconOnlyLogo(partner.logo),
+  );
+  const marqueeItems = [...displayPartners, ...displayPartners];
 
   return (
     <section id="partners" className="trusted_leaders">
@@ -22,10 +26,18 @@ const TrustedByGlobalLeaders = ({
                 (client) => client.id === partner.id,
               );
               const content = (
-                <BrandLogoMark
-                  item={partner}
-                  imageClassName="trusted_leaders__image"
-                />
+                <span
+                  className={`trusted_leaders__logo-shell${
+                    partner.logoOnDarkSurface
+                      ? " trusted_leaders__logo-shell--dark"
+                      : ""
+                  }`}
+                >
+                  <BrandLogoMark
+                    item={partner}
+                    imageClassName="trusted_leaders__image"
+                  />
+                </span>
               );
 
               if (hasClientPage) {
@@ -34,7 +46,7 @@ const TrustedByGlobalLeaders = ({
                     to={`/clients?client=${partner.id}`}
                     className="trusted_leaders__card"
                     key={`${partner.id}-${index}`}
-                    aria-hidden={index >= partners.length}
+                    aria-hidden={index >= displayPartners.length}
                     aria-label={partner.name}
                     title={partner.name}
                   >
@@ -47,7 +59,7 @@ const TrustedByGlobalLeaders = ({
                 <div
                   className="trusted_leaders__card"
                   key={`${partner.id}-${index}`}
-                  aria-hidden={index >= partners.length}
+                  aria-hidden={index >= displayPartners.length}
                   aria-label={partner.name}
                   title={partner.name}
                 >
