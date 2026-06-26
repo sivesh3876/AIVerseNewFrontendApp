@@ -1,7 +1,10 @@
-import hubspotLogo from "../assets/images/client_logo2.svg";
+import awsLogo from "../assets/logo/aws 1.svg";
 import quadientLogo from "../assets/images/client_logo4.svg";
-import outsystemsLogo from "../assets/logo/mobile-logo 1.svg";
-import { resolveLogoEntry } from "../utils/logoResolver";
+import unilyLogo from "../assets/logo/UNILY LOGO@3x 1.svg";
+import {
+  isIconOnlyLogo,
+  resolveLogoEntry,
+} from "../utils/logoResolver";
 
 const homePageClientEntries = [
   {
@@ -43,30 +46,21 @@ const homePageClientEntries = [
 ];
 
 const homePagePartnerEntries = [
-  { id: "sitecore", name: "Sitecore", logoKeywords: ["sitecore"] },
   { id: "microsoft", name: "Microsoft", logoKeywords: ["microsoft"] },
+  { id: "aws", name: "AWS", logo: awsLogo },
   { id: "uipath", name: "UiPath", logoKeywords: ["uipath"] },
-  { id: "opentext", name: "OpenText", logoKeywords: ["opentext"], initials: "OT" },
-  { id: "searchstax", name: "Searchstax", logoKeywords: ["searchstax"] },
-  { id: "wso2", name: "WSO2", logoKeywords: ["wso2"], initials: "WS" },
-  { id: "salesforce", name: "Salesforce", logoKeywords: ["salesforce"] },
   { id: "contentful", name: "Contentful", logoKeywords: ["contentful"] },
-  { id: "aws", name: "AWS", logoKeywords: ["aws"], initials: "AWS" },
   { id: "ellucian", name: "Ellucian", logoKeywords: ["ellucian"] },
   { id: "messagepoint", name: "Messagepoint", logoKeywords: ["messagepoint"] },
-  { id: "quadient", name: "Quadient", logo: quadientLogo },
-  { id: "outsystems", name: "Outsystems", logo: outsystemsLogo },
   {
-    id: "contentstack",
-    name: "Contentstack",
-    logoKeywords: ["contentstack"],
-    initials: "CS",
+    id: "quadient",
+    name: "Quadient",
+    logo: quadientLogo,
+    logoOnDarkSurface: true,
   },
-  { id: "dvelop", name: "d.velop", logoKeywords: ["dvelop", "velop"], initials: "DV" },
-  { id: "umbraco", name: "Umbraco", logoKeywords: ["umbraco"], initials: "UM" },
-  { id: "hubspot", name: "HubSpot", logo: hubspotLogo },
+  { id: "hubspot", name: "HubSpot", logoKeywords: ["hotsport", "hubspot"] },
   { id: "databricks", name: "Databricks", logoKeywords: ["databricks"] },
-  { id: "unily", name: "Unily", logoKeywords: ["unily"] },
+  { id: "unily", name: "Unily", logo: unilyLogo },
 ];
 
 const mapLogoEntries = (entries) =>
@@ -75,5 +69,10 @@ const mapLogoEntries = (entries) =>
     logo: resolveLogoEntry(entry),
   }));
 
+const mapPartnerEntries = (entries) =>
+  mapLogoEntries(entries).filter(
+    (entry) => entry.logo && !isIconOnlyLogo(entry.logo),
+  );
+
 export const homePageClients = mapLogoEntries(homePageClientEntries);
-export const homePagePartners = mapLogoEntries(homePagePartnerEntries);
+export const homePagePartners = mapPartnerEntries(homePagePartnerEntries);

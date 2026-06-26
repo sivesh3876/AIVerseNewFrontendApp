@@ -1,5 +1,4 @@
 import clientLogo1 from "../../assets/images/client_logo1.svg";
-import clientLogo2 from "../../assets/images/client_logo2.svg";
 import clientLogo3 from "../../assets/images/client_logo3.svg";
 import clientLogo4 from "../../assets/images/client_logo4.svg";
 import clientLogo5 from "../../assets/images/client_logo5.svg";
@@ -258,7 +257,7 @@ const platformPartners = [
   {
     id: "hubspot",
     name: "HubSpot",
-    logo: clientLogo2,
+    logo: resolveLogoEntry({ logoKeywords: ["hotsport", "hubspot"] }),
     tagline: "Inbound growth, amplified by AI",
     subtitle:
       "Connecting marketing, sales, and service workflows with intelligent automation on HubSpot.",
