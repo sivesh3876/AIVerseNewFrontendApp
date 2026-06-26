@@ -51,32 +51,28 @@ const defaultServices = [
     iconBg: "#EF8E29",
     title: "Agentic Automation",
     exploreServiceId: "agentic-automation",
-    description:
-      "Deploy intelligent AI agents for complex business workflows",
+    description: "Deploy intelligent AI agents for complex business workflows",
   },
   {
     icon: CustomerCommunicationIcon,
     iconBg: "#4D90E3",
     title: "Customer Communication",
     exploreServiceId: "customer-communication-management",
-    description:
-      "Omnichannel messaging with AI-driven content personalization",
+    description: "Omnichannel messaging with AI-driven content personalization",
   },
   {
     icon: CxCrmIcon,
     iconBg: "#3A8D9D",
     title: "CX & CRM",
     exploreServiceId: "customer-experience-crm",
-    description:
-      "AI-enhanced CRM platforms with predictive customer insights",
+    description: "AI-enhanced CRM platforms with predictive customer insights",
   },
   {
     icon: DigitalExperienceIcon,
     iconBg: "linear-gradient(135deg, #EF8E29 0%, #18E0CC 100%)",
     title: "Digital Experience",
     exploreServiceId: "digital-experience",
-    description:
-      "AI-powered digital platforms with advanced personalization",
+    description: "AI-powered digital platforms with advanced personalization",
   },
 ];
 
@@ -127,10 +123,10 @@ const EnterpriseTransformationServices = ({
     >
       <div className="enterprise_services__container">
         <header className="enterprise_services__header">
-          <h2>Enterprise Transformation Services</h2>
+          <h2>AI Capabilities by Service Line</h2>
           <p>
-            End-to-end AI transformation services tailored to your business
-            needs
+            Every Espire service line, mapped to its AI capabilities — with a
+            live demo for each
           </p>
         </header>
 

@@ -46,3 +46,23 @@ export const resolveLogoByKeywords = (keywords = []) => {
 
 export const resolveLogoEntry = ({ logo, logoKeywords = [] } = {}) =>
   logo || resolveLogoByKeywords(logoKeywords);
+
+const ICON_ONLY_LOGO_FRAGMENTS = [
+  "salesforce-no-type",
+  "searchstax",
+  "mobile-logo",
+  "site core logo 1",
+  "unily 1.svg",
+];
+
+export const isIconOnlyLogo = (logo) => {
+  if (!logo) {
+    return true;
+  }
+
+  const normalizedLogo = String(logo).toLowerCase();
+
+  return ICON_ONLY_LOGO_FRAGMENTS.some((fragment) =>
+    normalizedLogo.includes(fragment.toLowerCase()),
+  );
+};
