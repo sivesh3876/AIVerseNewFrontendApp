@@ -609,6 +609,36 @@ const platformPartners = [
 
 export const clientsData = [...realClients, ...platformPartners];
 
+export const partnerData = platformPartners;
+
+export const CLIENT_SECTION = "clients";
+export const PARTNER_SECTION = "partners";
+
+export const getClientSection = (clientId) => {
+  if (clientId && platformPartners.some((partner) => partner.id === clientId)) {
+    return PARTNER_SECTION;
+  }
+
+  return CLIENT_SECTION;
+};
+
+export const getSectionItems = (section) =>
+  section === PARTNER_SECTION ? platformPartners : realClients;
+
+export const getSectionItemById = (clientId) => {
+  const section = getClientSection(clientId);
+  const items = getSectionItems(section);
+  const index = items.findIndex((item) => item.id === clientId);
+  const resolvedIndex = index >= 0 ? index : 0;
+
+  return {
+    section,
+    items,
+    item: items[resolvedIndex],
+    index: resolvedIndex,
+  };
+};
+
 export const homeClients = realClients.map(({ id, name, logo, initials }) => ({
   id,
   name,
@@ -634,9 +664,8 @@ export const homePartners = trustedPartnerIds.map((id) => {
 });
 
 export const getClientIndexById = (clientId) => {
-  const index = clientsData.findIndex((item) => item.id === clientId);
-  return index >= 0 ? index : 0;
+  const { index } = getSectionItemById(clientId);
+  return index;
 };
 
-export const getClientById = (clientId) =>
-  clientsData[getClientIndexById(clientId)];
+export const getClientById = (clientId) => getSectionItemById(clientId).item;
