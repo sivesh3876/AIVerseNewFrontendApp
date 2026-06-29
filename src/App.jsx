@@ -12,6 +12,7 @@ import ClientsPage from "./pages/ClientsPage";
 import IndustrySolutionsPage from "./pages/IndustrySolutionsPage";
 import SolutionDetails from "./pages/SolutionDetails";
 import Solutions from "./pages/Solutions";
+import CustomerExperiencePage from "./pages/CustomerExperiencePage";
 import ContactPage from "./pages/ContactPage";
 import CareersPage from "./pages/CareersPage";
 import BlogsPage from "./pages/BlogsPage";
@@ -55,6 +56,7 @@ function App() {
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/industry-solutions" element={<IndustrySolutionsPage />} />
         <Route path="/solutions" element={<Solutions />} />
+        <Route path="/customer-experience" element={<CustomerExperiencePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/careers" element={<CareersPage />} />
         <Route path="/blogs" element={<BlogsPage />} />

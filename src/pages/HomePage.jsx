@@ -1,5 +1,5 @@
 import HeroBannerSlider from "../components/HeroBanner/HeroBanner";
-import ExploreAISolutions from "../components/ExploreAISolutions";
+import TotalExperienceFramework from "../components/TotalExperienceFramework";
 import ComprehensiveAICapabilities from "../components/ComprehensiveAICapabilities";
 import EnterpriseTransformationServices from "../components/EnterpriseTransformationServices";
 import IndustrySpecificAISolutions from "../components/IndustrySpecificAISolutions";
@@ -17,7 +17,7 @@ const HomePage = () => {
       <HeroBannerSlider />
       <ClientsLogoBar />
       <StatsSection />
-      <ExploreAISolutions />
+      <TotalExperienceFramework />
       <ComprehensiveAICapabilities />
       <EnterpriseTransformationServices />
       <IndustrySpecificAISolutions />

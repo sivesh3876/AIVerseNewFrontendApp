@@ -1,0 +1,281 @@
+.total_experience_framework {
+    position  : relative;
+    overflow  : hidden;
+    padding   : 72px 16px 64px;
+    background: linear-gradient(180deg, #0b1f3f 0%, #071528 55%, #050f1f 100%);
+
+    &::before {
+        content       : "";
+        position      : absolute;
+        inset         : 0;
+        background    : radial-gradient(ellipse at 50% 0%, rgba(77, 144, 227, 0.14) 0%, transparent 58%);
+        pointer-events: none;
+    }
+
+    &__container {
+        position      : relative;
+        z-index       : 1;
+        display       : flex;
+        flex-direction: column;
+        gap           : 40px;
+        max-width     : 1280px;
+        margin        : 0 auto;
+        color         : #fff;
+    }
+
+    &__header {
+        text-align: center;
+
+        h2 {
+            margin     : 0 0 14px;
+            font-size  : clamp(28px, 3.4vw, 42px);
+            font-weight: 700;
+            line-height: 1.2;
+            color      : #fff;
+        }
+
+        p {
+            margin     : 0 auto;
+            max-width  : 820px;
+            font-size  : clamp(15px, 1.6vw, 18px);
+            line-height: 1.65;
+            color      : rgba(203, 213, 225, 0.92);
+        }
+    }
+
+    &__equation {
+        display        : flex;
+        align-items    : flex-start;
+        justify-content: center;
+        flex-wrap      : wrap;
+        gap            : 12px 8px;
+    }
+
+    &__equation-group {
+        display    : flex;
+        align-items: center;
+        gap        : 8px;
+    }
+
+    &__operator {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        min-width      : 28px;
+        margin-top     : 34px;
+        font-size      : 28px;
+        font-weight    : 700;
+        line-height    : 1;
+        color          : #4ade80;
+    }
+
+    &__pillar {
+        display       : flex;
+        flex-direction: column;
+        align-items   : center;
+        width         : 220px;
+        padding       : 0;
+        border        : none;
+        background    : transparent;
+        color         : inherit;
+        font-family   : inherit;
+        text-align    : center;
+
+        &.is-clickable {
+            cursor    : pointer;
+            transition: transform 0.25s;
+
+            &:hover {
+                transform: translateY(-3px);
+
+                .total_experience_framework__badge {
+                    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+                }
+            }
+        }
+
+        h3 {
+            margin     : 14px 0 10px;
+            font-size  : 15px;
+            font-weight: 700;
+            line-height: 1.35;
+            color      : #fff;
+        }
+
+        ul {
+            list-style: none;
+            margin    : 0;
+            padding   : 0;
+            width     : 100%;
+        }
+
+        li {
+            position   : relative;
+            margin     : 0 0 6px;
+            padding    : 0 8px;
+            font-size  : 12px;
+            line-height: 1.55;
+            color      : rgba(148, 163, 184, 0.95);
+
+            &::before {
+                content     : "•";
+                margin-right: 6px;
+                color       : rgba(148, 163, 184, 0.7);
+            }
+        }
+
+        &.is-result {
+            width: 240px;
+
+            .total_experience_framework__badge {
+                width    : 104px;
+                height   : 104px;
+                font-size: 26px;
+            }
+
+            li::before {
+                content: none;
+            }
+        }
+    }
+
+    &__badge {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        width          : 84px;
+        height         : 84px;
+        border-radius  : 50%;
+        font-size      : 22px;
+        font-weight    : 700;
+        color          : #fff;
+        flex-shrink    : 0;
+        transition     : box-shadow 0.25s;
+    }
+
+    &__foundations {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        flex-wrap      : wrap;
+        gap            : 12px;
+        padding-top    : 8px;
+    }
+
+    &__foundation-label {
+        font-size  : 14px;
+        font-weight: 600;
+        color      : #38bdf8;
+        white-space: nowrap;
+    }
+
+    &__foundation-tags {
+        display  : flex;
+        flex-wrap: wrap;
+        gap      : 10px;
+        justify-content: center;
+    }
+
+    &__tag {
+        display      : inline-flex;
+        align-items  : center;
+        padding      : 7px 14px;
+        border       : 1px solid rgba(56, 189, 248, 0.45);
+        border-radius: 999px;
+        background   : rgba(7, 21, 40, 0.55);
+        font-size    : 12px;
+        line-height  : 1.3;
+        color        : #fff;
+        white-space  : nowrap;
+    }
+}
+
+.total_experience_framework__header,
+.total_experience_framework__equation,
+.total_experience_framework__foundations {
+    opacity  : 0;
+    transform: translateY(40px);
+}
+
+.total_experience_framework.animate {
+    .total_experience_framework__header {
+        animation: txf-slide-up 0.8s ease forwards;
+    }
+
+    .total_experience_framework__equation {
+        animation      : txf-slide-up 0.8s ease forwards;
+        animation-delay: 0.15s;
+    }
+
+    .total_experience_framework__foundations {
+        animation      : txf-slide-up 0.8s ease forwards;
+        animation-delay: 0.3s;
+    }
+}
+
+@keyframes txf-slide-up {
+    from {
+        opacity  : 0;
+        transform: translateY(40px);
+    }
+
+    to {
+        opacity  : 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1100px) {
+    .total_experience_framework {
+        &__equation {
+            gap: 20px 12px;
+        }
+
+        &__equation-group {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        &__operator {
+            margin-top: 0;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .total_experience_framework {
+        padding: 56px 16px 48px;
+
+        &__equation {
+            flex-direction: column;
+            align-items   : center;
+        }
+
+        &__equation-group {
+            flex-direction: column;
+        }
+
+        &__pillar,
+        &__pillar.is-result {
+            width: min(100%, 280px);
+        }
+
+        &__foundations {
+            flex-direction: column;
+            text-align    : center;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .total_experience_framework {
+        &__tag {
+            font-size: 11px;
+            padding  : 6px 12px;
+        }
+
+        &__pillar li {
+            font-size: 11px;
+        }
+    }
+}

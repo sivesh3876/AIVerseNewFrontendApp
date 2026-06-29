@@ -36,6 +36,31 @@ const STATIC_ENTRIES = [
     path: "/success-stories",
     type: "page",
   },
+  {
+    title: "Total Experience Framework",
+    description: "Espire unified CX, EX, and BX experience model",
+    keywords: [
+      "total experience",
+      "experience framework",
+      "cx ex bx tx",
+      "customer experience framework",
+    ],
+    path: "/#total-experience-framework",
+    type: "page",
+  },
+  {
+    title: "Customer Experience - Espire AI Support",
+    description: "AI support across the customer lifecycle",
+    keywords: [
+      "customer experience",
+      "cx",
+      "customer lifecycle",
+      "espire ai support",
+      "journey map",
+    ],
+    path: "/customer-experience",
+    type: "page",
+  },
 ];
 
 const INDUSTRY_ENTRIES = [
