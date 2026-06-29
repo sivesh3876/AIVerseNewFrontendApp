@@ -18,7 +18,11 @@ import {
 
 const coe = {
   sarah: { name: "Dr. Sarah Chen", title: "Chief AI Officer", color: "teal" },
-  michael: { name: "Michael Rodriguez", title: "VP of Engineering", color: "navy" },
+  michael: {
+    name: "Michael Rodriguez",
+    title: "VP of Engineering",
+    color: "navy",
+  },
   maria: { name: "Maria Garcia", title: "AI Ethics Lead", color: "orange" },
   priya: { name: "Priya Patel", title: "Director of Research", color: "sky" },
   robert: { name: "Robert Kim", title: "Senior Engineer", color: "orange" },
@@ -30,7 +34,8 @@ export const enterpriseServicesData = [
     id: "customer-communication-management",
     label: "Customer Communication Management",
     navIcon: MessageSquareIcon,
-    subtitle: "Intelligent, omnichannel communication delivered at enterprise scale.",
+    subtitle:
+      "Intelligent, omnichannel communication delivered at enterprise scale.",
     features: [
       "Unify communications across email, SMS, print, and web",
       "Migrate seamlessly from legacy CCM platforms",
@@ -41,7 +46,8 @@ export const enterpriseServicesData = [
       {
         title: "Omnichannel Document Management",
         icon: GlobeIcon,
-        description: "Generate, manage, and deliver personalized documents across every customer touchpoint.",
+        description:
+          "Generate, manage, and deliver personalized documents across every customer touchpoint.",
         techStack: [
           { name: "OpenText Exstream", label: "CCM Platform" },
           { name: "AWS SES", label: "Delivery" },
@@ -53,7 +59,8 @@ export const enterpriseServicesData = [
       {
         title: "Legacy CCM Migration",
         icon: RefreshIcon,
-        description: "Accelerate migration from legacy platforms with automated content transformation and validation.",
+        description:
+          "Accelerate migration from legacy platforms with automated content transformation and validation.",
         techStack: [
           { name: "IBM FileNet", label: "Legacy Source" },
           { name: "Azure APIM", label: "API Gateway" },
@@ -65,7 +72,8 @@ export const enterpriseServicesData = [
       {
         title: "AI-Driven Content Intelligence",
         icon: BrainIcon,
-        description: "Leverage LLMs to auto-generate, personalize, and optimize customer communications at scale.",
+        description:
+          "Leverage LLMs to auto-generate, personalize, and optimize customer communications at scale.",
         techStack: [
           { name: "Azure OpenAI", label: "LLM" },
           { name: "Python FastAPI", label: "Backend" },
@@ -77,7 +85,8 @@ export const enterpriseServicesData = [
       {
         title: "Real-Time Journey Orchestration",
         icon: ZapIcon,
-        description: "Trigger personalized communications based on real-time customer events and behavioral signals.",
+        description:
+          "Trigger personalized communications based on real-time customer events and behavioral signals.",
         techStack: [
           { name: "Twilio", label: "SMS Gateway" },
           { name: "Apigee", label: "API Gateway" },
@@ -89,7 +98,8 @@ export const enterpriseServicesData = [
       {
         title: "Compliance & Audit Automation",
         icon: ShieldIcon,
-        description: "Automated compliance checks, audit trails, and regulatory reporting for all communications.",
+        description:
+          "Automated compliance checks, audit trails, and regulatory reporting for all communications.",
         techStack: [
           { name: "OneTrust", label: "GDPR" },
           { name: "Actimize", label: "FINRA" },
@@ -101,7 +111,8 @@ export const enterpriseServicesData = [
       {
         title: "Predictive Engagement Analytics",
         icon: ChartIcon,
-        description: "Analyze engagement patterns and predict optimal communication timing across all channels.",
+        description:
+          "Analyze engagement patterns and predict optimal communication timing across all channels.",
         techStack: [
           { name: "Databricks", label: "Analytics" },
           { name: "Power BI", label: "Dashboards" },
@@ -114,9 +125,10 @@ export const enterpriseServicesData = [
   },
   {
     id: "customer-experience-crm",
-    label: "Customer Experience & CRM",
+    label: "Enterprise Application",
     navIcon: SmileIcon,
-    subtitle: "Deliver hyper-personalized customer journeys powered by AI across every CRM touchpoint.",
+    subtitle:
+      "Deliver hyper-personalized customer journeys powered by AI across every CRM touchpoint.",
     features: [
       "360° customer view with real-time AI insights",
       "Intelligent case routing and sentiment analysis",
@@ -127,7 +139,8 @@ export const enterpriseServicesData = [
       {
         title: "AI-Powered Customer Insights",
         icon: BrainIcon,
-        description: "Surface predictive customer behavior and churn risk from unified CRM data lakes.",
+        description:
+          "Surface predictive customer behavior and churn risk from unified CRM data lakes.",
         techStack: [
           { name: "Salesforce Einstein", label: "CRM AI" },
           { name: "Snowflake", label: "Data Cloud" },
@@ -139,7 +152,8 @@ export const enterpriseServicesData = [
       {
         title: "Omnichannel Service Hub",
         icon: GlobeIcon,
-        description: "Connect voice, chat, email, and social channels into a single agent workspace.",
+        description:
+          "Connect voice, chat, email, and social channels into a single agent workspace.",
         techStack: [
           { name: "Genesys", label: "Contact Center" },
           { name: "Zendesk", label: "Ticketing" },
@@ -151,7 +165,8 @@ export const enterpriseServicesData = [
       {
         title: "Loyalty & Retention Engine",
         icon: ChartIcon,
-        description: "Build AI-driven loyalty programs with personalized offers and reward optimization.",
+        description:
+          "Build AI-driven loyalty programs with personalized offers and reward optimization.",
         techStack: [
           { name: "Adobe Target", label: "Personalization" },
           { name: "Segment", label: "CDP" },
@@ -163,7 +178,8 @@ export const enterpriseServicesData = [
       {
         title: "Voice of Customer Analytics",
         icon: ZapIcon,
-        description: "Extract themes and sentiment from surveys, calls, and reviews using NLP pipelines.",
+        description:
+          "Extract themes and sentiment from surveys, calls, and reviews using NLP pipelines.",
         techStack: [
           { name: "Azure OpenAI", label: "NLP" },
           { name: "Qualtrics", label: "Surveys" },
@@ -175,7 +191,8 @@ export const enterpriseServicesData = [
       {
         title: "CRM Data Modernization",
         icon: RefreshIcon,
-        description: "Consolidate fragmented CRM instances with automated deduplication and enrichment.",
+        description:
+          "Consolidate fragmented CRM instances with automated deduplication and enrichment.",
         techStack: [
           { name: "Informatica", label: "MDM" },
           { name: "MuleSoft", label: "Integration" },
@@ -187,7 +204,8 @@ export const enterpriseServicesData = [
       {
         title: "Privacy-First CX Compliance",
         icon: ShieldIcon,
-        description: "Enforce consent management and data residency rules across all customer interactions.",
+        description:
+          "Enforce consent management and data residency rules across all customer interactions.",
         techStack: [
           { name: "OneTrust", label: "Consent" },
           { name: "Salesforce", label: "CRM" },
@@ -202,7 +220,8 @@ export const enterpriseServicesData = [
     id: "digital-experience",
     label: "Digital Experience",
     navIcon: SparklesIcon,
-    subtitle: "Create immersive, AI-enhanced digital experiences that convert and delight users.",
+    subtitle:
+      "Create immersive, AI-enhanced digital experiences that convert and delight users.",
     features: [
       "Composable experience platforms at enterprise scale",
       "AI-driven content personalization in real time",
@@ -213,7 +232,8 @@ export const enterpriseServicesData = [
       {
         title: "Composable Experience Platform",
         icon: GlobeIcon,
-        description: "Build modular digital experiences with API-first architecture and micro-frontends.",
+        description:
+          "Build modular digital experiences with API-first architecture and micro-frontends.",
         techStack: [
           { name: "Contentful", label: "Headless CMS" },
           { name: "Next.js", label: "Frontend" },
@@ -225,7 +245,8 @@ export const enterpriseServicesData = [
       {
         title: "AI Content Personalization",
         icon: BrainIcon,
-        description: "Dynamically adapt page content, layouts, and CTAs based on visitor intent signals.",
+        description:
+          "Dynamically adapt page content, layouts, and CTAs based on visitor intent signals.",
         techStack: [
           { name: "Adobe AEM", label: "CMS" },
           { name: "Optimizely", label: "A/B Testing" },
@@ -237,7 +258,8 @@ export const enterpriseServicesData = [
       {
         title: "Design System Acceleration",
         icon: SparklesIcon,
-        description: "Deploy enterprise design systems with AI-assisted component generation and documentation.",
+        description:
+          "Deploy enterprise design systems with AI-assisted component generation and documentation.",
         techStack: [
           { name: "Figma", label: "Design" },
           { name: "Storybook", label: "Components" },
@@ -249,7 +271,8 @@ export const enterpriseServicesData = [
       {
         title: "Digital Accessibility Suite",
         icon: ShieldIcon,
-        description: "Automated WCAG compliance scanning and remediation across all digital properties.",
+        description:
+          "Automated WCAG compliance scanning and remediation across all digital properties.",
         techStack: [
           { name: "axe DevTools", label: "Auditing" },
           { name: "Siteimprove", label: "Monitoring" },
@@ -261,7 +284,8 @@ export const enterpriseServicesData = [
       {
         title: "Experience Analytics",
         icon: ChartIcon,
-        description: "Track user journeys, funnel drop-offs, and conversion drivers with AI anomaly detection.",
+        description:
+          "Track user journeys, funnel drop-offs, and conversion drivers with AI anomaly detection.",
         techStack: [
           { name: "Google Analytics 4", label: "Web Analytics" },
           { name: "Hotjar", label: "Heatmaps" },
@@ -273,7 +297,8 @@ export const enterpriseServicesData = [
       {
         title: "Legacy Portal Migration",
         icon: RefreshIcon,
-        description: "Modernize outdated portals to cloud-native architectures with zero-downtime cutover.",
+        description:
+          "Modernize outdated portals to cloud-native architectures with zero-downtime cutover.",
         techStack: [
           { name: "SharePoint", label: "Legacy Portal" },
           { name: "Azure", label: "Cloud" },
@@ -288,7 +313,8 @@ export const enterpriseServicesData = [
     id: "strategy-modernization",
     label: "Strategy & Modernization",
     navIcon: BuildingIcon,
-    subtitle: "Transform legacy enterprises with AI-first roadmaps and accelerated modernization programs.",
+    subtitle:
+      "Transform legacy enterprises with AI-first roadmaps and accelerated modernization programs.",
     features: [
       "End-to-end digital transformation strategy",
       "Legacy system assessment and rationalization",
@@ -299,7 +325,8 @@ export const enterpriseServicesData = [
       {
         title: "AI Transformation Roadmap",
         icon: BrainIcon,
-        description: "Define prioritized AI use cases with business case modeling and maturity assessments.",
+        description:
+          "Define prioritized AI use cases with business case modeling and maturity assessments.",
         techStack: [
           { name: "Microsoft Copilot", label: "AI Strategy" },
           { name: "LeanIX", label: "EA Tooling" },
@@ -311,7 +338,8 @@ export const enterpriseServicesData = [
       {
         title: "Application Portfolio Rationalization",
         icon: ChartIcon,
-        description: "Inventory, assess, and retire redundant applications to reduce technical debt.",
+        description:
+          "Inventory, assess, and retire redundant applications to reduce technical debt.",
         techStack: [
           { name: "ServiceNow", label: "ITAM" },
           { name: "CAST Highlight", label: "Assessment" },
@@ -323,7 +351,8 @@ export const enterpriseServicesData = [
       {
         title: "Cloud Migration Factory",
         icon: RefreshIcon,
-        description: "Industrialized migration pipelines for lift-shift, replatform, and refactor strategies.",
+        description:
+          "Industrialized migration pipelines for lift-shift, replatform, and refactor strategies.",
         techStack: [
           { name: "AWS Migration Hub", label: "Migration" },
           { name: "Azure Migrate", label: "Assessment" },
@@ -335,7 +364,8 @@ export const enterpriseServicesData = [
       {
         title: "Enterprise Architecture Modernization",
         icon: BuildingIcon,
-        description: "Transition from monoliths to event-driven microservices with domain-driven design.",
+        description:
+          "Transition from monoliths to event-driven microservices with domain-driven design.",
         techStack: [
           { name: "Confluent", label: "Event Streaming" },
           { name: "Kong", label: "API Gateway" },
@@ -347,7 +377,8 @@ export const enterpriseServicesData = [
       {
         title: "FinOps & Cost Optimization",
         icon: ZapIcon,
-        description: "Implement cloud cost governance with AI-driven rightsizing and spend forecasting.",
+        description:
+          "Implement cloud cost governance with AI-driven rightsizing and spend forecasting.",
         techStack: [
           { name: "CloudHealth", label: "FinOps" },
           { name: "Spot.io", label: "Optimization" },
@@ -359,7 +390,8 @@ export const enterpriseServicesData = [
       {
         title: "Change & Adoption Programs",
         icon: ShieldIcon,
-        description: "Drive organizational readiness with training, champions networks, and success metrics.",
+        description:
+          "Drive organizational readiness with training, champions networks, and success metrics.",
         techStack: [
           { name: "WalkMe", label: "Digital Adoption" },
           { name: "Microsoft Viva", label: "Employee Experience" },
@@ -374,7 +406,8 @@ export const enterpriseServicesData = [
     id: "digital-engineering",
     label: "Digital Engineering",
     navIcon: CpuIcon,
-    subtitle: "Build resilient, cloud-native platforms with AI-accelerated software engineering practices.",
+    subtitle:
+      "Build resilient, cloud-native platforms with AI-accelerated software engineering practices.",
     features: [
       "DevSecOps pipelines with AI code assistance",
       "Microservices and API-first architecture",
@@ -385,7 +418,8 @@ export const enterpriseServicesData = [
       {
         title: "AI-Assisted Development",
         icon: BrainIcon,
-        description: "Accelerate delivery with copilot integrations, code review bots, and automated documentation.",
+        description:
+          "Accelerate delivery with copilot integrations, code review bots, and automated documentation.",
         techStack: [
           { name: "GitHub Copilot", label: "Code AI" },
           { name: "SonarQube", label: "Code Quality" },
@@ -397,7 +431,8 @@ export const enterpriseServicesData = [
       {
         title: "Cloud-Native Platform Engineering",
         icon: CpuIcon,
-        description: "Golden-path developer portals with self-service infrastructure and paved roads.",
+        description:
+          "Golden-path developer portals with self-service infrastructure and paved roads.",
         techStack: [
           { name: "Backstage", label: "Developer Portal" },
           { name: "Kubernetes", label: "Orchestration" },
@@ -409,7 +444,8 @@ export const enterpriseServicesData = [
       {
         title: "API Management & Integration",
         icon: GlobeIcon,
-        description: "Design, secure, and monetize APIs with full lifecycle governance and analytics.",
+        description:
+          "Design, secure, and monetize APIs with full lifecycle governance and analytics.",
         techStack: [
           { name: "Apigee", label: "API Gateway" },
           { name: "MuleSoft", label: "Integration" },
@@ -421,7 +457,8 @@ export const enterpriseServicesData = [
       {
         title: "Intelligent Test Automation",
         icon: ZapIcon,
-        description: "AI-generated test cases, self-healing scripts, and continuous quality gates in CI/CD.",
+        description:
+          "AI-generated test cases, self-healing scripts, and continuous quality gates in CI/CD.",
         techStack: [
           { name: "Selenium", label: "UI Testing" },
           { name: "k6", label: "Load Testing" },
@@ -433,7 +470,8 @@ export const enterpriseServicesData = [
       {
         title: "DevSecOps Pipeline",
         icon: ShieldIcon,
-        description: "Shift-left security with SAST, DAST, SCA, and policy-as-code in every deployment.",
+        description:
+          "Shift-left security with SAST, DAST, SCA, and policy-as-code in every deployment.",
         techStack: [
           { name: "Snyk", label: "Security" },
           { name: "HashiCorp Vault", label: "Secrets" },
@@ -445,7 +483,8 @@ export const enterpriseServicesData = [
       {
         title: "Observability Platform",
         icon: ChartIcon,
-        description: "Unified logging, metrics, and tracing with AI-powered incident detection and root cause analysis.",
+        description:
+          "Unified logging, metrics, and tracing with AI-powered incident detection and root cause analysis.",
         techStack: [
           { name: "Datadog", label: "APM" },
           { name: "Grafana", label: "Dashboards" },
@@ -460,7 +499,8 @@ export const enterpriseServicesData = [
     id: "data-management",
     label: "Data Management",
     navIcon: DatabaseIcon,
-    subtitle: "Unlock enterprise data value with AI-powered governance, integration, and analytics platforms.",
+    subtitle:
+      "Unlock enterprise data value with AI-powered governance, integration, and analytics platforms.",
     features: [
       "Unified data mesh and fabric architectures",
       "Real-time data pipelines and streaming analytics",
@@ -471,7 +511,8 @@ export const enterpriseServicesData = [
       {
         title: "Data Lakehouse Platform",
         icon: DatabaseIcon,
-        description: "Consolidate structured and unstructured data on a scalable lakehouse with open formats.",
+        description:
+          "Consolidate structured and unstructured data on a scalable lakehouse with open formats.",
         techStack: [
           { name: "Databricks", label: "Lakehouse" },
           { name: "Delta Lake", label: "Storage" },
@@ -483,7 +524,8 @@ export const enterpriseServicesData = [
       {
         title: "Real-Time Data Streaming",
         icon: ZapIcon,
-        description: "Ingest and process high-volume event streams for operational and analytical workloads.",
+        description:
+          "Ingest and process high-volume event streams for operational and analytical workloads.",
         techStack: [
           { name: "Apache Kafka", label: "Streaming" },
           { name: "Flink", label: "Processing" },
@@ -495,7 +537,8 @@ export const enterpriseServicesData = [
       {
         title: "Master Data Management",
         icon: RefreshIcon,
-        description: "Create golden records with AI-powered matching, deduplication, and enrichment.",
+        description:
+          "Create golden records with AI-powered matching, deduplication, and enrichment.",
         techStack: [
           { name: "Informatica MDM", label: "MDM" },
           { name: "Collibra", label: "Governance" },
@@ -507,7 +550,8 @@ export const enterpriseServicesData = [
       {
         title: "Data Governance & Lineage",
         icon: ShieldIcon,
-        description: "Automated cataloging, classification, and policy enforcement across the data estate.",
+        description:
+          "Automated cataloging, classification, and policy enforcement across the data estate.",
         techStack: [
           { name: "Alation", label: "Catalog" },
           { name: "Privacera", label: "Access Control" },
@@ -519,7 +563,8 @@ export const enterpriseServicesData = [
       {
         title: "AI-Ready Data Pipelines",
         icon: BrainIcon,
-        description: "Feature stores and vector databases optimized for ML and generative AI workloads.",
+        description:
+          "Feature stores and vector databases optimized for ML and generative AI workloads.",
         techStack: [
           { name: "Snowflake", label: "Warehouse" },
           { name: "Pinecone", label: "Vector DB" },
@@ -531,7 +576,8 @@ export const enterpriseServicesData = [
       {
         title: "Enterprise BI & Analytics",
         icon: ChartIcon,
-        description: "Self-service analytics with AI-generated insights and natural language query interfaces.",
+        description:
+          "Self-service analytics with AI-generated insights and natural language query interfaces.",
         techStack: [
           { name: "Power BI", label: "BI" },
           { name: "Tableau", label: "Visualization" },
@@ -546,7 +592,8 @@ export const enterpriseServicesData = [
     id: "agentic-automation",
     label: "Agentic Automation",
     navIcon: BotIcon,
-    subtitle: "Deploy autonomous AI agents that orchestrate complex workflows across your enterprise.",
+    subtitle:
+      "Deploy autonomous AI agents that orchestrate complex workflows across your enterprise.",
     features: [
       "Multi-agent systems for end-to-end process automation",
       "Human-in-the-loop governance and oversight",
@@ -557,7 +604,8 @@ export const enterpriseServicesData = [
       {
         title: "Autonomous Process Agents",
         icon: BotIcon,
-        description: "Deploy AI agents that plan, execute, and adapt multi-step business processes autonomously.",
+        description:
+          "Deploy AI agents that plan, execute, and adapt multi-step business processes autonomously.",
         techStack: [
           { name: "LangGraph", label: "Agent Framework" },
           { name: "Azure OpenAI", label: "LLM" },
@@ -569,7 +617,8 @@ export const enterpriseServicesData = [
       {
         title: "Enterprise Agent Orchestration",
         icon: ZapIcon,
-        description: "Coordinate specialized agents across departments with shared memory and tool registries.",
+        description:
+          "Coordinate specialized agents across departments with shared memory and tool registries.",
         techStack: [
           { name: "CrewAI", label: "Multi-Agent" },
           { name: "Redis", label: "Memory Store" },
@@ -581,7 +630,8 @@ export const enterpriseServicesData = [
       {
         title: "RPA + AI Hybrid Automation",
         icon: RefreshIcon,
-        description: "Combine traditional RPA bots with LLM agents for intelligent document and workflow handling.",
+        description:
+          "Combine traditional RPA bots with LLM agents for intelligent document and workflow handling.",
         techStack: [
           { name: "UiPath", label: "RPA" },
           { name: "Microsoft Power Automate", label: "Workflow" },
@@ -593,7 +643,8 @@ export const enterpriseServicesData = [
       {
         title: "Agent Safety & Governance",
         icon: ShieldIcon,
-        description: "Guardrails, audit trails, and policy engines to ensure responsible autonomous operations.",
+        description:
+          "Guardrails, audit trails, and policy engines to ensure responsible autonomous operations.",
         techStack: [
           { name: "Guardrails AI", label: "Safety" },
           { name: "LangSmith", label: "Observability" },
@@ -605,7 +656,8 @@ export const enterpriseServicesData = [
       {
         title: "MCP Tool Integration",
         icon: GlobeIcon,
-        description: "Connect agents to enterprise systems through Model Context Protocol servers and APIs.",
+        description:
+          "Connect agents to enterprise systems through Model Context Protocol servers and APIs.",
         techStack: [
           { name: "MCP SDK", label: "Protocol" },
           { name: "Apigee", label: "API Gateway" },
@@ -617,7 +669,8 @@ export const enterpriseServicesData = [
       {
         title: "Agent Performance Analytics",
         icon: ChartIcon,
-        description: "Monitor agent success rates, latency, cost, and human escalation patterns in real time.",
+        description:
+          "Monitor agent success rates, latency, cost, and human escalation patterns in real time.",
         techStack: [
           { name: "Datadog", label: "Monitoring" },
           { name: "Langfuse", label: "LLM Ops" },
@@ -631,7 +684,9 @@ export const enterpriseServicesData = [
 ];
 
 export const getEnterpriseServiceIndexById = (serviceId) => {
-  const index = enterpriseServicesData.findIndex((service) => service.id === serviceId);
+  const index = enterpriseServicesData.findIndex(
+    (service) => service.id === serviceId,
+  );
   return index >= 0 ? index : 0;
 };
 
