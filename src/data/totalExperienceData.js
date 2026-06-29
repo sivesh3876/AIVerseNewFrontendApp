@@ -1,4 +1,10 @@
-export const TOTAL_EXPERIENCE_ROUTE = "/customer-experience";
+export const CUSTOMER_EXPERIENCE_ROUTE = "/customer-experience";
+export const EMPLOYEE_EXPERIENCE_ROUTE = "/employee-experience";
+export const BUSINESS_EXPERIENCE_ROUTE = "/business-experience";
+export const TOTAL_EXPERIENCE_DETAIL_ROUTE = "/total-experience";
+
+/** @deprecated Use CUSTOMER_EXPERIENCE_ROUTE */
+export const TOTAL_EXPERIENCE_ROUTE = CUSTOMER_EXPERIENCE_ROUTE;
 
 export const totalExperienceFrameworkMeta = {
   title: "Espire - Total Experience Framework",
@@ -18,7 +24,7 @@ export const totalExperienceInputPillars = [
       "Campaign & e-commerce AI",
       "Predictive CX Insights",
     ],
-    detailPath: TOTAL_EXPERIENCE_ROUTE,
+    detailPath: CUSTOMER_EXPERIENCE_ROUTE,
   },
   {
     id: "ex",
@@ -30,7 +36,7 @@ export const totalExperienceInputPillars = [
       "Employee Content Management",
       "Intelligent Automation",
     ],
-    detailPath: null,
+    detailPath: EMPLOYEE_EXPERIENCE_ROUTE,
   },
   {
     id: "bx",
@@ -42,7 +48,7 @@ export const totalExperienceInputPillars = [
       "Industry ERP + Agentic AI",
       "Business Intelligence & Reporting",
     ],
-    detailPath: null,
+    detailPath: BUSINESS_EXPERIENCE_ROUTE,
   },
 ];
 
@@ -52,7 +58,7 @@ export const totalExperienceResultPillar = {
   title: "Total Experience",
   color: "#84cc16",
   highlights: ["Happy Customer - endless experience"],
-  detailPath: null,
+  detailPath: TOTAL_EXPERIENCE_DETAIL_ROUTE,
   isResult: true,
 };
 
@@ -64,7 +70,6 @@ export const totalExperienceFoundations = [
   "Security & Governance",
 ];
 
-// Backward-compatible export for any existing imports
 export const totalExperiencePillars = [
   ...totalExperienceInputPillars,
   totalExperienceResultPillar,
