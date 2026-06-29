@@ -133,13 +133,23 @@ const CustomerExperienceJourney = ({
           ))}
         </div>
 
-        <div
-          className="customer_experience_journey__columns"
-          style={{ "--journey-rows": maxRows }}
-        >
+        <div className="customer_experience_journey__columns">
           {stages.map((stage) => (
             <div className="customer_experience_journey__column" key={stage.id}>
-              {Array.from({ length: maxRows }, (_, rowIndex) => {
+              {stage.stageDescription && (
+                <div
+                  className="customer_experience_journey__stage-description"
+                  style={{ borderTopColor: stage.headerColor }}
+                >
+                  <p>{stage.stageDescription}</p>
+                </div>
+              )}
+
+              <div
+                className="customer_experience_journey__column-cards"
+                style={{ "--journey-rows": maxRows }}
+              >
+                {Array.from({ length: maxRows }, (_, rowIndex) => {
                 const card = stage.cards[rowIndex];
 
                 if (!card) {
@@ -169,16 +179,28 @@ const CustomerExperienceJourney = ({
                     </div>
                     <h3>{card.title}</h3>
                     <p>{card.description}</p>
-                    <span
-                      className="customer_experience_journey__metric"
-                      style={{ color: card.metricColor }}
-                    >
-                      <span aria-hidden="true">★</span>
-                      {card.metric}
-                    </span>
+                    {card.linkPath && card.linkLabel ? (
+                      <Link
+                        to={card.linkPath}
+                        className="customer_experience_journey__card-link"
+                      >
+                        {card.linkLabel}
+                      </Link>
+                    ) : (
+                      card.metric && (
+                        <span
+                          className="customer_experience_journey__metric"
+                          style={{ color: card.metricColor }}
+                        >
+                          <span aria-hidden="true">★</span>
+                          {card.metric}
+                        </span>
+                      )
+                    )}
                   </article>
                 );
               })}
+              </div>
             </div>
           ))}
         </div>
