@@ -5,8 +5,6 @@ export const totalExperienceDetailMeta = {
     "Where Customer, Employee, and Business experiences converge - powered by Agentic AI & Gen AI to deliver seamless, end-to-end value.",
   intro:
     "Total Experience is the outcome when CX, EX, and BX work as one. Espire AI orchestrates people, processes, and platforms - creating happy customers, empowered employees, and agile businesses.",
-  ctaLabel: "Explore Full Experience Map",
-  ctaPath: "/explore-solutions",
 };
 
 export const totalExperienceJourneyStages = [
