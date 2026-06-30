@@ -61,6 +61,44 @@ const STATIC_ENTRIES = [
     path: "/customer-experience",
     type: "page",
   },
+  {
+    title: "Employee Experience - Espire AI Support",
+    description: "AI support across the employee lifecycle",
+    keywords: [
+      "employee experience",
+      "ex",
+      "employee lifecycle",
+      "workforce ai",
+      "co-pilot",
+    ],
+    path: "/employee-experience",
+    type: "page",
+  },
+  {
+    title: "Business Experience - Espire AI Support",
+    description: "AI support across the business lifecycle",
+    keywords: [
+      "business experience",
+      "bx",
+      "erp ai",
+      "business intelligence",
+      "automation",
+    ],
+    path: "/business-experience",
+    type: "page",
+  },
+  {
+    title: "Total Experience - Espire AI Unified",
+    description: "Unified CX, EX, and BX experience framework",
+    keywords: [
+      "total experience",
+      "tx",
+      "unified experience",
+      "cx ex bx",
+    ],
+    path: "/total-experience",
+    type: "page",
+  },
 ];
 
 const INDUSTRY_ENTRIES = [

@@ -13,6 +13,9 @@ import IndustrySolutionsPage from "./pages/IndustrySolutionsPage";
 import SolutionDetails from "./pages/SolutionDetails";
 import Solutions from "./pages/Solutions";
 import CustomerExperiencePage from "./pages/CustomerExperiencePage";
+import EmployeeExperiencePage from "./pages/EmployeeExperiencePage";
+import BusinessExperiencePage from "./pages/BusinessExperiencePage";
+import TotalExperienceDetailPage from "./pages/TotalExperienceDetailPage";
 import ContactPage from "./pages/ContactPage";
 import CareersPage from "./pages/CareersPage";
 import BlogsPage from "./pages/BlogsPage";
@@ -57,6 +60,9 @@ function App() {
         <Route path="/industry-solutions" element={<IndustrySolutionsPage />} />
         <Route path="/solutions" element={<Solutions />} />
         <Route path="/customer-experience" element={<CustomerExperiencePage />} />
+        <Route path="/employee-experience" element={<EmployeeExperiencePage />} />
+        <Route path="/business-experience" element={<BusinessExperiencePage />} />
+        <Route path="/total-experience" element={<TotalExperienceDetailPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/careers" element={<CareersPage />} />
         <Route path="/blogs" element={<BlogsPage />} />
