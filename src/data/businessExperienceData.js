@@ -5,8 +5,6 @@ export const businessExperienceMeta = {
     "From fragmented operations to intelligent, connected enterprises - drive efficiency with Gen AI automation, ERP intelligence, and real-time business insights.",
   intro:
     "Modern BX demands agility, visibility, and precision across every process. Espire AI unifies data, systems, and decisions - turning operational complexity into competitive advantage.",
-  ctaLabel: "Explore Business Experience Solutions",
-  ctaPath: "/explore-solutions?service=agentic-automation",
 };
 
 export const businessJourneyStages = [
