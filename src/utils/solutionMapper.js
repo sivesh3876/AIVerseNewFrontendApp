@@ -402,7 +402,7 @@ export const mapFormToCapability = (
       DemoLink: form.DemoLink,
       DemoRecordedVideoLink: "",
       BusinessDomain: form.BusinessDomain,
-      Client: form.Client,
+      Client: (form.AiFoundation || []).join(", "),
     },
     { evangelistDirectory, solutionOwners },
   );
