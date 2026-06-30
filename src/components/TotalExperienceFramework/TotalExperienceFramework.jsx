@@ -6,6 +6,7 @@ import {
   totalExperienceInputPillars,
   totalExperienceResultPillar,
 } from "../../data/totalExperienceData";
+import { getFoundationIcons } from "./FoundationIcons";
 import "./TotalExperienceFramework.scss";
 
 const PillarCard = ({ pillar, onClick }) => {
@@ -143,6 +144,8 @@ const TotalExperienceFramework = ({
             {foundations.map((item) => {
               const label = getFoundationLabel(item);
               const key = typeof item === "string" ? item : item.id;
+              const foundationIcons =
+                typeof item === "string" ? [] : getFoundationIcons(item);
 
               return (
                 <button
@@ -152,7 +155,19 @@ const TotalExperienceFramework = ({
                   onClick={() => handleFoundationClick(item)}
                   aria-label={`Explore ${label} domain`}
                 >
-                  {label}
+                  {foundationIcons.length > 0 ? (
+                    <span className="total_experience_framework__tag-icons">
+                      {foundationIcons.map(({ id, Icon }) => (
+                        <span
+                          key={id}
+                          className="total_experience_framework__tag-icon"
+                        >
+                          <Icon />
+                        </span>
+                      ))}
+                    </span>
+                  ) : null}
+                  <span>{label}</span>
                 </button>
               );
             })}
