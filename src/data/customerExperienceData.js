@@ -5,8 +5,6 @@ export const customerExperienceMeta = {
     "From generic interactions to hyper-personalized, predictive customer journeys - powered by Agentic AI & Gen AI, at every phase.",
   intro:
     "Modern CX demands enterprise-scale agility combined with surgical personalization. Espire AI bridges the gap between massive data silos and individual customer needs, turning every interaction into a moment of value.",
-  ctaLabel: "Explore Full Journey Map",
-  ctaPath: "/explore-solutions?service=enterprise-application",
 };
 
 export const customerJourneyStages = [
