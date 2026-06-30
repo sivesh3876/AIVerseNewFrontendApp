@@ -6,7 +6,7 @@ export const customerExperienceMeta = {
   intro:
     "Modern CX demands enterprise-scale agility combined with surgical personalization. Espire AI bridges the gap between massive data silos and individual customer needs, turning every interaction into a moment of value.",
   ctaLabel: "Explore Full Journey Map",
-  ctaPath: "/explore-solutions?service=customer-experience-crm",
+  ctaPath: "/explore-solutions?service=enterprise-application",
 };
 
 export const customerJourneyStages = [
@@ -98,7 +98,7 @@ export const customerJourneyStages = [
           "Inspera is a lightweight CRM and commercial operations platform designed to give organisations a single, structured workspace for managing the full customer engagement lifecycle. It brings together lead capture, customer and contact management, opportunity tracking, quotation creation, approval governance, task follow-up, commercial handover and reporting into one connected solution.",
         linkLabel: "Inspera CRM",
         linkPath:
-          "/explore-solutions?service=customer-experience-crm&solution=api-60",
+          "/explore-solutions?service=enterprise-application&solution=api-60",
       },
     ],
   },
