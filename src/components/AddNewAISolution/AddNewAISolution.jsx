@@ -28,10 +28,21 @@ const CHAR_LIMITS = {
   TechHighlights: 150,
 };
 
+const AI_FOUNDATION_OPTIONS = ["Azure", "Open AI", "Claude", "Cursor"];
+
 const sanitizeEvangelists = (evangelists = []) =>
   evangelists.filter(
     (name) => name && name.trim() && name !== "Undefined",
   );
+
+const parseAiFoundation = (value = "") => {
+  const items = String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return items.filter((item) => AI_FOUNDATION_OPTIONS.includes(item));
+};
 
 const initialFormState = {
   Title: "",
@@ -41,7 +52,7 @@ const initialFormState = {
   SolutionContext: "",
   TechHighlights: "",
   RepositoryUrl: "",
-  Client: "",
+  AiFoundation: [],
   DemoLink: "",
 };
 
@@ -327,7 +338,9 @@ const AddNewAISolution = () => {
             SolutionContext: solution.SolutionContext || "",
             TechHighlights: solution.TechHighlights || "",
             RepositoryUrl: solution.RepositoryUrl || "",
-            Client: solution.Client || "",
+            AiFoundation: parseAiFoundation(
+              solution.AiFoundation || solution.Client,
+            ),
             DemoLink: solution.DemoLink || "",
           });
 
@@ -399,6 +412,27 @@ const AddNewAISolution = () => {
       AiEvangelists: sanitizeEvangelists(
         prev.AiEvangelists.filter((value) => value !== name),
       ),
+    }));
+  };
+
+  const toggleFoundation = (name, checked) => {
+    setForm((prev) => {
+      const selected = prev.AiFoundation || [];
+      const next = checked
+        ? [...selected, name]
+        : selected.filter((value) => value !== name);
+
+      return {
+        ...prev,
+        AiFoundation: next,
+      };
+    });
+  };
+
+  const removeFoundation = (name) => {
+    setForm((prev) => ({
+      ...prev,
+      AiFoundation: (prev.AiFoundation || []).filter((value) => value !== name),
     }));
   };
 
@@ -516,6 +550,15 @@ const AddNewAISolution = () => {
         if (key === "AiEvangelists") {
           if (Array.isArray(form[key]) && form[key].length > 0) {
             formDataToSend.append(key, form[key].join(", "));
+          }
+          return;
+        }
+
+        if (key === "AiFoundation") {
+          if (Array.isArray(form[key]) && form[key].length > 0) {
+            const foundationValue = form[key].join(", ");
+            formDataToSend.append("AiFoundation", foundationValue);
+            formDataToSend.append("Client", foundationValue);
           }
           return;
         }
@@ -852,14 +895,50 @@ const AddNewAISolution = () => {
         </div>
 
         <div className="add_ai_solution__field">
-          <label htmlFor="Client">Client Name</label>
-          <input
-            id="Client"
-            type="text"
-            placeholder="e.g. Acme Corp"
-            value={form.Client}
-            onChange={(event) => updateField("Client", event.target.value)}
-          />
+          <label htmlFor="aiFoundationOptions">AI Foundation</label>
+
+          <div
+            id="aiFoundationOptions"
+            className="add_ai_solution__evangelist-checkboxes"
+          >
+            {AI_FOUNDATION_OPTIONS.map((option) => (
+              <label
+                key={option}
+                className="add_ai_solution__checkbox-item"
+              >
+                <input
+                  type="checkbox"
+                  value={option}
+                  checked={form.AiFoundation.includes(option)}
+                  onChange={(event) =>
+                    toggleFoundation(option, event.target.checked)
+                  }
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+
+          <div className="add_ai_solution__selected-items">
+            <span className="add_ai_solution__selected-label">Selected:</span>
+            {form.AiFoundation.length === 0 ? (
+              <span className="add_ai_solution__selected-empty">None</span>
+            ) : (
+              form.AiFoundation.map((name) => (
+                <span key={name} className="add_ai_solution__selected-badge">
+                  {name}
+                  <button
+                    type="button"
+                    className="add_ai_solution__badge-remove"
+                    onClick={() => removeFoundation(name)}
+                    aria-label={`Remove ${name}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
         </div>
       </section>
 
