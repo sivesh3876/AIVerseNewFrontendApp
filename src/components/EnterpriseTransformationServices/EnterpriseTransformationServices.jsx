@@ -13,18 +13,12 @@ import {
 
 const defaultServices = [
   {
-    icon: CustomerCommunicationIcon,
-    iconBg: "#4D90E3",
-    title: "Customer Communication Management",
-    exploreServiceId: "customer-communication-management",
-    description: "Omnichannel messaging with AI-driven content personalization",
-  },
-  {
-    icon: CxCrmIcon,
-    iconBg: "#3A8D9D",
-    title: "Customer Experience & CRM",
-    exploreServiceId: "customer-experience-crm",
-    description: "AI-enhanced CRM platforms with predictive customer insights",
+    icon: DigitalEngineeringIcon,
+    iconBg: "#EF8E29",
+    title: "Digital Engineering",
+    exploreServiceId: "digital-engineering",
+    description:
+      "Build AI-native applications with modern cloud-native architectures",
   },
   {
     icon: DigitalExperienceIcon,
@@ -34,12 +28,18 @@ const defaultServices = [
     description: "AI-powered digital platforms with advanced personalization",
   },
   {
-    icon: DigitalEngineeringIcon,
+    icon: CustomerCommunicationIcon,
+    iconBg: "#4D90E3",
+    title: "Customer Communication Management",
+    exploreServiceId: "customer-communication-management",
+    description: "Omnichannel messaging with AI-driven content personalization",
+  },
+  {
+    icon: AgenticAutomationIcon,
     iconBg: "#EF8E29",
-    title: "Digital Engineering",
-    exploreServiceId: "digital-engineering",
-    description:
-      "Build AI-native applications with modern cloud-native architectures",
+    title: "Agentic Automation",
+    exploreServiceId: "agentic-automation",
+    description: "Deploy intelligent AI agents for complex business workflows",
   },
   {
     icon: DataManagementIcon,
@@ -50,11 +50,11 @@ const defaultServices = [
       "Modern data platforms, governance, and AI-ready data pipelines",
   },
   {
-    icon: AgenticAutomationIcon,
-    iconBg: "#EF8E29",
-    title: "Agentic Automation",
-    exploreServiceId: "agentic-automation",
-    description: "Deploy intelligent AI agents for complex business workflows",
+    icon: CxCrmIcon,
+    iconBg: "#3A8D9D",
+    title: "Enterprise Application",
+    exploreServiceId: "enterprise-application",
+    description: "AI-enhanced CRM platforms with predictive customer insights",
   },
 ];
 

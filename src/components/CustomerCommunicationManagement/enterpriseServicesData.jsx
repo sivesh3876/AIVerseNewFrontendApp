@@ -10,7 +10,6 @@ import {
   MessageSquareIcon,
   SmileIcon,
   SparklesIcon,
-  BuildingIcon,
   CpuIcon,
   DatabaseIcon,
   BotIcon,
@@ -25,7 +24,7 @@ const coe = {
   tom: { name: "Tom Morrison", title: "Innovation Director", color: "navy" },
 };
 
-export const enterpriseServicesData = [
+export const enterpriseServicesSource = [
   {
     id: "customer-communication-management",
     label: "Customer Communication Management",
@@ -113,8 +112,8 @@ export const enterpriseServicesData = [
     ],
   },
   {
-    id: "customer-experience-crm",
-    label: "Customer Experience & CRM",
+    id: "enterprise-application",
+    label: "Enterprise Application",
     navIcon: SmileIcon,
     subtitle: "Deliver hyper-personalized customer journeys powered by AI across every CRM touchpoint.",
     features: [
@@ -280,92 +279,6 @@ export const enterpriseServicesData = [
           { name: "Kubernetes", label: "Orchestration" },
         ],
         coe: coe.michael,
-        evangelists: [coe.tom],
-      },
-    ],
-  },
-  {
-    id: "strategy-modernization",
-    label: "Strategy & Modernization",
-    navIcon: BuildingIcon,
-    subtitle: "Transform legacy enterprises with AI-first roadmaps and accelerated modernization programs.",
-    features: [
-      "End-to-end digital transformation strategy",
-      "Legacy system assessment and rationalization",
-      "Cloud migration and FinOps optimization",
-      "Change management and adoption frameworks",
-    ],
-    capabilities: [
-      {
-        title: "AI Transformation Roadmap",
-        icon: BrainIcon,
-        description: "Define prioritized AI use cases with business case modeling and maturity assessments.",
-        techStack: [
-          { name: "Microsoft Copilot", label: "AI Strategy" },
-          { name: "LeanIX", label: "EA Tooling" },
-          { name: "Miro", label: "Workshops" },
-        ],
-        coe: coe.sarah,
-        evangelists: [coe.tom, coe.michael],
-      },
-      {
-        title: "Application Portfolio Rationalization",
-        icon: ChartIcon,
-        description: "Inventory, assess, and retire redundant applications to reduce technical debt.",
-        techStack: [
-          { name: "ServiceNow", label: "ITAM" },
-          { name: "CAST Highlight", label: "Assessment" },
-          { name: "Power BI", label: "Reporting" },
-        ],
-        coe: coe.michael,
-        evangelists: [coe.priya],
-      },
-      {
-        title: "Cloud Migration Factory",
-        icon: RefreshIcon,
-        description: "Industrialized migration pipelines for lift-shift, replatform, and refactor strategies.",
-        techStack: [
-          { name: "AWS Migration Hub", label: "Migration" },
-          { name: "Azure Migrate", label: "Assessment" },
-          { name: "Terraform", label: "IaC" },
-        ],
-        coe: coe.michael,
-        evangelists: [coe.robert],
-      },
-      {
-        title: "Enterprise Architecture Modernization",
-        icon: BuildingIcon,
-        description: "Transition from monoliths to event-driven microservices with domain-driven design.",
-        techStack: [
-          { name: "Confluent", label: "Event Streaming" },
-          { name: "Kong", label: "API Gateway" },
-          { name: "Docker", label: "Containers" },
-        ],
-        coe: coe.tom,
-        evangelists: [coe.maria],
-      },
-      {
-        title: "FinOps & Cost Optimization",
-        icon: ZapIcon,
-        description: "Implement cloud cost governance with AI-driven rightsizing and spend forecasting.",
-        techStack: [
-          { name: "CloudHealth", label: "FinOps" },
-          { name: "Spot.io", label: "Optimization" },
-          { name: "Datadog", label: "Monitoring" },
-        ],
-        coe: coe.priya,
-        evangelists: [coe.sarah],
-      },
-      {
-        title: "Change & Adoption Programs",
-        icon: ShieldIcon,
-        description: "Drive organizational readiness with training, champions networks, and success metrics.",
-        techStack: [
-          { name: "WalkMe", label: "Digital Adoption" },
-          { name: "Microsoft Viva", label: "Employee Experience" },
-          { name: "Qualtrics", label: "Feedback" },
-        ],
-        coe: coe.maria,
         evangelists: [coe.tom],
       },
     ],
@@ -630,8 +543,31 @@ export const enterpriseServicesData = [
   },
 ];
 
+const ENTERPRISE_SERVICE_ORDER = [
+  "digital-engineering",
+  "digital-experience",
+  "customer-communication-management",
+  "agentic-automation",
+  "data-management",
+  "enterprise-application",
+];
+
+export const ENTERPRISE_SERVICE_ID_ALIASES = {
+  "customer-experience-crm": "enterprise-application",
+};
+
+export const normalizeEnterpriseServiceId = (serviceId = "") =>
+  ENTERPRISE_SERVICE_ID_ALIASES[serviceId] || serviceId;
+
+export const enterpriseServicesData = ENTERPRISE_SERVICE_ORDER.map((id) =>
+  enterpriseServicesSource.find((service) => service.id === id),
+).filter(Boolean);
+
 export const getEnterpriseServiceIndexById = (serviceId) => {
-  const index = enterpriseServicesData.findIndex((service) => service.id === serviceId);
+  const normalizedId = normalizeEnterpriseServiceId(serviceId);
+  const index = enterpriseServicesData.findIndex(
+    (service) => service.id === normalizedId,
+  );
   return index >= 0 ? index : 0;
 };
 

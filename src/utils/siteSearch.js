@@ -126,7 +126,7 @@ const CAPABILITY_KEYWORDS = [
   {
     title: "Conversational AI",
     keywords: ["conversational ai", "chatbot", "nlp", "language"],
-    path: "/explore-solutions?service=customer-experience-crm",
+    path: "/explore-solutions?service=enterprise-application",
     type: "capability",
   },
   {

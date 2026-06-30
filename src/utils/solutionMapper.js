@@ -43,8 +43,8 @@ const PLACEHOLDER_EVANGELIST = "Undefined";
 
 const domainCodeToServiceId = {
   CustomerCommunicationManagement: "customer-communication-management",
-  CustomerExperienceCRM: "customer-experience-crm",
-  CustomerExperience: "customer-experience-crm",
+  CustomerExperienceCRM: "enterprise-application",
+  CustomerExperience: "enterprise-application",
   DigitalExperience: "digital-experience",
   AIStrategyModernization: "strategy-modernization",
   DigitalEngineering: "digital-engineering",
