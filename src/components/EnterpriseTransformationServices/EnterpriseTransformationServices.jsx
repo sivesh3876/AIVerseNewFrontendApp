@@ -4,31 +4,34 @@ import "./EnterpriseTransformationServices.scss";
 import {
   AgenticAutomationIcon,
   CustomerCommunicationIcon,
-  CustomerExperienceIcon,
   CxCrmIcon,
   DataManagementIcon,
   DigitalEngineeringIcon,
   DigitalExperienceIcon,
   ExternalLinkIcon,
-  StrategyModernizationIcon,
 } from "./ServiceIcons";
 
 const defaultServices = [
   {
-    icon: StrategyModernizationIcon,
-    iconBg: "#18E0CC",
-    title: "Strategy & Modernization",
-    exploreServiceId: "strategy-modernization",
-    description:
-      "AI strategy, roadmap, and legacy system modernization for future-ready enterprises",
+    icon: CustomerCommunicationIcon,
+    iconBg: "#4D90E3",
+    title: "Customer Communication Management",
+    exploreServiceId: "customer-communication-management",
+    description: "Omnichannel messaging with AI-driven content personalization",
   },
   {
-    icon: CustomerExperienceIcon,
-    iconBg: "#4D90E3",
-    title: "Customer Experience",
+    icon: CxCrmIcon,
+    iconBg: "#3A8D9D",
+    title: "Customer Experience & CRM",
     exploreServiceId: "customer-experience-crm",
-    description:
-      "AI-powered personalization and conversational interfaces that delight customers",
+    description: "AI-enhanced CRM platforms with predictive customer insights",
+  },
+  {
+    icon: DigitalExperienceIcon,
+    iconBg: "linear-gradient(135deg, #EF8E29 0%, #18E0CC 100%)",
+    title: "Digital Experience",
+    exploreServiceId: "digital-experience",
+    description: "AI-powered digital platforms with advanced personalization",
   },
   {
     icon: DigitalEngineeringIcon,
@@ -53,30 +56,9 @@ const defaultServices = [
     exploreServiceId: "agentic-automation",
     description: "Deploy intelligent AI agents for complex business workflows",
   },
-  {
-    icon: CustomerCommunicationIcon,
-    iconBg: "#4D90E3",
-    title: "Customer Communication",
-    exploreServiceId: "customer-communication-management",
-    description: "Omnichannel messaging with AI-driven content personalization",
-  },
-  {
-    icon: CxCrmIcon,
-    iconBg: "#3A8D9D",
-    title: "CX & CRM",
-    exploreServiceId: "customer-experience-crm",
-    description: "AI-enhanced CRM platforms with predictive customer insights",
-  },
-  {
-    icon: DigitalExperienceIcon,
-    iconBg: "linear-gradient(135deg, #EF8E29 0%, #18E0CC 100%)",
-    title: "Digital Experience",
-    exploreServiceId: "digital-experience",
-    description: "AI-powered digital platforms with advanced personalization",
-  },
 ];
 
-const CARDS_PER_ROW = 4;
+const CARDS_PER_ROW = 3;
 
 const getCardAnimation = (index) => {
   const positionInRow = index % CARDS_PER_ROW;
