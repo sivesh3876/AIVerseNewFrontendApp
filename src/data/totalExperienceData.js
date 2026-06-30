@@ -63,11 +63,30 @@ export const totalExperienceResultPillar = {
 };
 
 export const totalExperienceFoundations = [
-  "Enterprise-Wide Integration",
-  "Data & Analytics",
-  "Generative AI",
-  "Scalability",
-  "Security & Governance",
+  {
+    id: "azure",
+    label: "Azure",
+    pillarId: "bx",
+    detailPath: BUSINESS_EXPERIENCE_ROUTE,
+  },
+  {
+    id: "open-ai",
+    label: "Open AI",
+    pillarId: "cx",
+    detailPath: CUSTOMER_EXPERIENCE_ROUTE,
+  },
+  {
+    id: "claude",
+    label: "Claude",
+    pillarId: "ex",
+    detailPath: EMPLOYEE_EXPERIENCE_ROUTE,
+  },
+  {
+    id: "cursor",
+    label: "Cursor",
+    pillarId: "tx",
+    detailPath: TOTAL_EXPERIENCE_DETAIL_ROUTE,
+  },
 ];
 
 export const totalExperiencePillars = [
