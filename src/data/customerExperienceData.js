@@ -14,6 +14,8 @@ export const customerJourneyStages = [
     id: "awareness",
     label: "AWARENESS",
     headerColor: "#0d3b6e",
+    stageDescription:
+      "Delivers intuitive, personalized, and responsive digital experiences that create a strong first impression, increasing customer engagement and brand perception.",
     cards: [
       {
         id: "gen-ai-content",
@@ -23,9 +25,10 @@ export const customerJourneyStages = [
         iconColor: "#166534",
         title: "Gen-AI Content Management",
         description:
-          "Automated generation of campaigns, product descriptions, and personalized emails - localized and brand-aligned at enterprise speed.",
-        metric: "60% content cost saving",
-        metricColor: "#166534",
+          "AI assists business users in creating compelling marketing content, campaigns, blogs, emails, and social media posts, helping attract and engage potential customers.",
+        linkLabel: "AI based content assist for business user",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-28",
       },
     ],
   },
@@ -33,18 +36,21 @@ export const customerJourneyStages = [
     id: "consideration",
     label: "CONSIDERATION",
     headerColor: "#2563eb",
+    stageDescription:
+      "Enables rapid creation of interactive prototypes, helping customers visualize solutions early, validate requirements quickly, and make informed decisions with confidence.",
     cards: [
       {
-        id: "hyper-personalized-journeys",
+        id: "document-translation-workflow",
         icon: "journey",
         cardBg: "#eef4ff",
         iconBg: "#dbeafe",
         iconColor: "#2563eb",
-        title: "Hyper-Personalized Journeys",
+        title: "Multilingual Document Access",
         description:
-          "Customers experience hyper-personalized journeys - AI understands behaviour in real time and delivers relevant content, offers, and next steps across channels.",
-        metric: "3.5x engagement lift",
-        metricColor: "#2563eb",
+          "Enables customers to access product information, proposals, brochures, and technical documents in their preferred language, improving understanding and confidence during evaluation.",
+        linkLabel: "AI-Powered Document Translation Workflow",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-70",
       },
     ],
   },
@@ -52,18 +58,47 @@ export const customerJourneyStages = [
     id: "purchase",
     label: "PURCHASE",
     headerColor: "#0f766e",
+    stageDescription:
+      "Streamlines the buying journey through intuitive interfaces and faster solution validation, reducing decision cycles and improving conversion rates.",
     cards: [
       {
-        id: "ai-ecommerce",
-        icon: "cart",
+        id: "purchase-document-translation",
+        icon: "journey",
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "AI-Driven eCommerce",
+        title: "Contract & Quotation Translation",
         description:
-          "AI-powered eCommerce improves discovery and conversion through intelligent recommendations and dynamic pricing.",
-        metric: "42% conversion uplift",
-        metricColor: "#166534",
+          "Accelerates contract, quotation, and compliance document translation, reducing turnaround time and enabling faster purchasing decisions across global markets.",
+        linkLabel: "AI-Powered Document Translation Workflow",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-70",
+      },
+      {
+        id: "purchase-content-assist",
+        icon: "sparkle",
+        cardBg: "#e8f8f2",
+        iconBg: "#d1fae5",
+        iconColor: "#166534",
+        title: "Quotation & Business Communications",
+        description:
+          "Creates quotations, business communications, and customer responses that speed up decision-making and improve the buying experience.",
+        linkLabel: "AI based content assist for business user",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-28",
+      },
+      {
+        id: "purchase-inspera-crm",
+        icon: "chart",
+        cardBg: "#e8f8f2",
+        iconBg: "#d1fae5",
+        iconColor: "#166534",
+        title: "Commercial Operations Platform",
+        description:
+          "Inspera is a lightweight CRM and commercial operations platform designed to give organisations a single, structured workspace for managing the full customer engagement lifecycle. It brings together lead capture, customer and contact management, opportunity tracking, quotation creation, approval governance, task follow-up, commercial handover and reporting into one connected solution.",
+        linkLabel: "Inspera CRM",
+        linkPath:
+          "/explore-solutions?service=customer-experience-crm&solution=api-60",
       },
     ],
   },
@@ -71,30 +106,47 @@ export const customerJourneyStages = [
     id: "service",
     label: "SERVICE",
     headerColor: "#16a34a",
+    stageDescription:
+      "Continuously enhances application performance, security, scalability, and reliability, ensuring seamless service delivery, reduced downtime, and superior customer satisfaction.",
     cards: [
       {
-        id: "conversational-ai",
-        icon: "chat",
-        cardBg: "#e8f8f2",
-        iconBg: "#d1fae5",
-        iconColor: "#166534",
-        title: "Conversational AI & Voice Bots",
-        description:
-          "NLP-powered chatbots and voice agents resolve queries 24/7, escalate intelligently, and continuously learn.",
-        metric: "70% self-service rate",
-        metricColor: "#166534",
-      },
-      {
-        id: "sentiment-proactive-cx",
+        id: "pii-remediation",
         icon: "heart",
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "Sentiment & Proactive CX",
+        title: "PII Data Sanitization",
         description:
-          "Real-time sentiment analysis across calls, chats & social - enabling proactive intervention before escalation.",
-        metric: "91% CSAT achieved",
-        metricColor: "#166534",
+          "Automatically detects, masks, or removes Personally Identifiable Information (PII) from customer communications and documents, ensuring secure, compliant, and privacy-focused service delivery.",
+        linkLabel: "CCM PII Remediation – Data Sanitization",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-27",
+      },
+      {
+        id: "nova-astra-migration",
+        icon: "journey",
+        cardBg: "#e8f8f2",
+        iconBg: "#d1fae5",
+        iconColor: "#166534",
+        title: "SmartComm to Quadient Migration",
+        description:
+          "AI accelerates migration of customer communication templates from SmartComm to Quadient, ensuring faster modernization, minimal business disruption, and consistent customer communications.",
+        linkLabel: "Nova Astra AI based migration from SmartComm to Quadient",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-33",
+      },
+      {
+        id: "ccm-content-rationalization",
+        icon: "sparkle",
+        cardBg: "#e8f8f2",
+        iconBg: "#d1fae5",
+        iconColor: "#166534",
+        title: "CCM Content Optimization",
+        description:
+          "AI analyzes, consolidates, and optimizes customer communication content by eliminating duplicates, standardizing templates, and improving consistency. This enables accurate, personalized, and compliant communications across all customer touchpoints.",
+        linkLabel: "AI-Powered CCM Content",
+        linkPath:
+          "/explore-solutions?service=customer-communication-management&solution=api-29",
       },
     ],
   },
@@ -102,6 +154,8 @@ export const customerJourneyStages = [
     id: "loyalty",
     label: "LOYALTY",
     headerColor: "#166534",
+    stageDescription:
+      "Provides consistent, secure, and high-performing applications while continuously enhancing user experience, driving customer trust, retention, and long-term loyalty.",
     cards: [
       {
         id: "predictive-insights",
