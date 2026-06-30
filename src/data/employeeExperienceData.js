@@ -5,8 +5,6 @@ export const employeeExperienceMeta = {
     "From manual workflows to AI-augmented productivity - empower every employee with intelligent co-pilots, content, and automation at every stage.",
   intro:
     "Modern EX demands speed, clarity, and personalization at scale. Espire AI connects people, knowledge, and processes - turning everyday work into a seamless, empowered experience.",
-  ctaLabel: "Explore Employee Experience Solutions",
-  ctaPath: "/explore-solutions?service=digital-experience",
 };
 
 export const employeeJourneyStages = [

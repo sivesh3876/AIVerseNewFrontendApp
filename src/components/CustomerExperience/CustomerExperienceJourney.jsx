@@ -205,11 +205,13 @@ const CustomerExperienceJourney = ({
           ))}
         </div>
 
-        <div className="customer_experience_journey__footer">
-          <Link to={meta.ctaPath} className="customer_experience_journey__cta">
-            {meta.ctaLabel}
-          </Link>
-        </div>
+        {meta.ctaLabel && meta.ctaPath ? (
+          <div className="customer_experience_journey__footer">
+            <Link to={meta.ctaPath} className="customer_experience_journey__cta">
+              {meta.ctaLabel}
+            </Link>
+          </div>
+        ) : null}
       </div>
     </section>
   );
