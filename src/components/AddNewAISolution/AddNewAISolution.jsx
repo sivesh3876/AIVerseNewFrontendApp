@@ -28,21 +28,40 @@ const CHAR_LIMITS = {
   TechHighlights: 150,
 };
 
-const AI_FOUNDATION_OPTIONS = ["Azure", "Open AI", "Claude", "Cursor"];
+const AI_FOUNDATION_OPTIONS = [
+  "Azure OpenAI",
+  "Claude (Anthropic)",
+  "GitHub Copilot",
+  "Cursor",
+];
+
+const LEGACY_AI_FOUNDATION_VALUES = {
+  Azure: "Azure OpenAI",
+  "Open AI": "Azure OpenAI",
+  "Azure OpenAI & GitHub Copilot": "Azure OpenAI",
+  Claude: "Claude (Anthropic)",
+  "GitHub Copilot": "GitHub Copilot",
+};
+
+const normalizeAiFoundationValue = (value = "") => {
+  const trimmed = String(value).trim();
+  return LEGACY_AI_FOUNDATION_VALUES[trimmed] || trimmed;
+};
+
+const parseAiFoundation = (value = "") => {
+  const items = String(value)
+    .split(",")
+    .map((item) => normalizeAiFoundationValue(item))
+    .filter(Boolean);
+
+  const unique = [...new Set(items)];
+  return unique.filter((item) => AI_FOUNDATION_OPTIONS.includes(item));
+};
 
 const sanitizeEvangelists = (evangelists = []) =>
   evangelists.filter(
     (name) => name && name.trim() && name !== "Undefined",
   );
-
-const parseAiFoundation = (value = "") => {
-  const items = String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  return items.filter((item) => AI_FOUNDATION_OPTIONS.includes(item));
-};
 
 const initialFormState = {
   Title: "",
