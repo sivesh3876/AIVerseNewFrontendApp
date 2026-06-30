@@ -190,6 +190,10 @@
         white-space  : nowrap;
         font-family  : inherit;
 
+        &.is-static {
+            cursor: default;
+        }
+
         &.is-clickable {
             cursor    : pointer;
             transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
