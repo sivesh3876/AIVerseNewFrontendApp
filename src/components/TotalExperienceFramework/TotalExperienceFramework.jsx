@@ -81,21 +81,6 @@ const TotalExperienceFramework = ({
     }
   };
 
-  const handleFoundationClick = (foundation) => {
-    if (foundation.detailPath) {
-      navigate(foundation.detailPath);
-      return;
-    }
-
-    const pillar = [...inputPillars, resultPillar].find(
-      (entry) => entry.id === foundation.pillarId,
-    );
-
-    if (pillar) {
-      handlePillarClick(pillar);
-    }
-  };
-
   const getFoundationLabel = (foundation) =>
     typeof foundation === "string" ? foundation : foundation.label;
 
@@ -148,13 +133,7 @@ const TotalExperienceFramework = ({
                 typeof item === "string" ? [] : getFoundationIcons(item);
 
               return (
-                <button
-                  key={key}
-                  type="button"
-                  className="total_experience_framework__tag is-clickable"
-                  onClick={() => handleFoundationClick(item)}
-                  aria-label={`Explore ${label} domain`}
-                >
+                <span key={key} className="total_experience_framework__tag is-static">
                   {foundationIcons.length > 0 ? (
                     <span className="total_experience_framework__tag-icons">
                       {foundationIcons.map(({ id, Icon }) => (
@@ -168,7 +147,7 @@ const TotalExperienceFramework = ({
                     </span>
                   ) : null}
                   <span>{label}</span>
-                </button>
+                </span>
               );
             })}
           </div>
