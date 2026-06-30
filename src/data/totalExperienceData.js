@@ -64,26 +64,30 @@ export const totalExperienceResultPillar = {
 
 export const totalExperienceFoundations = [
   {
-    id: "azure",
-    label: "Azure",
+    id: "azure-openai",
+    label: "Azure OpenAI",
+    icons: ["azure-openai"],
     pillarId: "bx",
     detailPath: BUSINESS_EXPERIENCE_ROUTE,
   },
   {
-    id: "open-ai",
-    label: "Open AI",
-    pillarId: "cx",
-    detailPath: CUSTOMER_EXPERIENCE_ROUTE,
+    id: "claude",
+    label: "Claude (Anthropic)",
+    icons: ["claude"],
+    pillarId: "ex",
+    detailPath: EMPLOYEE_EXPERIENCE_ROUTE,
   },
   {
-    id: "claude",
-    label: "Claude",
+    id: "github-copilot",
+    label: "GitHub Copilot",
+    icons: ["github-copilot"],
     pillarId: "ex",
     detailPath: EMPLOYEE_EXPERIENCE_ROUTE,
   },
   {
     id: "cursor",
     label: "Cursor",
+    icons: ["cursor"],
     pillarId: "tx",
     detailPath: TOTAL_EXPERIENCE_DETAIL_ROUTE,
   },
