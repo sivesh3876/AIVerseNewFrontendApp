@@ -125,7 +125,10 @@
   }
 
   &--card {
-    margin-top: 12px;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    margin-bottom: 0;
   }
 }
 

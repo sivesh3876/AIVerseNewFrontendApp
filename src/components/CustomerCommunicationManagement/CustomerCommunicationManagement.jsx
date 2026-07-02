@@ -202,22 +202,16 @@ const SolutionDetailPanel = ({
         </div>
       )}
 
-      {aiFoundation.length > 0 && (
-        <div className="ccm_dashboard__highlights">
-          <h3>
-            <AiFoundationLabelIcon />
-            AI Foundation
-          </h3>
-          <div className="ccm_dashboard__highlights-grid">
-            {aiFoundation.map((item) => (
-              <article className="ccm_dashboard__highlight" key={item}>
-                <h4>{item}</h4>
-                <p>Foundation</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
+      <SolutionEngagement
+        solutionId={capability.id}
+        title={capability.title}
+        serviceLine={
+          detailSolution?.serviceLine ||
+          getServiceIdForDomain(capability.businessDomain)
+        }
+        variant="card"
+        trackView
+      />
 
       <div className="ccm_dashboard__detail-actions">
         <button
