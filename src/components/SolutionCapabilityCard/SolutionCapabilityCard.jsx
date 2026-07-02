@@ -185,7 +185,9 @@ const SolutionCapabilityCard = ({
             onActionClick={(event) => event.stopPropagation()}
           />
         )}
+      </div>
 
+      <div className="ccm_dashboard__capability-footer">
         <SolutionEngagement
           solutionId={capability.id}
           title={capability.title}
@@ -193,9 +195,8 @@ const SolutionCapabilityCard = ({
           variant="card"
           onActionClick={(event) => event.stopPropagation()}
         />
-      </div>
 
-      <div className="ccm_dashboard__capability-actions">
+        <div className="ccm_dashboard__capability-actions">
         <button
           type="button"
           className="ccm_dashboard__action-btn"
@@ -223,6 +224,7 @@ const SolutionCapabilityCard = ({
             <VideoCameraIcon />
           </button>
         )}
+        </div>
       </div>
     </article>
   );
