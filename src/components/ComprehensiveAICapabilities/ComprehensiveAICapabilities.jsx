@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
+import {
+  AI_FOUNDATION_HIGHLIGHT_EVENT,
+  AI_FOUNDATION_HIGHLIGHT_KEY,
+  findHomeSolutionForFoundation,
+  getFoundationExplorePath,
+  readPendingFoundationHighlight,
+} from "../../utils/foundationNavigation";
 import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
 
 const HOME_SOLUTION_LIMIT = 8;
@@ -22,7 +29,7 @@ const SolutionCardSkeleton = ({ index }) => (
   </article>
 );
 
-const SolutionCard = ({ solution, index, onRequestDemo }) => {
+const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }) => {
   const navigate = useNavigate();
   const Icon =
     HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
@@ -34,7 +41,10 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
 
   return (
     <article
-      className="ai_capabilities__card"
+      ref={cardRef}
+      className={`ai_capabilities__card${
+        isHighlighted ? " is-foundation-highlight" : ""
+      }`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div
@@ -116,12 +126,66 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
 };
 
 const ComprehensiveAICapabilities = () => {
+  const navigate = useNavigate();
   const sectionRef = useRef(null);
+  const cardRefs = useRef([]);
+  const highlightTimeoutRef = useRef(null);
   const [visible, setVisible] = useState(false);
   const [solutions, setSolutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [demoTarget, setDemoTarget] = useState(null);
+  const [highlightedSolutionId, setHighlightedSolutionId] = useState(null);
+
+  const clearHighlight = useCallback(() => {
+    if (highlightTimeoutRef.current) {
+      window.clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    setHighlightedSolutionId(null);
+  }, []);
+
+  const focusFoundationSolution = useCallback(
+    (foundationId) => {
+      if (!foundationId || loading) {
+        return;
+      }
+
+      sessionStorage.removeItem(AI_FOUNDATION_HIGHLIGHT_KEY);
+
+      const match = findHomeSolutionForFoundation(solutions, foundationId);
+
+      if (match) {
+        const matchIndex = solutions.findIndex(
+          (solution) => solution.id === match.id,
+        );
+        const cardElement = cardRefs.current[matchIndex];
+
+        setHighlightedSolutionId(match.id);
+
+        if (cardElement) {
+          window.setTimeout(() => {
+            cardElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }, 150);
+        }
+
+        if (highlightTimeoutRef.current) {
+          window.clearTimeout(highlightTimeoutRef.current);
+        }
+
+        highlightTimeoutRef.current = window.setTimeout(() => {
+          clearHighlight();
+        }, 3200);
+        return;
+      }
+
+      navigate(getFoundationExplorePath(foundationId));
+    },
+    [clearHighlight, loading, navigate, solutions],
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -175,6 +239,44 @@ const ComprehensiveAICapabilities = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleFoundationHighlight = (event) => {
+      focusFoundationSolution(event.detail?.foundationId);
+    };
+
+    window.addEventListener(
+      AI_FOUNDATION_HIGHLIGHT_EVENT,
+      handleFoundationHighlight,
+    );
+
+    return () => {
+      window.removeEventListener(
+        AI_FOUNDATION_HIGHLIGHT_EVENT,
+        handleFoundationHighlight,
+      );
+    };
+  }, [focusFoundationSolution]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    const pendingFoundationId = readPendingFoundationHighlight();
+    if (pendingFoundationId) {
+      focusFoundationSolution(pendingFoundationId);
+    }
+  }, [focusFoundationSolution, loading, solutions]);
+
+  useEffect(
+    () => () => {
+      if (highlightTimeoutRef.current) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
   return (
     <section
       id="capabilities"
@@ -201,6 +303,10 @@ const ComprehensiveAICapabilities = () => {
                 solution={solution}
                 index={index}
                 onRequestDemo={setDemoTarget}
+                cardRef={(element) => {
+                  cardRefs.current[index] = element;
+                }}
+                isHighlighted={highlightedSolutionId === solution.id}
               />
             ))}
         </div>

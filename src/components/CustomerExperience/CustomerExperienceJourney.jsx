@@ -1,8 +1,15 @@
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   customerExperienceMeta,
   customerJourneyStages,
 } from "../../data/customerExperienceData";
+import { fetchAllUseCases } from "../../services/usecasesService";
+import {
+  buildSolutionTitleMap,
+  resolveJourneyCardDisplayTitle,
+  resolveJourneyCardSolutionLink,
+} from "../../utils/journeySolutionLinks";
 import "./CustomerExperienceJourney.scss";
 
 const JourneyCardIcon = ({ type }) => {
@@ -101,6 +108,31 @@ const CustomerExperienceJourney = ({
   meta = customerExperienceMeta,
   stages = customerJourneyStages,
 }) => {
+  const location = useLocation();
+  const [solutionTitleMap, setSolutionTitleMap] = useState(() => new Map());
+
+  const loadSolutionTitles = useCallback(async () => {
+    try {
+      const solutions = await fetchAllUseCases();
+      setSolutionTitleMap(buildSolutionTitleMap(solutions));
+    } catch (error) {
+      console.error("Failed to load journey solution titles:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSolutionTitles();
+  }, [loadSolutionTitles, location.pathname]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      loadSolutionTitles();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [loadSolutionTitles]);
+
   const maxRows = Math.max(...stages.map((stage) => stage.cards.length), 1);
 
   return (
@@ -162,11 +194,21 @@ const CustomerExperienceJourney = ({
                   );
                 }
 
+                const solutionLink = resolveJourneyCardSolutionLink(
+                  card,
+                  solutionTitleMap,
+                );
+                const displayTitle = resolveJourneyCardDisplayTitle(
+                  card,
+                  solutionTitleMap,
+                );
+
                 return (
                   <article
                     key={card.id}
                     className="customer_experience_journey__card"
                     style={{ background: card.cardBg }}
+                    data-solution-id={solutionLink?.solutionId}
                   >
                     <div
                       className="customer_experience_journey__card-icon"
@@ -177,14 +219,18 @@ const CustomerExperienceJourney = ({
                     >
                       <JourneyCardIcon type={card.icon} />
                     </div>
-                    <h3>{card.title}</h3>
+                    <h3>
+                      {displayTitle ||
+                        (solutionLink ? "Loading solution…" : card.title)}
+                    </h3>
                     <p>{card.description}</p>
-                    {card.linkPath && card.linkLabel ? (
+                    {solutionLink ? (
                       <Link
-                        to={card.linkPath}
+                        to={solutionLink.path}
                         className="customer_experience_journey__card-link"
+                        data-solution-id={solutionLink.solutionId}
                       >
-                        {card.linkLabel}
+                        {displayTitle || "View solution"}
                       </Link>
                     ) : (
                       card.metric && (

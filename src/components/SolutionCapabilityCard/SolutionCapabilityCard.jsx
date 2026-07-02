@@ -4,6 +4,7 @@ import {
   TechStackLabelIcon,
   CoeLabelIcon,
   EvangelistLabelIcon,
+  AiFoundationLabelIcon,
   VideoCameraIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
 import { resolveCapabilityIcon } from "../../utils/solutionMapper";
@@ -38,6 +39,7 @@ const SolutionCapabilityCard = ({
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
   const isSubmitted = Boolean(capability.isApiSolution);
   const documents = buildDocumentsFromCapability(capability);
+  const aiFoundation = capability.aiFoundation || [];
 
   return (
     <article
@@ -140,19 +142,38 @@ const SolutionCapabilityCard = ({
             </div>
           </div>
 
-          <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--tech">
-            <span className="ccm_dashboard__section-label">
-              <TechStackLabelIcon />
-              TECH STACK
-            </span>
-            <div className="ccm_dashboard__tags">
-              {capability.techStack.map((tech) => (
-                <div className="ccm_dashboard__tag" key={tech.name}>
-                  <strong>{tech.name}</strong>
-                  <span>{tech.label}</span>
-                </div>
-              ))}
+          <div className="ccm_dashboard__meta-tech-group">
+            <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--tech">
+              <span className="ccm_dashboard__section-label">
+                <TechStackLabelIcon />
+                TECH STACK
+              </span>
+              <div className="ccm_dashboard__tags">
+                {capability.techStack.map((tech) => (
+                  <div className="ccm_dashboard__tag" key={tech.name}>
+                    <strong>{tech.name}</strong>
+                    <span>{tech.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {aiFoundation.length > 0 && (
+              <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--foundation">
+                <span className="ccm_dashboard__section-label">
+                  <AiFoundationLabelIcon />
+                  AI FOUNDATION
+                </span>
+                <div className="ccm_dashboard__tags">
+                  {aiFoundation.map((item) => (
+                    <div className="ccm_dashboard__tag" key={item}>
+                      <strong>{item}</strong>
+                      <span>Foundation</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
