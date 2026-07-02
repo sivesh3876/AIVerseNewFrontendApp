@@ -61,6 +61,7 @@ export const solutionToCapabilityCard = (solution) => {
     demoLink: solution.demoLink || "",
     recordedDemoLink: solution.recordedDemoLink || solution.demoLink || "",
     client: solution.client || "",
+    aiFoundation: solution.aiFoundation || [],
     documents: solution.documents || [],
     isApiSolution: Boolean(solution.isApiSolution),
   };
@@ -83,6 +84,7 @@ export const buildDetailFromCapability = (capability, { businessDomains = [] } =
     serviceLineLabel: service.label,
     industry: domain?.DomainName || capability.businessDomain || null,
     client: capability.client || "",
+    aiFoundation: capability.aiFoundation || [],
     shortDescription: capability.description || "",
     detailedDescription: capability.description || "",
     keyBenefits: service.features,
@@ -121,6 +123,7 @@ export const mapApiSolutionToDetail = (
     serviceLineLabel: service.label,
     industry: domain?.DomainName || apiSolution.BusinessDomain || null,
     client: resolveSolutionClient(apiSolution),
+    aiFoundation: capability.aiFoundation || [],
     shortDescription: apiSolution.SolutionContext || "",
     detailedDescription: apiSolution.SolutionContext || "",
     keyBenefits: service.features,

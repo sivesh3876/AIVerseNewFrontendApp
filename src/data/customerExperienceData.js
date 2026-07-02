@@ -7,6 +7,8 @@ export const customerExperienceMeta = {
     "Modern CX demands enterprise-scale agility combined with surgical personalization. Espire AI bridges the gap between massive data silos and individual customer needs, turning every interaction into a moment of value.",
 };
 
+// Card titles for linked solutions are loaded from the API by solutionId (Excel ID).
+// Only solutionId stays fixed here — if the title changes in Excel/edit, the card updates automatically.
 export const customerJourneyStages = [
   {
     id: "awareness",
@@ -21,12 +23,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "Gen-AI Content Management",
         description:
           "AI assists business users in creating compelling marketing content, campaigns, blogs, emails, and social media posts, helping attract and engage potential customers.",
-        linkLabel: "AI based content assist for business user",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-28",
+        solutionId: 28,
       },
     ],
   },
@@ -43,12 +42,9 @@ export const customerJourneyStages = [
         cardBg: "#eef4ff",
         iconBg: "#dbeafe",
         iconColor: "#2563eb",
-        title: "Multilingual Document Access",
         description:
           "Enables customers to access product information, proposals, brochures, and technical documents in their preferred language, improving understanding and confidence during evaluation.",
-        linkLabel: "AI-Powered Document Translation Workflow",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-70",
+        solutionId: 70,
       },
     ],
   },
@@ -65,12 +61,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "Contract & Quotation Translation",
         description:
           "Accelerates contract, quotation, and compliance document translation, reducing turnaround time and enabling faster purchasing decisions across global markets.",
-        linkLabel: "AI-Powered Document Translation Workflow",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-70",
+        solutionId: 70,
       },
       {
         id: "purchase-content-assist",
@@ -78,12 +71,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "Quotation & Business Communications",
         description:
           "Creates quotations, business communications, and customer responses that speed up decision-making and improve the buying experience.",
-        linkLabel: "AI based content assist for business user",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-28",
+        solutionId: 28,
       },
       {
         id: "purchase-inspera-crm",
@@ -91,12 +81,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "Commercial Operations Platform",
         description:
           "Inspera is a lightweight CRM and commercial operations platform designed to give organisations a single, structured workspace for managing the full customer engagement lifecycle. It brings together lead capture, customer and contact management, opportunity tracking, quotation creation, approval governance, task follow-up, commercial handover and reporting into one connected solution.",
-        linkLabel: "Inspera CRM",
-        linkPath:
-          "/explore-solutions?service=enterprise-application&solution=api-60",
+        solutionId: 60,
       },
     ],
   },
@@ -113,12 +100,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "PII Data Sanitization",
         description:
           "Automatically detects, masks, or removes Personally Identifiable Information (PII) from customer communications and documents, ensuring secure, compliant, and privacy-focused service delivery.",
-        linkLabel: "CCM PII Remediation – Data Sanitization",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-27",
+        solutionId: 27,
       },
       {
         id: "nova-astra-migration",
@@ -126,12 +110,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "SmartComm to Quadient Migration",
         description:
           "AI accelerates migration of customer communication templates from SmartComm to Quadient, ensuring faster modernization, minimal business disruption, and consistent customer communications.",
-        linkLabel: "Nova Astra AI based migration from SmartComm to Quadient",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-33",
+        solutionId: 33,
       },
       {
         id: "ccm-content-rationalization",
@@ -139,12 +120,9 @@ export const customerJourneyStages = [
         cardBg: "#e8f8f2",
         iconBg: "#d1fae5",
         iconColor: "#166534",
-        title: "CCM Content Optimization",
         description:
           "AI analyzes, consolidates, and optimizes customer communication content by eliminating duplicates, standardizing templates, and improving consistency. This enables accurate, personalized, and compliant communications across all customer touchpoints.",
-        linkLabel: "AI-Powered CCM Content",
-        linkPath:
-          "/explore-solutions?service=customer-communication-management&solution=api-29",
+        solutionId: 29,
       },
     ],
   },

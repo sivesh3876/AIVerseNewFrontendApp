@@ -41,6 +41,65 @@ export const hydrateCapability = (capability) => {
 const AVATAR_COLORS = ["teal", "navy", "orange", "sky"];
 const PLACEHOLDER_EVANGELIST = "Undefined";
 
+const AI_FOUNDATION_OPTIONS = [
+  "Azure OpenAI",
+  "Claude (Anthropic)",
+  "GitHub Copilot",
+  "Cursor",
+];
+
+const LEGACY_AI_FOUNDATION_VALUES = {
+  Azure: "Azure OpenAI",
+  "Open AI": "Azure OpenAI",
+  "Azure OpenAI & GitHub Copilot": "Azure OpenAI",
+  Claude: "Claude (Anthropic)",
+  "GitHub Copilot": "GitHub Copilot",
+};
+
+const normalizeAiFoundationLabel = (value = "") => {
+  const trimmed = String(value).trim();
+  return LEGACY_AI_FOUNDATION_VALUES[trimmed] || trimmed;
+};
+
+export const parseAiFoundationValues = (value = "") => {
+  const items = String(value)
+    .split(",")
+    .map((item) => normalizeAiFoundationLabel(item))
+    .filter(Boolean);
+
+  return [...new Set(items)].filter((item) =>
+    AI_FOUNDATION_OPTIONS.includes(item),
+  );
+};
+
+export const resolveSolutionAiFoundation = (solution = {}) => {
+  const rawFoundation =
+    solution.AiFoundation ??
+    solution.AIFoundation ??
+    solution.aiFoundation ??
+    "";
+
+  const fromField = parseAiFoundationValues(rawFoundation);
+  if (fromField.length > 0) {
+    return fromField;
+  }
+
+  return parseAiFoundationValues(solution.Client);
+};
+
+const isAiFoundationValue = (value = "") => {
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  if (trimmed in LEGACY_AI_FOUNDATION_VALUES) {
+    return true;
+  }
+
+  return AI_FOUNDATION_OPTIONS.includes(trimmed);
+};
+
 const domainCodeToServiceId = {
   CustomerCommunicationManagement: "customer-communication-management",
   CustomerExperienceCRM: "enterprise-application",
@@ -153,6 +212,18 @@ export const resolveSolutionClient = (solution = {}) => {
   ).trim();
 
   if (explicit && explicit.toLowerCase() !== "null") {
+    const explicitParts = explicit
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (
+      explicitParts.length > 0 &&
+      explicitParts.every((item) => isAiFoundationValue(item))
+    ) {
+      return "";
+    }
+
     return explicit;
   }
 
@@ -267,7 +338,10 @@ export const mapApiSolutionToHomeCard = (solution) => {
       "Explore this enterprise AI solution.",
     domainLabel: service?.label || solution.BusinessDomain || "Enterprise AI",
     client: resolveSolutionClient(solution),
+    aiFoundation: resolveSolutionAiFoundation(solution),
     techHighlight: techStack[0]?.name || null,
+    techText: techStack.map((entry) => entry.name).join(" "),
+    serviceId,
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
@@ -369,6 +443,7 @@ export const mapApiSolutionToCapability = (
     recordedDemoLink,
     businessDomain: solution.BusinessDomain,
     client: resolveSolutionClient(solution),
+    aiFoundation: resolveSolutionAiFoundation(solution),
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
@@ -402,6 +477,7 @@ export const mapFormToCapability = (
       DemoLink: form.DemoLink,
       DemoRecordedVideoLink: "",
       BusinessDomain: form.BusinessDomain,
+      AiFoundation: (form.AiFoundation || []).join(", "),
       Client: (form.AiFoundation || []).join(", "),
     },
     { evangelistDirectory, solutionOwners },
@@ -695,7 +771,30 @@ export const mergeSubmittedCapabilities = ({
 
   const fromApi = apiCapabilities.filter(matchesFilter);
 
-  const apiIds = new Set(fromApi.map((capability) => capability.id));
+  const pendingById = new Map(
+    pendingCapabilities
+      .filter(matchesFilter)
+      .filter((capability) => capability?.id)
+      .map((capability) => [capability.id, capability]),
+  );
+
+  const mergedFromApi = fromApi.map((capability) => {
+    const pending = pendingById.get(capability.id);
+    if (!pending) {
+      return capability;
+    }
+
+    const apiFoundation = capability.aiFoundation || [];
+    const pendingFoundation = pending.aiFoundation || [];
+
+    return {
+      ...capability,
+      aiFoundation:
+        apiFoundation.length > 0 ? apiFoundation : pendingFoundation,
+    };
+  });
+
+  const apiIds = new Set(mergedFromApi.map((capability) => capability.id));
 
   const fromPending = pendingCapabilities.filter((capability) => {
     if (!matchesFilter(capability)) {
@@ -705,5 +804,5 @@ export const mergeSubmittedCapabilities = ({
     return capability.id && !apiIds.has(capability.id);
   });
 
-  return dedupeCapabilitiesById([...fromApi, ...fromPending]);
+  return dedupeCapabilitiesById([...mergedFromApi, ...fromPending]);
 };
