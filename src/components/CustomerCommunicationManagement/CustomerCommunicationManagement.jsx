@@ -5,6 +5,7 @@ import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapability
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
+import SolutionEngagement from "../SolutionEngagement";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -198,6 +199,17 @@ const SolutionDetailPanel = ({
           </div>
         </div>
       )}
+
+      <SolutionEngagement
+        solutionId={capability.id}
+        title={capability.title}
+        serviceLine={
+          detailSolution?.serviceLine ||
+          getServiceIdForDomain(capability.businessDomain)
+        }
+        variant="card"
+        trackView
+      />
 
       <div className="ccm_dashboard__detail-actions">
         <button
