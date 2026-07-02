@@ -77,6 +77,13 @@
             transform   : translateY(-2px);
         }
 
+        &.is-foundation-highlight {
+            border-color: #18E0CC;
+            box-shadow  : 0 0 0 3px rgba(24, 224, 204, 0.22),
+                          0 12px 28px rgba(13, 30, 50, 0.12);
+            transform   : translateY(-2px);
+        }
+
         &--skeleton {
             padding       : 24px;
             pointer-events: none;

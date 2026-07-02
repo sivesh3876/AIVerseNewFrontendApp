@@ -11,6 +11,7 @@ import {
   TechStackLabelIcon,
   CoeLabelIcon,
   EvangelistLabelIcon,
+  AiFoundationLabelIcon,
   VideoCameraIcon,
 } from "./CapabilityIcons";
 import {
@@ -97,6 +98,7 @@ const SolutionDetailPanel = ({
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
   const showAdminActions = Boolean(detailSolution?.isApiSolution);
   const clientName = (detailSolution?.client || capability.client || "").trim();
+  const aiFoundation = capability.aiFoundation || [];
 
   return (
     <section className="ccm_dashboard__content">
@@ -200,16 +202,22 @@ const SolutionDetailPanel = ({
         </div>
       )}
 
-      <SolutionEngagement
-        solutionId={capability.id}
-        title={capability.title}
-        serviceLine={
-          detailSolution?.serviceLine ||
-          getServiceIdForDomain(capability.businessDomain)
-        }
-        variant="card"
-        trackView
-      />
+      {aiFoundation.length > 0 && (
+        <div className="ccm_dashboard__highlights">
+          <h3>
+            <AiFoundationLabelIcon />
+            AI Foundation
+          </h3>
+          <div className="ccm_dashboard__highlights-grid">
+            {aiFoundation.map((item) => (
+              <article className="ccm_dashboard__highlight" key={item}>
+                <h4>{item}</h4>
+                <p>Foundation</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="ccm_dashboard__detail-actions">
         <button
