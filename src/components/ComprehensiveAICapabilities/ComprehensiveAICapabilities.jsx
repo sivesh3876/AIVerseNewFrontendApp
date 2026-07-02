@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
+import SolutionEngagement from "../SolutionEngagement";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
 import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
@@ -82,6 +83,14 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           )}
         </div>
       </div>
+
+      <SolutionEngagement
+        solutionId={solution.id}
+        title={solution.title}
+        detailUrl={solution.detailUrl}
+        variant="home"
+        onActionClick={(event) => event.stopPropagation()}
+      />
 
       <div className="ai_capabilities__actions">
         <button

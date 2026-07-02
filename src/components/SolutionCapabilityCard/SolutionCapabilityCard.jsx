@@ -6,8 +6,9 @@ import {
   EvangelistLabelIcon,
   VideoCameraIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
-import { resolveCapabilityIcon } from "../../utils/solutionMapper";
+import { resolveCapabilityIcon, getServiceIdForDomain } from "../../utils/solutionMapper";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import SolutionEngagement from "../SolutionEngagement";
 
 const getInitials = (name) =>
   name
@@ -163,6 +164,14 @@ const SolutionCapabilityCard = ({
             onActionClick={(event) => event.stopPropagation()}
           />
         )}
+
+        <SolutionEngagement
+          solutionId={capability.id}
+          title={capability.title}
+          serviceLine={getServiceIdForDomain(capability.businessDomain)}
+          variant="card"
+          onActionClick={(event) => event.stopPropagation()}
+        />
       </div>
 
       <div className="ccm_dashboard__capability-actions">
