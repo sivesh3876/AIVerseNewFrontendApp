@@ -7,6 +7,8 @@ import {
   totalExperienceResultPillar,
 } from "../../data/totalExperienceData";
 import { getFoundationIcons } from "./FoundationIcons";
+import { queueFoundationHighlight } from "../../utils/foundationNavigation";
+import { scrollToHomeSection } from "../../utils/homeSections";
 import "./TotalExperienceFramework.scss";
 
 const PillarCard = ({ pillar, onClick }) => {
@@ -81,6 +83,15 @@ const TotalExperienceFramework = ({
     }
   };
 
+  const handleFoundationClick = (foundation) => {
+    if (typeof foundation === "string" || !foundation?.id) {
+      return;
+    }
+
+    queueFoundationHighlight(foundation.id);
+    scrollToHomeSection("capabilities");
+  };
+
   const getFoundationLabel = (foundation) =>
     typeof foundation === "string" ? foundation : foundation.label;
 
@@ -133,7 +144,13 @@ const TotalExperienceFramework = ({
                 typeof item === "string" ? [] : getFoundationIcons(item);
 
               return (
-                <span key={key} className="total_experience_framework__tag is-static">
+                <button
+                  key={key}
+                  type="button"
+                  className="total_experience_framework__tag is-clickable"
+                  onClick={() => handleFoundationClick(item)}
+                  aria-label={`Explore solutions for ${label}`}
+                >
                   {foundationIcons.length > 0 ? (
                     <span className="total_experience_framework__tag-icons">
                       {foundationIcons.map(({ id, Icon }) => (
@@ -147,7 +164,7 @@ const TotalExperienceFramework = ({
                     </span>
                   ) : null}
                   <span>{label}</span>
-                </span>
+                </button>
               );
             })}
           </div>
