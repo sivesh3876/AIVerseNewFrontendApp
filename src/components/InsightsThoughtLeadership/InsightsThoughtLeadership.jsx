@@ -105,12 +105,23 @@ const InsightsThoughtLeadership = ({
                   {insight.date}
                 </time>
 
-                <Link
-                  to={`/learn-explore?article=${insight.id}`}
-                  className="insights_leadership__card-link"
-                >
-                  Read More &gt;
-                </Link>
+                {insight.url ? (
+  <a
+    href={insight.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="insights_leadership__card-link"
+  >
+    Read More &gt;
+  </a>
+) : (
+  <Link
+    to={`/learn-explore?article=${insight.id}`}
+    className="insights_leadership__card-link"
+  >
+    Read More &gt;
+  </Link>
+)}
               </article>
             );
           })}
