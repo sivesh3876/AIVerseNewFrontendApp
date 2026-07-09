@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
+import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
 import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
 
@@ -29,6 +31,9 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
 
   const handleNavigate = () => {
+    if (solution.id) {
+      incrementSolutionView(solution.id);
+    }
     navigate(solution.detailUrl);
   };
 
@@ -81,6 +86,8 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             </span>
           )}
         </div>
+
+        <SolutionEngagementBar solutionId={solution.id} />
       </div>
 
       <div className="ai_capabilities__actions">

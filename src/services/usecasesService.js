@@ -1,13 +1,10 @@
 import { selectTopOrderedSolutions } from "../utils/solutionMapper";
+import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
-
-export const getUsecasesApiBaseUrl = () => API_BASE_URL;
+export const getUsecasesApiBaseUrl = () => getApiBaseUrl();
 
 export const fetchAllUseCases = async () => {
-  const response = await fetch(`${API_BASE_URL}/get-usecases`);
+  const response = await fetch(buildApiPath("get-usecases"));
   const result = await response.json();
 
   if (!response.ok || result.status !== "success" || !Array.isArray(result.data)) {
@@ -23,7 +20,9 @@ export const fetchTopOrderedSolutions = async (limit = 8) => {
 };
 
 export const fetchUseCaseById = async (solutionId) => {
-  const response = await fetch(`${API_BASE_URL}/get-usecases?id=${solutionId}`);
+  const response = await fetch(
+    buildApiPath("get-usecases", { id: solutionId }),
+  );
   const result = await response.json();
 
   if (
@@ -38,7 +37,7 @@ export const fetchUseCaseById = async (solutionId) => {
 };
 
 export const deleteUseCase = async (solutionId) => {
-  const url = `${API_BASE_URL}/delete-usecase?id=${solutionId}`;
+  const url = buildApiPath("delete-usecase", { id: solutionId });
 
   const parseResponse = async (response) => {
     let result = {};

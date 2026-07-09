@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer/Footer";
+import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { ProtectedAdminRoute } from "./components/Admin";
 import HomePage from "./pages/HomePage";
 import GetStarted from "./pages/GetStarted";
 import ExploreSolutions from "./pages/ExploreSolutions";
@@ -22,6 +24,11 @@ import BlogsPage from "./pages/BlogsPage";
 import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
 import SuccessStoriesPage from "./pages/SuccessStoriesPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminDashboardPage, {
+  AdminLayout,
+  AdminRequestDemoSolutionInfo,
+} from "./pages/AdminDashboardPage";
 import { scrollToHomeSection } from "./utils/homeSections";
 
 const RouteScrollManager = () => {
@@ -43,18 +50,28 @@ const RouteScrollManager = () => {
   return null;
 };
 
-function App() {
+const AppShell = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   return (
-    <BrowserRouter>
+    <>
       <RouteScrollManager />
-      <Navigation />
+      {!isAdminRoute && <Navigation />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
         <Route path="/learn-explore" element={<LearnExplorePage />} />
         <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
-        <Route path="/get-started" element={<GetStarted />} />
+        <Route
+          path="/get-started"
+          element={
+            <ProtectedAdminRoute>
+              <GetStarted />
+            </ProtectedAdminRoute>
+          }
+        />
         <Route path="/about-us" element={<AboutUsPage />} />
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/industry-solutions" element={<IndustrySolutionsPage />} />
@@ -69,8 +86,37 @@ function App() {
         <Route path="/whitepapers" element={<WhitepapersPage />} />
         <Route path="/case-studies" element={<CaseStudiesPage />} />
         <Route path="/success-stories" element={<SuccessStoriesPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLayout />
+            </ProtectedAdminRoute>
+          }
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route
+            path="request-demos"
+            element={<Navigate to="/admin/request-demos/solution-info" replace />}
+          />
+          <Route
+            path="request-demos/solution-info"
+            element={<AdminRequestDemoSolutionInfo />}
+          />
+        </Route>
       </Routes>
-      <Footer />
+      {!isAdminRoute && <Footer />}
+    </>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AdminAuthProvider>
+        <AppShell />
+      </AdminAuthProvider>
     </BrowserRouter>
   );
 }
