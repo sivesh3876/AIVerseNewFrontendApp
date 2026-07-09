@@ -1,5 +1,6 @@
 import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionDocuments from "../SolutionDocuments";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import {
   TechStackLabelIcon,
   CoeLabelIcon,
@@ -163,6 +164,8 @@ const SolutionCapabilityCard = ({
             onActionClick={(event) => event.stopPropagation()}
           />
         )}
+
+        <SolutionEngagementBar solutionId={capability.id} />
       </div>
 
       <div className="ccm_dashboard__capability-actions">

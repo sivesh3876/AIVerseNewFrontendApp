@@ -39,6 +39,7 @@ import {
 } from "../../utils/solutionMapper";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   deleteUseCase,
   fetchAllUseCases,
@@ -92,9 +93,9 @@ const SolutionDetailPanel = ({
   onDelete,
   onRequestDemo,
   isDeleting = false,
+  showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const showAdminActions = Boolean(detailSolution?.isApiSolution);
   const clientName = (detailSolution?.client || capability.client || "").trim();
 
   return (
@@ -241,6 +242,7 @@ const SolutionDetailPanel = ({
 const CustomerCommunicationManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
   const solutionQueryId = searchParams.get("solution");
@@ -776,6 +778,9 @@ const CustomerCommunicationManagement = () => {
                 }
                 onRequestDemo={handleRequestDemo}
                 isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
+                showAdminActions={
+                  isAdminAuthenticated && Boolean(detailSolution.isApiSolution)
+                }
               />
             )}
           </>
@@ -812,7 +817,7 @@ const CustomerCommunicationManagement = () => {
                     (capability.id === `api-${highlightId}` ||
                       capability.id === `api-pending-${highlightId}`)
                   }
-                  showAdminActions
+                  showAdminActions={isAdminAuthenticated}
                   onEdit={handleEditCapability}
                   onDelete={handleDeleteCapability}
                   onRequestDemo={handleRequestDemo}

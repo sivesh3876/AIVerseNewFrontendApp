@@ -88,6 +88,13 @@ const Navigation = () => {
           </ul>
 
           <div className="nav-right">
+            <Link
+              to="/admin/login"
+              className="nav-admin-link"
+              onClick={() => setMobileMenu(false)}
+            >
+              Admin Login
+            </Link>
             <button
               className="icon-btn"
               onClick={() => setShowSearch(!showSearch)}

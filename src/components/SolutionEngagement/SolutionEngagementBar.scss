@@ -1,0 +1,66 @@
+.solution_engagement {
+    margin-top: 12px;
+
+    &__stats {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    &__stat {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        &:hover {
+            color: #3A8D9D;
+        }
+    }
+
+    &__comment-form {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #dbe3ea;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        button {
+            justify-self: start;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: #0d1e32;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+        }
+    }
+}
