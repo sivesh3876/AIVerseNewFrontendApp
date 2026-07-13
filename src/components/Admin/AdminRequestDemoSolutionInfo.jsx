@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   formatDemoRequestDate,
@@ -15,6 +15,7 @@ import {
   getUniqueValues,
 } from "../../utils/adminDemoTableUtils";
 import AdminDemoPageShell from "./AdminDemoPageShell";
+import AdminTablePagination from "./AdminBlogPagination";
 import AdminDemoTableToolbar from "./AdminDemoTableToolbar";
 import AdminDemoStatusModal from "./AdminDemoStatusModal";
 import AdminDemoUpdateModal from "./AdminDemoUpdateModal";
@@ -22,6 +23,8 @@ import AdminStatusDropdown from "./AdminStatusDropdown";
 import AdminUpdateStatusDropdown from "./AdminUpdateStatusDropdown";
 import { useAdminDemoRequests } from "./useAdminDemoRequests";
 import "./AdminLayout.scss";
+
+const PAGE_SIZE = 10;
 
 const formatCell = (value) => value || "—";
 
@@ -61,6 +64,7 @@ const AdminRequestDemoSolutionInfo = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [solutionFilter, setSolutionFilter] = useState("all");
   const [coeFilter, setCoeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const lastSubmission = useMemo(() => loadLastDemoSubmission(), [requests]);
 
   const solutionOptions = useMemo(
@@ -83,6 +87,23 @@ const AdminRequestDemoSolutionInfo = () => {
       }),
     [requests, searchQuery, statusFilter, solutionFilter, coeFilter],
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
+
+  const paginatedRequests = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredRequests.slice(start, start + PAGE_SIZE);
+  }, [filteredRequests, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, solutionFilter, coeFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const hasActiveFilters =
     searchQuery.trim() ||
@@ -263,7 +284,7 @@ const AdminRequestDemoSolutionInfo = () => {
                 </td>
               </tr>
             ) : (
-              filteredRequests.map((request) => (
+              paginatedRequests.map((request) => (
                 <tr key={request.id}>
                   <td>
                     <AdminUpdateStatusDropdown
@@ -313,6 +334,17 @@ const AdminRequestDemoSolutionInfo = () => {
           </tbody>
         </table>
       </div>
+
+      {!loading && filteredRequests.length > 0 && (
+        <AdminTablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredRequests.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCurrentPage}
+          itemLabel="records"
+        />
+      )}
 
       {statusRequest && (
         <AdminDemoStatusModal

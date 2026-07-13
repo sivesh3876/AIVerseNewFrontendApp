@@ -5,12 +5,15 @@ import {
   getResourceById,
   getTrackById,
 } from "../components/LearnExplore/learnExploreData";
+import { getPublicResourceById } from "../utils/publicBlogContent";
 
 const LearnExplorePage = () => {
   const [searchParams] = useSearchParams();
   const articleId = searchParams.get("article");
   const trackId = searchParams.get("track");
-  const resource = articleId ? getResourceById(articleId) : null;
+  const resource = articleId
+    ? getPublicResourceById(articleId) || getResourceById(articleId)
+    : null;
   const track = resource
     ? getTrackById(resource.trackId)
     : trackId

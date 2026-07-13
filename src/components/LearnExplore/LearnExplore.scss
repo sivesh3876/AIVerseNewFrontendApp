@@ -147,6 +147,12 @@
         box-shadow    : 0 4px 16px rgba(13, 30, 50, 0.05);
         transition    : box-shadow 0.3s, border-color 0.3s, transform 0.3s;
 
+        &--link {
+            text-decoration: none;
+            color          : inherit;
+            cursor         : pointer;
+        }
+
         &:hover {
             border-color: rgba(24, 224, 204, 0.35);
             box-shadow  : 0 12px 32px rgba(13, 30, 50, 0.1);

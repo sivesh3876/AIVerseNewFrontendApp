@@ -1,11 +1,40 @@
-import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import "./InsightsThoughtLeadership.scss";
 import insigts from "../../assets/images/insigts.svg";
+import BlogResourceLink from "../BlogResourceLink/BlogResourceLink";
 import {
   featuredArticle as defaultFeaturedArticle,
   homeInsights as defaultInsights,
 } from "../LearnExplore/learnExploreData";
+import { BLOGS_CHANGED_EVENT } from "../../utils/adminBlogStorage";
+import { getHomepageInsightCards } from "../../utils/publicBlogContent";
+import {
+  getPublicCertificationById,
+  PUBLIC_CERTIFICATION_EVENTS,
+} from "../../utils/publicCertificationContent";
+import { stripHtml } from "../../utils/htmlContent";
+
+const FEATURED_CERT_ID = "cert-ai-900";
+
+const buildFeaturedCertificationCard = () => {
+  const certification = getPublicCertificationById(FEATURED_CERT_ID);
+  if (!certification) {
+    return null;
+  }
+
+  return {
+    ...defaultFeaturedArticle,
+    id: certification.id,
+    certificationId: certification.id,
+    badge: "Certification",
+    title: certification.name,
+    description:
+      stripHtml(certification.description) || defaultFeaturedArticle.description,
+    linkText: "Read Full Article",
+    linkTo: `/learn-explore/certifications`,
+    image: insigts,
+  };
+};
 
 const getCardAnimation = (index) => {
   const columns = 3;
@@ -18,11 +47,66 @@ const getCardAnimation = (index) => {
 };
 
 const InsightsThoughtLeadership = ({
-  featuredArticle = { ...defaultFeaturedArticle, image: insigts },
-  insights = defaultInsights,
+  featuredArticle: featuredArticleProp,
+  insights: initialInsights = defaultInsights,
 }) => {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
+  const [insights, setInsights] = useState(initialInsights);
+  const [featuredArticle, setFeaturedArticle] = useState(() => {
+    if (featuredArticleProp) {
+      return { ...featuredArticleProp, image: featuredArticleProp.image || insigts };
+    }
+    return (
+      buildFeaturedCertificationCard() || {
+        ...defaultFeaturedArticle,
+        image: insigts,
+      }
+    );
+  });
+
+  useEffect(() => {
+    const refreshInsights = () => {
+      setInsights(getHomepageInsightCards());
+    };
+
+    const refreshFeatured = () => {
+      if (featuredArticleProp) {
+        setFeaturedArticle({
+          ...featuredArticleProp,
+          image: featuredArticleProp.image || insigts,
+        });
+        return;
+      }
+
+      const fromAdmin = buildFeaturedCertificationCard();
+      setFeaturedArticle(
+        fromAdmin || {
+          ...defaultFeaturedArticle,
+          image: insigts,
+        },
+      );
+    };
+
+    refreshInsights();
+    refreshFeatured();
+
+    window.addEventListener(BLOGS_CHANGED_EVENT, refreshInsights);
+    PUBLIC_CERTIFICATION_EVENTS.forEach((eventName) => {
+      window.addEventListener(eventName, refreshFeatured);
+    });
+    window.addEventListener("storage", refreshInsights);
+    window.addEventListener("storage", refreshFeatured);
+
+    return () => {
+      window.removeEventListener(BLOGS_CHANGED_EVENT, refreshInsights);
+      PUBLIC_CERTIFICATION_EVENTS.forEach((eventName) => {
+        window.removeEventListener(eventName, refreshFeatured);
+      });
+      window.removeEventListener("storage", refreshInsights);
+      window.removeEventListener("storage", refreshFeatured);
+    };
+  }, [featuredArticleProp]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -66,12 +150,12 @@ const InsightsThoughtLeadership = ({
             <h3>{featuredArticle.title}</h3>
             <p>{featuredArticle.description}</p>
 
-            <Link
-              to={`/learn-explore?article=${featuredArticle.id}`}
+            <BlogResourceLink
+              resource={featuredArticle}
               className="insights_leadership__featured-link"
             >
               {featuredArticle.linkText} &rarr;
-            </Link>
+            </BlogResourceLink>
           </div>
         </article>
 
@@ -80,8 +164,9 @@ const InsightsThoughtLeadership = ({
             const { animationDelay } = getCardAnimation(index);
 
             return (
-              <article
-                className="insights_leadership__card"
+              <BlogResourceLink
+                resource={insight}
+                className="insights_leadership__card insights_leadership__card--link"
                 key={insight.id}
                 style={{ animationDelay }}
               >
@@ -105,13 +190,8 @@ const InsightsThoughtLeadership = ({
                   {insight.date}
                 </time>
 
-                <Link
-                  to={`/learn-explore?article=${insight.id}`}
-                  className="insights_leadership__card-link"
-                >
-                  Read More &gt;
-                </Link>
-              </article>
+                <span className="insights_leadership__card-link">Read More &gt;</span>
+              </BlogResourceLink>
             );
           })}
         </div>

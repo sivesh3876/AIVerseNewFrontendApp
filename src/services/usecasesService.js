@@ -36,6 +36,38 @@ export const fetchUseCaseById = async (solutionId) => {
   return result.data;
 };
 
+export const updateUseCaseStatus = async (solution, isActive) => {
+  const formData = new FormData();
+  const publishValue = isActive ? "Yes" : "No";
+
+  formData.append("ID", solution.ID);
+  formData.append("Title", solution.Title || "");
+  formData.append("BusinessDomain", solution.BusinessDomain || "");
+  formData.append("OwnershipDetails", solution.OwnershipDetails || "");
+  formData.append("AiEvangelists", solution.AiEvangelists || "");
+  formData.append("SolutionContext", solution.SolutionContext || "");
+  formData.append("TechHighlights", solution.TechHighlights || "");
+  formData.append("RepositoryUrl", solution.RepositoryUrl || "");
+  formData.append("DemoLink", solution.DemoLink || "");
+  formData.append("AiFoundation", solution.AiFoundation || solution.Client || "");
+  formData.append("Client", solution.Client || solution.AiFoundation || "");
+  formData.append("Publish", publishValue);
+  formData.append("PublicationStatus", isActive ? "Published" : "Draft");
+  formData.append("IsSolutionActive", isActive ? "true" : "false");
+
+  const response = await fetch(buildApiPath("update-usecase"), {
+    method: "POST",
+    body: formData,
+  });
+  const result = await response.json();
+
+  if (!response.ok || result.status !== "success") {
+    throw new Error(result.message || "Failed to update solution status.");
+  }
+
+  return result.data || { ...solution, IsSolutionActive: isActive, Publish: publishValue };
+};
+
 export const deleteUseCase = async (solutionId) => {
   const url = buildApiPath("delete-usecase", { id: solutionId });
 

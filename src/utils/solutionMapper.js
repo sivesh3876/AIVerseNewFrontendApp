@@ -229,9 +229,28 @@ export const getSolutionOrderNumber = (solution = {}) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+export const isPublicSolutionVisible = (solution = {}) => {
+  if (solution?.IsSolutionActive === false) return false;
+
+  const publishValue =
+    solution.Publish ??
+    solution.publish ??
+    solution.IsPublished ??
+    solution.isPublished ??
+    solution.PublicationStatus ??
+    solution.publicationStatus;
+
+  if (publishValue == null || publishValue === "") return true;
+
+  const normalized = String(publishValue).trim().toLowerCase();
+  return !["no", "false", "0", "draft", "inactive", "archive"].includes(
+    normalized,
+  );
+};
+
 export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
   [...solutions]
-    .filter((solution) => solution?.IsSolutionActive !== false)
+    .filter(isPublicSolutionVisible)
     .sort((left, right) => {
       const leftOrder = getSolutionOrderNumber(left);
       const rightOrder = getSolutionOrderNumber(right);

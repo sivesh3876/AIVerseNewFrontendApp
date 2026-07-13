@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { DEMO_RECORD_STATUSES } from "../../utils/demoRequestStorage";
 
-const AdminStatusDropdown = ({ value = "Active", onChange }) => {
+const AdminStatusDropdown = ({
+  value = "Active",
+  onChange,
+  statuses = ["Active", "Inactive"],
+  defaultStatus = "Active",
+}) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
-  const current = DEMO_RECORD_STATUSES.includes(value) ? value : "Active";
-  const otherStatus = current === "Active" ? "Inactive" : "Active";
+  const current = statuses.includes(value) ? value : defaultStatus;
+  const otherStatus = statuses.find((status) => status !== current) || statuses[0];
 
   useEffect(() => {
     const handleClickOutside = (event) => {

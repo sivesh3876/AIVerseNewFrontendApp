@@ -11,6 +11,7 @@ import {
   filterOutDeletedSolutions,
   getServiceIdForDomain,
   hydrateCapability,
+  isPublicSolutionVisible,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   mergeSubmittedCapabilities,
@@ -106,7 +107,7 @@ const IndustryApiSolutions = ({ domainCode, industryId, industryTitle }) => {
       );
 
     const apiCapabilities = apiSolutions
-      .filter((solution) => solution.IsSolutionActive !== false)
+      .filter(isPublicSolutionVisible)
       .map((solution) => {
         try {
           return enrich(mapApiSolutionToCapability(solution, directories));

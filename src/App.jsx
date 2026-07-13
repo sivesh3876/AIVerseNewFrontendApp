@@ -21,13 +21,19 @@ import TotalExperienceDetailPage from "./pages/TotalExperienceDetailPage";
 import ContactPage from "./pages/ContactPage";
 import CareersPage from "./pages/CareersPage";
 import BlogsPage from "./pages/BlogsPage";
+import CertificationDetailsPage from "./pages/CertificationDetailsPage";
 import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
 import SuccessStoriesPage from "./pages/SuccessStoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboardPage, {
+  AdminBlogs,
+  AdminCertifications,
+  AdminCertificationDetail,
+  AdminCertifiedProfessionalsPage,
   AdminLayout,
   AdminRequestDemoSolutionInfo,
+  AdminSolutionNewAI,
 } from "./pages/AdminDashboardPage";
 import { scrollToHomeSection } from "./utils/homeSections";
 
@@ -63,6 +69,14 @@ const AppShell = () => {
         <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
         <Route path="/learn-explore" element={<LearnExplorePage />} />
+        <Route
+          path="/learn-explore/certifications"
+          element={<CertificationDetailsPage />}
+        />
+        <Route
+          path="/learn-explore/certifications/:certificationId"
+          element={<CertificationDetailsPage />}
+        />
         <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
         <Route
           path="/get-started"
@@ -104,6 +118,17 @@ const AppShell = () => {
             path="request-demos/solution-info"
             element={<AdminRequestDemoSolutionInfo />}
           />
+          <Route path="blogs" element={<AdminBlogs />} />
+          <Route path="learn-explore" element={<AdminCertifications />} />
+          <Route
+            path="learn-explore/:certificationId/certified-professionals"
+            element={<AdminCertifiedProfessionalsPage />}
+          />
+          <Route
+            path="learn-explore/:certificationId"
+            element={<AdminCertificationDetail />}
+          />
+          <Route path="solution-new-ai" element={<AdminSolutionNewAI />} />
         </Route>
       </Routes>
       {!isAdminRoute && <Footer />}
