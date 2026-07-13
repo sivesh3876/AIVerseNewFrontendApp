@@ -11,6 +11,21 @@ const adminNavItems = [
     to: "/admin/request-demos/solution-info",
     end: false,
   },
+  {
+    label: "Blogs",
+    to: "/admin/blogs",
+    end: true,
+  },
+  {
+    label: "Learn & Explore",
+    to: "/admin/learn-explore",
+    end: false,
+  },
+  {
+    label: "Solution New AI",
+    to: "/admin/solution-new-ai",
+    end: true,
+  },
 ];
 const AdminLayout = () => {
   const navigate = useNavigate();

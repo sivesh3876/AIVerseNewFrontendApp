@@ -73,6 +73,7 @@ const initialFormState = {
   RepositoryUrl: "",
   AiFoundation: [],
   DemoLink: "",
+  Publish: "Yes",
 };
 
 const isValidUrl = (value) => {
@@ -361,6 +362,10 @@ const AddNewAISolution = () => {
               solution.AiFoundation || solution.Client,
             ),
             DemoLink: solution.DemoLink || "",
+            Publish:
+              solution.Publish ||
+              solution.publish ||
+              (solution.IsSolutionActive === false ? "No" : "Yes"),
           });
 
           setExistingFiles({
@@ -566,6 +571,17 @@ const AddNewAISolution = () => {
       Object.keys(form).forEach((key) => {
         if (!form[key]) return;
 
+        if (key === "Publish") {
+          const isPublished = form[key] === "Yes";
+          formDataToSend.append("Publish", form[key]);
+          formDataToSend.append(
+            "PublicationStatus",
+            isPublished ? "Published" : "Draft",
+          );
+          formDataToSend.append("IsSolutionActive", isPublished ? "true" : "false");
+          return;
+        }
+
         if (key === "AiEvangelists") {
           if (Array.isArray(form[key]) && form[key].length > 0) {
             formDataToSend.append(key, form[key].join(", "));
@@ -637,10 +653,18 @@ const AddNewAISolution = () => {
           solutionOwners,
         });
         const serializedSolution = serializeCapabilityForNavigation(submittedSolution);
-        persistSubmittedCapability(serializedSolution);
+        const isPublishedSolution = form.Publish === "Yes";
+        if (isPublishedSolution) {
+          persistSubmittedCapability(serializedSolution);
+        }
 
         if (!isEditMode) {
           resetFormFields();
+        }
+
+        if (!isPublishedSolution) {
+          navigate("/admin/solution-new-ai");
+          return;
         }
 
         const serviceId =
@@ -797,6 +821,22 @@ const AddNewAISolution = () => {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="add_ai_solution__field add_ai_solution__field--publish">
+          <label htmlFor="Publish">Publish</label>
+          <select
+            id="Publish"
+            value={form.Publish}
+            onChange={(event) => updateField("Publish", event.target.value)}
+          >
+            <option value="Yes">Yes - show on Explore Solutions</option>
+            <option value="No">No - keep inactive</option>
+          </select>
+          <p className="add_ai_solution__field-hint">
+            Published solutions stay Active and appear as cards under their
+            selected enterprise service.
+          </p>
         </div>
 
         <div className="add_ai_solution__field">

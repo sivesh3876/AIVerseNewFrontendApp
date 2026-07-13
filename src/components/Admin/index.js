@@ -1,5 +1,10 @@
 export { default as AdminLogin } from "./AdminLogin";
 export { default as AdminDashboard } from "./AdminDashboard";
 export { default as AdminLayout } from "./AdminLayout";
+export { default as AdminBlogs } from "./AdminBlogs";
+export { default as AdminCertifications } from "./AdminCertifications";
+export { default as AdminCertificationDetail } from "./AdminCertificationDetail";
+export { default as AdminCertifiedProfessionalsPage } from "./AdminCertifiedProfessionalsPage";
+export { default as AdminSolutionNewAI } from "./AdminSolutionNewAI";
 export { default as AdminRequestDemoSolutionInfo } from "./AdminRequestDemoSolutionInfo";
 export { default as ProtectedAdminRoute } from "./ProtectedAdminRoute";

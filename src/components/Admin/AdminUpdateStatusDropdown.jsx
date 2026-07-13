@@ -68,16 +68,17 @@ const AdminUpdateStatusDropdown = ({ onSelect }) => {
       setOpen(false);
     };
 
-    const handleReposition = () => updateMenuPosition();
+    const handleScroll = () => setOpen(false);
+    const handleResize = () => updateMenuPosition();
 
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("resize", handleReposition);
-    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, true);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("resize", handleReposition);
-      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [open]);
 
