@@ -8,31 +8,59 @@ import {
   getSolutionStatusLabel,
   getUniqueSolutionValues,
 } from "../../utils/adminSolutionTableUtils";
+import { getSolutionEngagement } from "../../utils/solutionEngagementStorage";
 import AddNewAISolution from "../AddNewAISolution";
 import AdminBlogActionDropdown from "./AdminBlogActionDropdown";
 import AdminBlogPagination from "./AdminBlogPagination";
 import AdminDemoPageShell from "./AdminDemoPageShell";
 import AdminSolutionDeleteModal from "./AdminSolutionDeleteModal";
+import AdminSolutionDemoRequestsModal from "./AdminSolutionDemoRequestsModal";
+import AdminSolutionEnhancementModal from "./AdminSolutionEnhancementModal";
 import AdminSolutionNewAITableToolbar from "./AdminSolutionNewAITableToolbar";
 import AdminSolutionStatusDropdown from "./AdminSolutionStatusDropdown";
 import AdminSolutionViewModal from "./AdminSolutionViewModal";
+import { useAdminDemoRequests } from "./useAdminDemoRequests";
 import { useAdminSolutions } from "./useAdminSolutions";
 import "./AdminLayout.scss";
 
 const PAGE_SIZE = 10;
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT = 8;
 
 const formatCell = (value) => value || "—";
+
+const matchesSolutionRequest = (request, solution) => {
+  if (!request || !solution) return false;
+
+  if (
+    request.solutionId != null &&
+    String(request.solutionId) === String(solution.ID)
+  ) {
+    return true;
+  }
+
+  const requestTitle = String(request.solutionTitle || "")
+    .trim()
+    .toLowerCase();
+  const solutionTitle = String(solution.Title || "")
+    .trim()
+    .toLowerCase();
+
+  return Boolean(requestTitle && solutionTitle && requestTitle === solutionTitle);
+};
 
 const AdminSolutionNewAI = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { solutions, loading, error, loadSolutions } = useAdminSolutions();
+  const { requests: demoRequests, loadRequests: loadDemoRequests } =
+    useAdminDemoRequests();
 
   const editId = searchParams.get("id");
   const isFormView =
     searchParams.get("mode") === "add" || Boolean(editId);
 
   const [viewSolutionId, setViewSolutionId] = useState(null);
+  const [enhancementSolutionId, setEnhancementSolutionId] = useState(null);
+  const [demoSolutionId, setDemoSolutionId] = useState(null);
   const [deleteSolutionId, setDeleteSolutionId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
@@ -40,6 +68,7 @@ const AdminSolutionNewAI = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [domainFilter, setDomainFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [engagementTick, setEngagementTick] = useState(0);
 
   const domainOptions = useMemo(
     () => getUniqueSolutionValues(solutions, "BusinessDomain"),
@@ -93,6 +122,28 @@ const AdminSolutionNewAI = () => {
     [solutions, viewSolutionId],
   );
 
+  const enhancementSolution = useMemo(
+    () =>
+      solutions.find(
+        (item) => String(item.ID) === String(enhancementSolutionId),
+      ) || null,
+    [solutions, enhancementSolutionId],
+  );
+
+  const demoSolution = useMemo(
+    () =>
+      solutions.find((item) => String(item.ID) === String(demoSolutionId)) ||
+      null,
+    [solutions, demoSolutionId],
+  );
+
+  const selectedDemoRequests = useMemo(() => {
+    if (!demoSolution) return [];
+    return demoRequests.filter((request) =>
+      matchesSolutionRequest(request, demoSolution),
+    );
+  }, [demoRequests, demoSolution]);
+
   const deleteSolution = useMemo(
     () =>
       solutions.find(
@@ -101,9 +152,14 @@ const AdminSolutionNewAI = () => {
     [solutions, deleteSolutionId],
   );
 
+  const handleRefresh = async () => {
+    setEngagementTick((prev) => prev + 1);
+    await Promise.all([loadSolutions(), loadDemoRequests()]);
+  };
+
   const handleBackToList = () => {
     setSearchParams({});
-    loadSolutions();
+    handleRefresh();
   };
 
   const handleOpenAdd = () => {
@@ -128,6 +184,22 @@ const AdminSolutionNewAI = () => {
 
   const handleCloseView = () => {
     setViewSolutionId(null);
+  };
+
+  const handleOpenEnhancement = (solution) => {
+    setEnhancementSolutionId(solution.ID);
+  };
+
+  const handleCloseEnhancement = () => {
+    setEnhancementSolutionId(null);
+  };
+
+  const handleOpenDemos = (solution) => {
+    setDemoSolutionId(solution.ID);
+  };
+
+  const handleCloseDemos = () => {
+    setDemoSolutionId(null);
   };
 
   const handleCloseDelete = () => {
@@ -224,7 +296,7 @@ const AdminSolutionNewAI = () => {
           onExport={handleExport}
           exportDisabled={sortedSolutions.length === 0}
           onAddSolution={handleOpenAdd}
-          onRefresh={loadSolutions}
+          onRefresh={handleRefresh}
           loading={loading}
           filteredCount={sortedSolutions.length}
           totalCount={solutions.length}
@@ -240,6 +312,8 @@ const AdminSolutionNewAI = () => {
               <th>Solution Title</th>
               <th>Business Domain</th>
               <th>COE / Ownership</th>
+              <th className="admin_demo_table__enhancement-col">Card Engagement</th>
+              <th className="admin_demo_table__demos-col">Demos</th>
               <th className="admin_demo_table__status-col">Status</th>
             </tr>
           </thead>
@@ -261,9 +335,13 @@ const AdminSolutionNewAI = () => {
             ) : (
               paginatedSolutions.map((solution) => {
                 const statusLabel = getSolutionStatusLabel(solution);
+                const engagement = getSolutionEngagement(solution.ID);
+                const requestCount = demoRequests.filter((request) =>
+                  matchesSolutionRequest(request, solution),
+                ).length;
 
                 return (
-                  <tr key={solution.ID}>
+                  <tr key={`${solution.ID}-${engagementTick}`}>
                     <td>
                       <AdminBlogActionDropdown
                         onSelect={(action) => handleAction(solution, action)}
@@ -273,6 +351,78 @@ const AdminSolutionNewAI = () => {
                     <td>{formatCell(solution.Title)}</td>
                     <td>{formatCell(solution.BusinessDomain)}</td>
                     <td>{formatCell(solution.OwnershipDetails)}</td>
+                    <td className="admin_demo_table__enhancement-col">
+                      <button
+                        type="button"
+                        className="admin_solution_enhancement__metrics"
+                        onClick={() => handleOpenEnhancement(solution)}
+                        title="View likes, views and comments"
+                      >
+                        <span className="admin_solution_enhancement__metric">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M1.5 12C3.5 7.5 7.5 5 12 5s8.5 2.5 10.5 7c-2 4.5-6 7-10.5 7S3.5 16.5 1.5 12Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                          </svg>
+                          <span>Views {engagement.views}</span>
+                        </span>
+                        <span className="admin_solution_enhancement__metric">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M12 20s-7-4.4-9.2-8.4C1.2 8.2 3.2 5 6.4 5c1.8 0 3.4.9 4.4 2.3C12 5.9 13.6 5 15.4 5 18.6 5 20.6 8.2 21.2 11.6 19 15.6 12 20 12 20Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                          </svg>
+                          <span>Likes {engagement.likes}</span>
+                        </span>
+                        <span className="admin_solution_enhancement__metric">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M4 5h16v11H8l-4 4V5Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span>Comments {engagement.comments.length}</span>
+                        </span>
+                      </button>
+                    </td>
+                    <td className="admin_demo_table__demos-col">
+                      <button
+                        type="button"
+                        className="admin_solution_enhancement__metrics admin_solution_demos__link"
+                        onClick={() => handleOpenDemos(solution)}
+                        title="View requested demo details"
+                      >
+                        <span className="admin_solution_enhancement__metric">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M4 7h16v12H4V7Zm2-3h12v3H6V4Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <span>Demos {requestCount}</span>
+                        </span>
+                      </button>
+                    </td>
                     <td className="admin_demo_table__status-cell">
                       <AdminSolutionStatusDropdown
                         value={statusLabel}
@@ -293,13 +443,27 @@ const AdminSolutionNewAI = () => {
         <AdminBlogPagination
           currentPage={currentPage}
           totalPages={totalPages}
+          totalItems={sortedSolutions.length}
+          pageSize={PAGE_SIZE}
           onPageChange={setCurrentPage}
+          itemLabel="records"
         />
       )}
 
       <AdminSolutionViewModal
         solution={viewSolution}
         onClose={handleCloseView}
+      />
+
+      <AdminSolutionEnhancementModal
+        solution={enhancementSolution}
+        onClose={handleCloseEnhancement}
+      />
+
+      <AdminSolutionDemoRequestsModal
+        solution={demoSolution}
+        demoRequests={selectedDemoRequests}
+        onClose={handleCloseDemos}
       />
 
       <AdminSolutionDeleteModal

@@ -35,6 +35,11 @@ import AdminDashboardPage, {
   AdminRequestDemoSolutionInfo,
   AdminSolutionNewAI,
 } from "./pages/AdminDashboardPage";
+import UserManagement from "./pages/UserManagement/UserManagement";
+import UserDetails from "./pages/UserManagement/UserDetails";
+import RoleManagement from "./pages/RoleManagement/RoleManagement";
+import RoleDetails from "./pages/RoleManagement/RoleDetails";
+import ContactRequests from "./pages/ContactRequests/ContactRequests";
 import { scrollToHomeSection } from "./utils/homeSections";
 
 const RouteScrollManager = () => {
@@ -118,6 +123,7 @@ const AppShell = () => {
             path="request-demos/solution-info"
             element={<AdminRequestDemoSolutionInfo />}
           />
+          <Route path="contact-requests" element={<ContactRequests />} />
           <Route path="blogs" element={<AdminBlogs />} />
           <Route path="learn-explore" element={<AdminCertifications />} />
           <Route
@@ -129,6 +135,10 @@ const AppShell = () => {
             element={<AdminCertificationDetail />}
           />
           <Route path="solution-new-ai" element={<AdminSolutionNewAI />} />
+          <Route path="role-management" element={<RoleManagement />} />
+          <Route path="role-management/:roleId" element={<RoleDetails />} />
+          <Route path="user-management" element={<UserManagement />} />
+          <Route path="user-management/:userId" element={<UserDetails />} />
         </Route>
       </Routes>
       {!isAdminRoute && <Footer />}
