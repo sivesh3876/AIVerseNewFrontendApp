@@ -12,6 +12,11 @@ const adminNavItems = [
     end: false,
   },
   {
+    label: "Contact Requests",
+    to: "/admin/contact-requests",
+    end: true,
+  },
+  {
     label: "Blogs",
     to: "/admin/blogs",
     end: true,
@@ -25,6 +30,16 @@ const adminNavItems = [
     label: "Solution New AI",
     to: "/admin/solution-new-ai",
     end: true,
+  },
+  {
+    label: "Role Management",
+    to: "/admin/role-management",
+    end: false,
+  },
+  {
+    label: "User Management",
+    to: "/admin/user-management",
+    end: false,
   },
 ];
 const AdminLayout = () => {

@@ -5,6 +5,7 @@ import {
   sendContactEmail,
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";
+import { addContactRequest } from "../../utils/contactRequestStorage";
 import "./RequestDemoModal.scss";
 
 const INITIAL_FORM = {
@@ -57,7 +58,7 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!isEmailApiReady) {
+    if (!isContactMode && !isEmailApiReady) {
       setErrors({ form: REQUEST_DEMO_EMAIL_SETUP_MESSAGE });
       return;
     }
@@ -69,9 +70,38 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
       setErrors({});
       setSuccessPopupMessage("");
 
-      const result = isContactMode
-        ? await sendContactEmail({ form })
-        : await sendRequestDemoEmail({ capability, form });
+      if (isContactMode) {
+        addContactRequest({
+          name: form.name,
+          email: form.email,
+          company: form.company,
+          phone: form.phone,
+          reason: "Contact Us",
+          message: form.message,
+        });
+
+        if (isEmailApiReady) {
+          try {
+            const result = await sendContactEmail({ form });
+            setSuccessPopupMessage(
+              result.successMessage || "Mail sent successfully.",
+            );
+            return;
+          } catch {
+            setSuccessPopupMessage(
+              "Your message has been received. Our team will get back to you shortly.",
+            );
+            return;
+          }
+        }
+
+        setSuccessPopupMessage(
+          "Thank you! Your message has been received. Our team will get back to you shortly.",
+        );
+        return;
+      }
+
+      const result = await sendRequestDemoEmail({ capability, form });
 
       setSuccessPopupMessage(
         result.successMessage || "Mail sent successfully.",
@@ -116,7 +146,7 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
             </button>
           </div>
 
-          {!isEmailApiReady && (
+          {!isEmailApiReady && !isContactMode && (
             <div className="request_demo_modal__setup-note" role="status">
               {REQUEST_DEMO_EMAIL_SETUP_MESSAGE}
             </div>
@@ -230,7 +260,7 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
               <button
                 type="submit"
                 className="request_demo_modal__btn request_demo_modal__btn--primary"
-                disabled={isSending || !isEmailApiReady}
+                disabled={isSending || (!isContactMode && !isEmailApiReady)}
                 title={
                   isEmailApiReady ? "Send email" : REQUEST_DEMO_EMAIL_SETUP_MESSAGE
                 }
