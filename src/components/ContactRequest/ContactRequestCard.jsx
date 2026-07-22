@@ -16,22 +16,11 @@ const formatDate = (value) => {
   });
 };
 
-const PriorityBadge = ({ priority }) => {
-  const modifier = priority?.toLowerCase() || "medium";
-  return (
-    <span className={`admin_contact_priority admin_contact_priority--${modifier}`}>
-      {priority}
-    </span>
-  );
-};
-
-const StatusBadge = ({ status }) => {
-  const modifier = status === "Open" ? "open" : status === "Closed" ? "closed" : "progress";
-  return (
-    <span className={`admin_contact_status admin_contact_status--${modifier}`}>
-      {status}
-    </span>
-  );
+const typeClass = (type = "") => {
+  const value = String(type).toLowerCase();
+  if (value.includes("request demo") || value.includes("demo")) return "demo";
+  if (value.includes("mail")) return "mail";
+  return "message";
 };
 
 const ContactRequestCard = ({ request, onClick }) => (
@@ -51,6 +40,9 @@ const ContactRequestCard = ({ request, onClick }) => (
       <div className="admin_contact_card__identity">
         <strong>{request.name}</strong>
         <span>{request.company}</span>
+        {request.solutionTitle ? (
+          <span className="admin_contact_card__solution">{request.solutionTitle}</span>
+        ) : null}
       </div>
     </div>
 
@@ -60,8 +52,13 @@ const ContactRequestCard = ({ request, onClick }) => (
     </div>
 
     <div className="admin_contact_card__badges">
-      <StatusBadge status={request.status} />
-      <PriorityBadge priority={request.priority} />
+      <span
+        className={`admin_contact_type admin_contact_type--${typeClass(
+          request.type,
+        )}`}
+      >
+        Type: {request.type || "Message"}
+      </span>
     </div>
 
     <div className="admin_contact_card__footer">

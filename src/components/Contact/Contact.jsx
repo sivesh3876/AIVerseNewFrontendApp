@@ -21,6 +21,7 @@ const Contact = () => {
       company: data.get("company"),
       reason: data.get("reason"),
       message: data.get("message"),
+      type: "Message",
     });
     setSubmitted(true);
   };

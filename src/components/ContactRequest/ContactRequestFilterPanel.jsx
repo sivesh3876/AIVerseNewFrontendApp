@@ -3,7 +3,6 @@ import {
   COUNTRY_OPTIONS,
   INDUSTRY_OPTIONS,
   PIPELINE_STAGES,
-  PRIORITY_OPTIONS,
 } from "./placeholders";
 
 const ContactRequestFilterPanel = ({ open, onClose }) => {
@@ -17,11 +16,11 @@ const ContactRequestFilterPanel = ({ open, onClose }) => {
         aria-label="Close filters"
         onClick={onClose}
       />
-      <aside className="admin_contact_filter" role="dialog" aria-label="Filter contact requests">
+      <aside className="admin_contact_filter" role="dialog" aria-label="Filter leads">
         <header className="admin_contact_filter__head">
           <div>
             <p className="admin_demo_modal__eyebrow">Filters</p>
-            <h3>Filter Requests</h3>
+            <h3>Filter Leads</h3>
           </div>
           <button
             type="button"
@@ -41,18 +40,6 @@ const ContactRequestFilterPanel = ({ open, onClose }) => {
               {PIPELINE_STAGES.map((stage) => (
                 <option key={stage} value={stage}>
                   {stage}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="admin_demo_toolbar__field">
-            <span>Priority</span>
-            <select defaultValue="all">
-              <option value="all">All priorities</option>
-              {PRIORITY_OPTIONS.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
                 </option>
               ))}
             </select>

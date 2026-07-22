@@ -1,7 +1,13 @@
 // Shared localStorage utility for contact form submissions.
-// The public Contact form writes here; the admin Contact Requests page reads.
+// The public Contact form writes here; the admin Leads page reads.
 
 const STORAGE_KEY = "aiverse_contact_requests";
+
+export const LEAD_TYPES = {
+  MAIL_CONTACT: "Mail",
+  MESSAGE: "Message",
+  REQUEST_DEMO: "Request Demo",
+};
 
 const getAll = () => {
   try {
@@ -25,9 +31,54 @@ const AVATAR_COLORS = [
 const nextId = (requests) =>
   requests.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0) + 1;
 
-export const addContactRequest = ({ name, email, company, phone, reason, message }) => {
+const normalizeStage = (stage) => (stage === "New" ? "Contacted" : stage || "Contacted");
+
+const normalizeLeadType = (type) => {
+  const value = String(type || "").trim();
+
+  if (
+    value === LEAD_TYPES.MAIL_CONTACT ||
+    value === "Mail Contact Form" ||
+    value === "Contact Us" ||
+    value === "mail"
+  ) {
+    return LEAD_TYPES.MAIL_CONTACT;
+  }
+
+  if (
+    value === LEAD_TYPES.MESSAGE ||
+    value === "Message Form" ||
+    value.toLowerCase() === "message"
+  ) {
+    return LEAD_TYPES.MESSAGE;
+  }
+
+  if (
+    value === LEAD_TYPES.REQUEST_DEMO ||
+    value === "Demo" ||
+    value === "Solution Demo" ||
+    value.toLowerCase().includes("request demo")
+  ) {
+    return LEAD_TYPES.REQUEST_DEMO;
+  }
+
+  return value || LEAD_TYPES.MESSAGE;
+};
+
+export const addContactRequest = ({
+  name,
+  email,
+  company,
+  phone,
+  reason,
+  message,
+  type,
+  solutionTitle,
+}) => {
   const requests = getAll();
   const id = nextId(requests);
+  const leadType = normalizeLeadType(type);
+  const title = String(solutionTitle || "").trim();
 
   const entry = {
     id,
@@ -38,8 +89,10 @@ export const addContactRequest = ({ name, email, company, phone, reason, message
     country: "—",
     industry: "—",
     message: message || "—",
-    reason: reason || "General Inquiry",
-    stage: "New",
+    reason: reason || title || "General Inquiry",
+    solutionTitle: title || "",
+    type: leadType,
+    stage: "Contacted",
     priority: "Medium",
     status: "Open",
     assignedTo: "Unassigned",
@@ -55,7 +108,12 @@ export const addContactRequest = ({ name, email, company, phone, reason, message
   return entry;
 };
 
-export const getContactRequests = () => getAll();
+export const getContactRequests = () =>
+  getAll().map((request) => ({
+    ...request,
+    stage: normalizeStage(request.stage),
+    type: normalizeLeadType(request.type || request.reason),
+  }));
 
 export const updateStoredContactRequestStage = (id, stage) => {
   const requests = getAll();
@@ -65,12 +123,12 @@ export const updateStoredContactRequestStage = (id, stage) => {
   const now = new Date().toISOString();
   const updated = {
     ...requests[index],
-    stage,
+    stage: normalizeStage(stage),
     activities: [
       ...(requests[index].activities || []),
       {
         id: `a-${Date.now()}`,
-        label: `Stage changed to ${stage}`,
+        label: `Stage changed to ${normalizeStage(stage)}`,
         at: now,
       },
     ],
@@ -78,7 +136,38 @@ export const updateStoredContactRequestStage = (id, stage) => {
 
   requests[index] = updated;
   saveAll(requests);
-  return updated;
+  return {
+    ...updated,
+    type: normalizeLeadType(updated.type || updated.reason),
+  };
+};
+
+export const deleteContactRequest = (id) => {
+  const requests = getAll();
+  const next = requests.filter((request) => String(request.id) !== String(id));
+  if (next.length === requests.length) return false;
+  saveAll(next);
+  return true;
+};
+
+const DELETED_DEMO_KEY = "aiverse_deleted_demo_leads";
+
+export const getDeletedDemoLeadKeys = () => {
+  try {
+    const raw = localStorage.getItem(DELETED_DEMO_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const markDemoLeadDeleted = (requestKey) => {
+  const key = String(requestKey || "");
+  if (!key.startsWith("demo-")) return;
+  const existing = getDeletedDemoLeadKeys();
+  if (existing.includes(key)) return;
+  localStorage.setItem(DELETED_DEMO_KEY, JSON.stringify([...existing, key]));
 };
 
 export const clearContactRequests = () => {

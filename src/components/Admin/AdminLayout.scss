@@ -3076,12 +3076,31 @@
             width: 18px;
             height: 18px;
         }
+
+        &--views {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+
+        &--likes {
+            background: rgba(244, 63, 94, 0.12);
+            color: #e11d48;
+        }
+
+        &--dislikes {
+            background: rgba(100, 116, 139, 0.14);
+            color: #475569;
+        }
     }
 
     &__stats {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
+
+        &--four {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
     }
 
     &__stat {
@@ -3139,6 +3158,20 @@
             .admin_solution_enhancement_modal__stat-icon {
                 color: #fff;
                 background: #f43f5e;
+            }
+        }
+
+        &--dislikes {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-color: #dbe3ea;
+
+            strong {
+                color: #475569;
+            }
+
+            .admin_solution_enhancement_modal__stat-icon {
+                color: #fff;
+                background: #64748b;
             }
         }
 
@@ -3261,6 +3294,12 @@
         border: 1px solid #e8ecf0;
         border-radius: 14px;
         background: #f8fafc;
+    }
+
+    &__person-email {
+        margin: 4px 0 0 !important;
+        font-size: 12px !important;
+        color: #64748b !important;
     }
 
     &__comment-avatar {
@@ -3683,8 +3722,9 @@
 
 @media (max-width: 900px) {
     .admin_solution_enhancement_modal {
-        &__stats {
-            grid-template-columns: 1fr;
+        &__stats,
+        &__stats--four {
+            grid-template-columns: 1fr 1fr;
         }
     }
 
@@ -4442,6 +4482,14 @@
         }
     }
 
+    &__solution {
+        margin-top : 2px !important;
+        font-size  : 11px !important;
+        font-weight: 600 !important;
+        color      : #3A8D9D !important;
+        white-space: normal !important;
+    }
+
     &__meta {
         display       : flex;
         flex-direction: column;
@@ -4514,8 +4562,84 @@
     }
 
     &--closed {
-        background: rgba(100, 116, 139, 0.12);
+        background: rgba(100, 116, 139, 0.14);
         color     : #475569;
+    }
+}
+
+.admin_contact_stage {
+    display      : inline-flex;
+    max-width    : 100%;
+    padding      : 4px 10px;
+    border-radius: 999px;
+    font-size    : 11px;
+    font-weight  : 700;
+    white-space  : nowrap;
+    background   : rgba(58, 141, 157, 0.12);
+    color        : #0d6e7a;
+
+    &--new {
+        background: rgba(37, 99, 235, 0.12);
+        color     : #1d4ed8;
+    }
+
+    &--contacted {
+        background: rgba(14, 165, 233, 0.14);
+        color     : #0284c7;
+    }
+
+    &--qualified {
+        background: rgba(124, 58, 237, 0.12);
+        color     : #6d28d9;
+    }
+
+    &--meeting-scheduled {
+        background: rgba(245, 158, 11, 0.16);
+        color     : #b45309;
+    }
+
+    &--proposal-sent {
+        background: rgba(234, 88, 12, 0.14);
+        color     : #c2410c;
+    }
+
+    &--won {
+        background: rgba(22, 163, 74, 0.14);
+        color     : #15803d;
+    }
+
+    &--lost {
+        background: rgba(220, 38, 38, 0.12);
+        color     : #b91c1c;
+    }
+
+    &--closed {
+        background: rgba(100, 116, 139, 0.14);
+        color     : #475569;
+    }
+}
+
+.admin_contact_type {
+    display      : inline-flex;
+    padding      : 4px 10px;
+    border-radius: 999px;
+    font-size    : 11px;
+    font-weight  : 700;
+    white-space  : nowrap;
+
+    &--mail {
+        background: rgba(37, 99, 235, 0.12);
+        color     : #1d4ed8;
+    }
+
+    &--message {
+        background: rgba(13, 148, 136, 0.14);
+        color     : #0f766e;
+    }
+
+    &--demo {
+        background: rgba(124, 58, 237, 0.12);
+        color     : #6d28d9;
     }
 }
 

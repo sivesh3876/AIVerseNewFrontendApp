@@ -9,10 +9,14 @@ import ContactRequestTable from "../../components/ContactRequest/ContactRequestT
 import ContactRequestFilterPanel from "../../components/ContactRequest/ContactRequestFilterPanel";
 import ContactRequestDrawer from "../../components/ContactRequest/ContactRequestDrawer";
 import ContactRequestToast from "../../components/ContactRequest/ContactRequestToast";
+import LeadDeleteModal from "../../components/ContactRequest/LeadDeleteModal";
 import { PLACEHOLDER_REQUESTS } from "../../components/ContactRequest/placeholders";
 import {
   getContactRequests,
   updateStoredContactRequestStage,
+  deleteContactRequest,
+  getDeletedDemoLeadKeys,
+  markDemoLeadDeleted,
 } from "../../utils/contactRequestStorage";
 import { updateContactRequestStageApi } from "../../services/contactRequestStageService";
 import { createFollowUpApi } from "../../services/contactRequestFollowUpService";
@@ -23,25 +27,35 @@ const PAGE_SIZE = 10;
 
 const buildStats = (requests) => ({
   total: requests.length,
-  new: requests.filter((r) => r.stage === "New").length,
+  contacted: requests.filter((r) => r.stage === "Contacted").length,
   qualified: requests.filter((r) => r.stage === "Qualified").length,
   won: requests.filter((r) => r.stage === "Won").length,
   lost: requests.filter((r) => r.stage === "Lost").length,
   closed: requests.filter((r) => r.stage === "Closed").length,
 });
 
+const normalizeLead = (request) => ({
+  ...request,
+  stage: request.stage === "New" ? "Contacted" : request.stage || "Contacted",
+  type:
+    request.type ||
+    (request.reason === "Contact Us" ? "Mail" : "Message"),
+});
+
 const buildInitialRequests = () => {
+  const deletedDemoKeys = new Set(getDeletedDemoLeadKeys());
+
   const stored = getContactRequests().map((request) => ({
-    ...request,
+    ...normalizeLead(request),
     requestKey: `stored-${request.id}`,
     isStored: true,
   }));
 
   const demo = PLACEHOLDER_REQUESTS.map((request) => ({
-    ...request,
+    ...normalizeLead(request),
     requestKey: `demo-${request.id}`,
     isStored: false,
-  }));
+  })).filter((request) => !deletedDemoKeys.has(request.requestKey));
 
   return [...stored, ...demo];
 };
@@ -85,6 +99,9 @@ const ContactRequests = () => {
   const [toast, setToast] = useState(null);
   const [savingFollowUp, setSavingFollowUp] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [leadToDelete, setLeadToDelete] = useState(null);
+  const [deletingLead, setDeletingLead] = useState(false);
 
   const selectedRequest = useMemo(
     () => requests.find((r) => r.requestKey === selectedRequestKey) || null,
@@ -101,10 +118,24 @@ const ContactRequests = () => {
 
   const stats = useMemo(() => buildStats(requests), [requests]);
 
+  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
+
+  const paginatedRequests = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return requests.slice(start, start + PAGE_SIZE);
+  }, [requests, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const handleRefresh = useCallback(() => {
     setRequests(buildInitialRequests());
     setFollowUpsByLead({});
     setNotesByLead({});
+    setCurrentPage(1);
   }, []);
 
   useEffect(() => {
@@ -127,6 +158,50 @@ const ContactRequests = () => {
   const handleTableAction = (request, action) => {
     if (action === "view" || action === "edit") {
       openDrawer(request);
+      return;
+    }
+
+    if (action === "delete") {
+      setLeadToDelete(request);
+    }
+  };
+
+  const handleConfirmDeleteLead = () => {
+    if (!leadToDelete) return;
+
+    setDeletingLead(true);
+
+    try {
+      if (leadToDelete.isStored) {
+        deleteContactRequest(leadToDelete.id);
+      } else {
+        markDemoLeadDeleted(leadToDelete.requestKey);
+      }
+
+      setRequests((prev) =>
+        prev.filter((item) => item.requestKey !== leadToDelete.requestKey),
+      );
+
+      setFollowUpsByLead((prev) => {
+        const next = { ...prev };
+        delete next[leadToDelete.requestKey];
+        return next;
+      });
+
+      setNotesByLead((prev) => {
+        const next = { ...prev };
+        delete next[leadToDelete.requestKey];
+        return next;
+      });
+
+      if (selectedRequestKey === leadToDelete.requestKey) {
+        closeDrawer();
+      }
+
+      setLeadToDelete(null);
+      setToast({ type: "success", message: "Lead deleted successfully." });
+    } finally {
+      setDeletingLead(false);
     }
   };
 
@@ -241,7 +316,7 @@ const ContactRequests = () => {
 
   return (
     <AdminDemoPageShell
-      title="Contact Requests"
+      title="Leads"
       description="Manage and track all inquiries submitted through the website Contact Us form."
     >
       <ContactRequestSummary stats={stats} />
@@ -259,16 +334,16 @@ const ContactRequests = () => {
       ) : (
         <>
           <ContactRequestTable
-            requests={requests}
+            requests={paginatedRequests}
             onRowAction={handleTableAction}
           />
           <AdminBlogPagination
-            currentPage={1}
-            totalPages={Math.max(1, Math.ceil(requests.length / PAGE_SIZE))}
+            currentPage={currentPage}
+            totalPages={totalPages}
             totalItems={requests.length}
             pageSize={PAGE_SIZE}
-            onPageChange={() => {}}
-            itemLabel="requests"
+            onPageChange={setCurrentPage}
+            itemLabel="leads"
           />
         </>
       )}
@@ -291,6 +366,15 @@ const ContactRequests = () => {
         savingFollowUp={savingFollowUp}
         onSaveNote={handleSaveNote}
         savingNote={savingNote}
+      />
+
+      <LeadDeleteModal
+        lead={leadToDelete}
+        deleting={deletingLead}
+        onClose={() => {
+          if (!deletingLead) setLeadToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteLead}
       />
 
       <ContactRequestToast toast={toast} onClose={() => setToast(null)} />

@@ -3,7 +3,7 @@ import { getSolutionStatusLabel } from "../../utils/adminSolutionTableUtils";
 
 const formatCell = (value) => value || "—";
 
-const formatCommentDate = (value) => {
+const formatDateTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -39,6 +39,24 @@ const HeartIcon = () => (
   </svg>
 );
 
+const DislikeIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M10 15v5a2 2 0 0 0 2 2l5-6V4H7.5A2.5 2.5 0 0 0 5 6.4l-1.2 5.2A2 2 0 0 0 5.7 14H10Z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M17 4h2.5A1.5 1.5 0 0 1 21 5.5v7A1.5 1.5 0 0 1 19.5 14H17"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    />
+  </svg>
+);
+
 const CommentIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path
@@ -60,11 +78,63 @@ const SparkleIcon = () => (
   </svg>
 );
 
+const EmptyState = ({ title, description, icon }) => (
+  <div className="admin_solution_enhancement_modal__empty">
+    <div className="admin_solution_enhancement_modal__empty-visual">
+      <span className="admin_solution_enhancement_modal__sparkle admin_solution_enhancement_modal__sparkle--one">
+        <SparkleIcon />
+      </span>
+      <span className="admin_solution_enhancement_modal__empty-icon">{icon}</span>
+      <span className="admin_solution_enhancement_modal__sparkle admin_solution_enhancement_modal__sparkle--two">
+        <SparkleIcon />
+      </span>
+    </div>
+    <strong>{title}</strong>
+    <p>{description}</p>
+  </div>
+);
+
+const PeopleList = ({ people, dateKey, emptyTitle, emptyDescription, emptyIcon }) => {
+  if (!people.length) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        icon={emptyIcon}
+      />
+    );
+  }
+
+  return (
+    <ul className="admin_solution_enhancement_modal__comments">
+      {people.map((person) => (
+        <li key={person.id || person.userId || person.email}>
+          <div className="admin_solution_enhancement_modal__comment-avatar">
+            {(person.name || person.email || "U").charAt(0).toUpperCase()}
+          </div>
+          <div className="admin_solution_enhancement_modal__comment-body">
+            <div className="admin_solution_enhancement_modal__comment-meta">
+              <strong>{formatCell(person.name || "User")}</strong>
+              <span>{formatDateTime(person[dateKey])}</span>
+            </div>
+            <p className="admin_solution_enhancement_modal__person-email">
+              {person.email ? person.email : "No email on record"}
+            </p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
   if (!solution) return null;
 
   const engagement = getSolutionEngagement(solution.ID);
   const comments = engagement.comments || [];
+  const likedBy = engagement.likedBy || [];
+  const dislikedBy = engagement.dislikedBy || [];
+  const viewers = engagement.viewers || [];
   const statusLabel = getSolutionStatusLabel(solution);
   const isActive = statusLabel === "Active";
 
@@ -122,11 +192,11 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
               </span>
               <div>
                 <h4>Card Engagement</h4>
-                <p>Live activity from the Explore Solutions card</p>
+                <p>Authenticated likes and dislikes from signed-in users</p>
               </div>
             </div>
 
-            <div className="admin_solution_enhancement_modal__stats">
+            <div className="admin_solution_enhancement_modal__stats admin_solution_enhancement_modal__stats--four">
               <article className="admin_solution_enhancement_modal__stat admin_solution_enhancement_modal__stat--views">
                 <span className="admin_solution_enhancement_modal__stat-icon">
                   <EyeIcon />
@@ -134,7 +204,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                 <div>
                   <span>Views</span>
                   <strong>{engagement.views}</strong>
-                  <em>Total views</em>
+                  <em>Unique viewers</em>
                 </div>
               </article>
 
@@ -146,6 +216,17 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                   <span>Likes</span>
                   <strong>{engagement.likes}</strong>
                   <em>Total likes</em>
+                </div>
+              </article>
+
+              <article className="admin_solution_enhancement_modal__stat admin_solution_enhancement_modal__stat--dislikes">
+                <span className="admin_solution_enhancement_modal__stat-icon">
+                  <DislikeIcon />
+                </span>
+                <div>
+                  <span>Dislikes</span>
+                  <strong>{engagement.dislikes}</strong>
+                  <em>Total dislikes</em>
                 </div>
               </article>
 
@@ -164,6 +245,69 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
 
           <section className="admin_solution_enhancement_modal__section">
             <div className="admin_solution_enhancement_modal__section-head">
+              <span className="admin_solution_enhancement_modal__section-icon admin_solution_enhancement_modal__section-icon--likes">
+                <HeartIcon />
+              </span>
+              <div>
+                <h4>Who liked</h4>
+                <p>
+                  {likedBy.length} user{likedBy.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <PeopleList
+              people={likedBy}
+              dateKey="likedAt"
+              emptyTitle="No likes yet"
+              emptyDescription="Signed-in users who like this solution will appear here with their name."
+              emptyIcon={<HeartIcon />}
+            />
+          </section>
+
+          <section className="admin_solution_enhancement_modal__section">
+            <div className="admin_solution_enhancement_modal__section-head">
+              <span className="admin_solution_enhancement_modal__section-icon admin_solution_enhancement_modal__section-icon--dislikes">
+                <DislikeIcon />
+              </span>
+              <div>
+                <h4>Who disliked</h4>
+                <p>
+                  {dislikedBy.length} user{dislikedBy.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <PeopleList
+              people={dislikedBy}
+              dateKey="dislikedAt"
+              emptyTitle="No dislikes yet"
+              emptyDescription="Signed-in users who dislike this solution will appear here with their name."
+              emptyIcon={<DislikeIcon />}
+            />
+          </section>
+
+          <section className="admin_solution_enhancement_modal__section">
+            <div className="admin_solution_enhancement_modal__section-head">
+              <span className="admin_solution_enhancement_modal__section-icon admin_solution_enhancement_modal__section-icon--views">
+                <EyeIcon />
+              </span>
+              <div>
+                <h4>Who viewed</h4>
+                <p>
+                  {viewers.length} unique viewer{viewers.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <PeopleList
+              people={viewers}
+              dateKey="viewedAt"
+              emptyTitle="No viewers yet"
+              emptyDescription="When someone views this card, their details will appear here."
+              emptyIcon={<EyeIcon />}
+            />
+          </section>
+
+          <section className="admin_solution_enhancement_modal__section">
+            <div className="admin_solution_enhancement_modal__section-head">
               <span className="admin_solution_enhancement_modal__section-icon">
                 <CommentIcon />
               </span>
@@ -177,24 +321,11 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
             </div>
 
             {comments.length === 0 ? (
-              <div className="admin_solution_enhancement_modal__empty">
-                <div className="admin_solution_enhancement_modal__empty-visual">
-                  <span className="admin_solution_enhancement_modal__sparkle admin_solution_enhancement_modal__sparkle--one">
-                    <SparkleIcon />
-                  </span>
-                  <span className="admin_solution_enhancement_modal__empty-icon">
-                    <CommentIcon />
-                  </span>
-                  <span className="admin_solution_enhancement_modal__sparkle admin_solution_enhancement_modal__sparkle--two">
-                    <SparkleIcon />
-                  </span>
-                </div>
-                <strong>No comments yet</strong>
-                <p>
-                  When users comment on this card, their feedback will appear
-                  here.
-                </p>
-              </div>
+              <EmptyState
+                title="No comments yet"
+                description="When users comment on this card, their feedback will appear here."
+                icon={<CommentIcon />}
+              />
             ) : (
               <ul className="admin_solution_enhancement_modal__comments">
                 {comments.map((comment) => (
@@ -207,7 +338,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                         <strong>
                           {formatCell(comment.authorName || "Guest")}
                         </strong>
-                        <span>{formatCommentDate(comment.createdAt)}</span>
+                        <span>{formatDateTime(comment.createdAt)}</span>
                       </div>
                       <p>{formatCell(comment.message)}</p>
                     </div>

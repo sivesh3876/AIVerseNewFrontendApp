@@ -2,7 +2,6 @@
 // No API / service layer — replace with real data when backend is ready.
 
 export const PIPELINE_STAGES = [
-  "New",
   "Contacted",
   "Qualified",
   "Meeting Scheduled",
@@ -11,6 +10,13 @@ export const PIPELINE_STAGES = [
   "Lost",
   "Closed",
 ];
+
+/** Where the lead came from on the public site. */
+export const LEAD_TYPES = {
+  MAIL_CONTACT: "Mail",
+  MESSAGE: "Message",
+  REQUEST_DEMO: "Request Demo",
+};
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
 export const ASSIGNEE_OPTIONS = ["Unassigned", "Priya Nair", "Rohan Mehta", "Isha Verma", "Aarav Sharma"];
@@ -27,7 +33,8 @@ export const PLACEHOLDER_REQUESTS = [
     country: "India",
     industry: "Technology",
     message: "We are looking for an AI-powered customer support solution for our enterprise clients.",
-    stage: "New",
+    type: "Message",
+    stage: "Contacted",
     priority: "High",
     status: "Open",
     assignedTo: "Unassigned",
@@ -46,7 +53,8 @@ export const PLACEHOLDER_REQUESTS = [
     country: "United States",
     industry: "Finance",
     message: "Interested in automation for loan processing workflows.",
-    stage: "New",
+    type: "Mail",
+    stage: "Contacted",
     priority: "Medium",
     status: "Open",
     assignedTo: "Priya Nair",
@@ -65,6 +73,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "UAE",
     industry: "Retail",
     message: "Need a demo for our e-commerce personalization use case.",
+    type: "Mail",
     stage: "Contacted",
     priority: "High",
     status: "In Progress",
@@ -85,6 +94,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "Singapore",
     industry: "Healthcare",
     message: "Exploring AI for patient intake and triage automation.",
+    type: "Message",
     stage: "Qualified",
     priority: "High",
     status: "In Progress",
@@ -106,6 +116,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "United Kingdom",
     industry: "Manufacturing",
     message: "Looking for predictive maintenance AI solutions.",
+    type: "Mail",
     stage: "Meeting Scheduled",
     priority: "Medium",
     status: "In Progress",
@@ -127,6 +138,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "India",
     industry: "Education",
     message: "Want to discuss AI tutoring and content recommendation.",
+    type: "Message",
     stage: "Proposal Sent",
     priority: "Medium",
     status: "In Progress",
@@ -147,6 +159,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "United States",
     industry: "Technology",
     message: "Enterprise AI integration for our SaaS platform.",
+    type: "Mail",
     stage: "Won",
     priority: "High",
     status: "Closed",
@@ -167,6 +180,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "United States",
     industry: "Retail",
     message: "Budget constraints — may revisit next quarter.",
+    type: "Message",
     stage: "Lost",
     priority: "Low",
     status: "Closed",
@@ -187,6 +201,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "India",
     industry: "Finance",
     message: "Completed engagement — no further action needed.",
+    type: "Mail",
     stage: "Closed",
     priority: "Low",
     status: "Closed",
@@ -208,6 +223,7 @@ export const PLACEHOLDER_REQUESTS = [
     country: "United Kingdom",
     industry: "Healthcare",
     message: "Initial inquiry about conversational AI for appointments.",
+    type: "Message",
     stage: "Contacted",
     priority: "Medium",
     status: "In Progress",
@@ -223,7 +239,7 @@ export const PLACEHOLDER_REQUESTS = [
 
 export const SUMMARY_STATS = {
   total: PLACEHOLDER_REQUESTS.length,
-  new: PLACEHOLDER_REQUESTS.filter((r) => r.stage === "New").length,
+  contacted: PLACEHOLDER_REQUESTS.filter((r) => r.stage === "Contacted").length,
   qualified: PLACEHOLDER_REQUESTS.filter((r) => r.stage === "Qualified").length,
   won: PLACEHOLDER_REQUESTS.filter((r) => r.stage === "Won").length,
   lost: PLACEHOLDER_REQUESTS.filter((r) => r.stage === "Lost").length,

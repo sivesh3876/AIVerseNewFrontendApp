@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 export const PIPELINE_STAGE_OPTIONS = [
-  "New",
   "Contacted",
   "Qualified",
   "Meeting Scheduled",
@@ -23,7 +22,7 @@ const getStageLabel = (stage) => PIPELINE_STAGE_LABELS[stage] || stage;
  * by the parent (mock API today, real API later).
  */
 const PipelineStage = ({
-  stage: stageProp = "New",
+  stage: stageProp = "Contacted",
   onStageChange,
   onSuccess,
   onError,
