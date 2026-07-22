@@ -148,7 +148,11 @@ const ContactRequestDrawer = ({
               <InfoField label="Phone">{request.phone}</InfoField>
               <InfoField label="Country">{request.country}</InfoField>
               <InfoField label="Industry">{request.industry}</InfoField>
+              <InfoField label="Type">{request.type || "Message"}</InfoField>
             </div>
+            {request.solutionTitle ? (
+              <InfoField label="Solution">{request.solutionTitle}</InfoField>
+            ) : null}
             <InfoField label="Message">{request.message}</InfoField>
             <InfoField label="Submission Date">
               {formatDateTime(request.submittedAt)}

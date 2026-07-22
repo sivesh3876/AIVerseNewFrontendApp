@@ -1,12 +1,12 @@
 const ContactRequestSummary = ({ stats }) => (
   <section className="admin_contact_summary">
     <article className="admin_contact_summary__card">
-      <span>Total Requests</span>
+      <span>Total Leads</span>
       <strong>{stats.total}</strong>
     </article>
     <article className="admin_contact_summary__card admin_contact_summary__card--new">
-      <span>New</span>
-      <strong>{stats.new}</strong>
+      <span>Contacted</span>
+      <strong>{stats.contacted}</strong>
     </article>
     <article className="admin_contact_summary__card admin_contact_summary__card--qualified">
       <span>Qualified</span>

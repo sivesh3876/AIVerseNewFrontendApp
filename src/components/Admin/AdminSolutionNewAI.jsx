@@ -110,6 +110,19 @@ const AdminSolutionNewAI = () => {
     }
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    const refreshEngagement = () => setEngagementTick((prev) => prev + 1);
+    window.addEventListener(
+      "aiverse:solution-engagement-updated",
+      refreshEngagement,
+    );
+    return () =>
+      window.removeEventListener(
+        "aiverse:solution-engagement-updated",
+        refreshEngagement,
+      );
+  }, []);
+
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
     statusFilter !== "all" ||
@@ -356,7 +369,7 @@ const AdminSolutionNewAI = () => {
                         type="button"
                         className="admin_solution_enhancement__metrics"
                         onClick={() => handleOpenEnhancement(solution)}
-                        title="View likes, views and comments"
+                        title="View likes, dislikes, views and comments"
                       >
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -387,6 +400,24 @@ const AdminSolutionNewAI = () => {
                             />
                           </svg>
                           <span>Likes {engagement.likes}</span>
+                        </span>
+                        <span className="admin_solution_enhancement__metric">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M10 15v5a2 2 0 0 0 2 2l5-6V4H7.5A2.5 2.5 0 0 0 5 6.4l-1.2 5.2A2 2 0 0 0 5.7 14H10Z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M17 4h2.5A1.5 1.5 0 0 1 21 5.5v7A1.5 1.5 0 0 1 19.5 14H17"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                            />
+                          </svg>
+                          <span>Dislikes {engagement.dislikes}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">

@@ -7,14 +7,14 @@ import "./AdminLayout.scss";
 const adminNavItems = [
   { label: "Dashboard", to: "/admin", end: true },
   {
+    label: "Leads",
+    to: "/admin/contact-requests",
+    end: true,
+  },
+  {
     label: "Request Demo",
     to: "/admin/request-demos/solution-info",
     end: false,
-  },
-  {
-    label: "Contact Requests",
-    to: "/admin/contact-requests",
-    end: true,
   },
   {
     label: "Blogs",

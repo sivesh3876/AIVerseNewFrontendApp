@@ -18,7 +18,6 @@ export const TEAM_MEMBERS = [
 
 /** Suggested follow-up based on pipeline stage. User can override before save. */
 export const STAGE_FOLLOW_UP_SUGGESTIONS = {
-  New: { type: "Call", label: "Introductory Call" },
   Contacted: { type: "Email", label: "Follow-up Email" },
   Qualified: { type: "Demo", label: "Product Demo" },
   "Meeting Scheduled": { type: "Reminder", label: "Meeting Reminder" },

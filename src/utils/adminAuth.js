@@ -50,14 +50,31 @@ export const getAdminSession = () => {
     return null;
   }
 
+  // Older sessions may not have token/name — refresh them in place.
+  if (!session.token || !session.name) {
+    return createAdminSession(session.email);
+  }
+
   return session;
 };
 
 export const isAdminAuthenticated = () => Boolean(getAdminSession());
 
 export const createAdminSession = (email) => {
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const localName = normalizedEmail.split("@")[0] || "Admin";
+  const displayName = localName
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
   const session = {
-    email: String(email).trim().toLowerCase(),
+    email: normalizedEmail,
+    name: displayName || "Admin",
+    token: `aiverse.${btoa(unescape(encodeURIComponent(`${normalizedEmail}:${Date.now()}`)))}.${Math.random()
+      .toString(36)
+      .slice(2, 10)}`,
     loggedInAt: Date.now(),
     expiresAt: Date.now() + SESSION_DURATION_MS,
   };
@@ -65,6 +82,8 @@ export const createAdminSession = (email) => {
   sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
   return session;
 };
+
+export const getAdminAuthToken = () => getAdminSession()?.token || "";
 
 export const clearAdminSession = () => {
   sessionStorage.removeItem(ADMIN_SESSION_KEY);

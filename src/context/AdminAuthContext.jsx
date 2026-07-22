@@ -45,6 +45,8 @@ export const AdminAuthProvider = ({ children }) => {
       session,
       isAuthenticated: Boolean(session),
       adminEmail: session?.email || "",
+      adminName: session?.name || "",
+      authToken: session?.token || "",
       login,
       logout,
     }),

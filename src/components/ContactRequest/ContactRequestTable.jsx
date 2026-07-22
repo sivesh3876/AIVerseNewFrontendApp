@@ -18,7 +18,20 @@ const formatDate = (value) => {
   });
 };
 
-const COLUMN_COUNT = 11;
+const stageClass = (stage = "") =>
+  String(stage)
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+
+const typeClass = (type = "") => {
+  const value = String(type).toLowerCase();
+  if (value.includes("request demo") || value.includes("demo")) return "demo";
+  if (value.includes("mail")) return "mail";
+  return "message";
+};
+
+const COLUMN_COUNT = 10;
 
 const ContactRequestTable = ({ requests, onRowAction }) => (
   <div className="admin_demo_table__wrap">
@@ -31,21 +44,20 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
           <th>Email</th>
           <th>Phone</th>
           <th>Industry</th>
-          <th>Priority</th>
-          <th>Stage</th>
+          <th>Type</th>
           <th>Assigned To</th>
           <th>Submitted</th>
-          <th className="admin_demo_table__status-col">Status</th>
+          <th className="admin_demo_table__status-col">Stage</th>
         </tr>
       </thead>
       <tbody>
         {requests.length === 0 ? (
           <tr>
-            <td colSpan={COLUMN_COUNT}>No contact requests found.</td>
+            <td colSpan={COLUMN_COUNT}>No leads found.</td>
           </tr>
         ) : (
           requests.map((request) => (
-            <tr key={request.id}>
+            <tr key={request.requestKey || request.id}>
               <td>
                 <AdminBlogActionDropdown
                   onSelect={(action) => onRowAction?.(request, action)}
@@ -81,27 +93,22 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
               <td>{request.industry}</td>
               <td>
                 <span
-                  className={`admin_contact_priority admin_contact_priority--${request.priority?.toLowerCase()}`}
+                  className={`admin_contact_type admin_contact_type--${typeClass(
+                    request.type,
+                  )}`}
                 >
-                  {request.priority}
+                  {request.type || "Message"}
                 </span>
-              </td>
-              <td>
-                <span className="admin_role_table__role">{request.stage}</span>
               </td>
               <td>{request.assignedTo}</td>
               <td>{formatDate(request.submittedAt)}</td>
               <td className="admin_demo_table__status-cell">
                 <span
-                  className={`admin_contact_status admin_contact_status--${
-                    request.status === "Open"
-                      ? "open"
-                      : request.status === "Closed"
-                        ? "closed"
-                        : "progress"
-                  }`}
+                  className={`admin_contact_stage admin_contact_stage--${stageClass(
+                    request.stage,
+                  )}`}
                 >
-                  {request.status}
+                  {request.stage || "—"}
                 </span>
               </td>
             </tr>
