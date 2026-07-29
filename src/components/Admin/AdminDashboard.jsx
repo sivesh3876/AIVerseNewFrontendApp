@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAdminAuth } from "../../context/AdminAuthContext";
 import { fetchAllUseCases } from "../../services/usecasesService";
 import { getServiceIdForDomain } from "../../utils/solutionMapper";
 import "./AdminDashboard.scss";
@@ -15,7 +14,6 @@ const quickActions = [
 ];
 
 const AdminDashboard = () => {
-  const { adminEmail } = useAdminAuth();
   const [solutions, setSolutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,9 +72,6 @@ const AdminDashboard = () => {
         <div>
           <p className="admin_dashboard__eyebrow">Welcome back</p>
           <h1>Admin Dashboard</h1>
-          <p className="admin_dashboard__subtitle">
-            Signed in <strong>{adminEmail}</strong>
-          </p>
         </div>
       </header>
 

@@ -16,7 +16,18 @@ export const LEAD_TYPES = {
   MAIL_CONTACT: "Mail",
   MESSAGE: "Message",
   REQUEST_DEMO: "Request Demo",
+  CALLBACK_SCHEDULE: "Schedule",
+  REGISTER: "Register",
 };
+
+export const COMPANY_SIZE_OPTIONS = [
+  "1–10",
+  "11–50",
+  "51–200",
+  "201–500",
+  "501–1000",
+  "1000+",
+];
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
 export const ASSIGNEE_OPTIONS = ["Unassigned", "Priya Nair", "Rohan Mehta", "Isha Verma", "Aarav Sharma"];
