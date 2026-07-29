@@ -7,6 +7,8 @@ export const LEAD_TYPES = {
   MAIL_CONTACT: "Mail",
   MESSAGE: "Message",
   REQUEST_DEMO: "Request Demo",
+  CALLBACK_SCHEDULE: "Schedule",
+  REGISTER: "Register",
 };
 
 const getAll = () => {
@@ -62,6 +64,25 @@ const normalizeLeadType = (type) => {
     return LEAD_TYPES.REQUEST_DEMO;
   }
 
+  if (
+    value === LEAD_TYPES.CALLBACK_SCHEDULE ||
+    value === "Callback Shedule" ||
+    value === "Callback Schedule" ||
+    value.toLowerCase().includes("callback") ||
+    value.toLowerCase().includes("call back") ||
+    value.toLowerCase() === "schedule"
+  ) {
+    return LEAD_TYPES.CALLBACK_SCHEDULE;
+  }
+
+  if (
+    value === LEAD_TYPES.REGISTER ||
+    value.toLowerCase() === "register" ||
+    value.toLowerCase().includes("registration")
+  ) {
+    return LEAD_TYPES.REGISTER;
+  }
+
   return value || LEAD_TYPES.MESSAGE;
 };
 
@@ -70,15 +91,22 @@ export const addContactRequest = ({
   email,
   company,
   phone,
+  country,
+  industry,
+  jobTitle,
+  companySize,
   reason,
   message,
   type,
   solutionTitle,
+  preferredCallbackTime,
+  source,
 }) => {
   const requests = getAll();
   const id = nextId(requests);
   const leadType = normalizeLeadType(type);
   const title = String(solutionTitle || "").trim();
+  const preferTime = String(preferredCallbackTime || "").trim();
 
   const entry = {
     id,
@@ -86,11 +114,15 @@ export const addContactRequest = ({
     company: company || "—",
     email: email || "—",
     phone: phone || "—",
-    country: "—",
-    industry: "—",
+    country: country || "—",
+    industry: industry || "—",
+    jobTitle: String(jobTitle || "").trim(),
+    companySize: String(companySize || "").trim(),
+    source: String(source || "").trim(),
     message: message || "—",
     reason: reason || title || "General Inquiry",
     solutionTitle: title || "",
+    preferredCallbackTime: preferTime,
     type: leadType,
     stage: "Contacted",
     priority: "Medium",

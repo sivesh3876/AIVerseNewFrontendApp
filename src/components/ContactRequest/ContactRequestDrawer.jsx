@@ -149,12 +149,26 @@ const ContactRequestDrawer = ({
               <InfoField label="Country">{request.country}</InfoField>
               <InfoField label="Industry">{request.industry}</InfoField>
               <InfoField label="Type">{request.type || "Message"}</InfoField>
+              {request.jobTitle ? (
+                <InfoField label="Job Title">{request.jobTitle}</InfoField>
+              ) : null}
+              {request.companySize ? (
+                <InfoField label="Company Size">{request.companySize}</InfoField>
+              ) : null}
+              {request.source ? (
+                <InfoField label="Source">{request.source}</InfoField>
+              ) : null}
             </div>
             {request.solutionTitle ? (
               <InfoField label="Solution">{request.solutionTitle}</InfoField>
             ) : null}
+            {request.preferredCallbackTime ? (
+              <InfoField label="Preferred Call Back Time">
+                {formatDateTime(request.preferredCallbackTime)}
+              </InfoField>
+            ) : null}
             <InfoField label="Message">{request.message}</InfoField>
-            <InfoField label="Submission Date">
+            <InfoField label="Registration / Submission Date">
               {formatDateTime(request.submittedAt)}
             </InfoField>
           </section>

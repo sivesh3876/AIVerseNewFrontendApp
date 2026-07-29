@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer/Footer";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { RegistrationReminderProvider } from "./context/RegistrationReminderContext";
 import { ProtectedAdminRoute } from "./components/Admin";
 import HomePage from "./pages/HomePage";
 import GetStarted from "./pages/GetStarted";
@@ -150,7 +151,9 @@ function App() {
   return (
     <BrowserRouter>
       <AdminAuthProvider>
-        <AppShell />
+        <RegistrationReminderProvider>
+          <AppShell />
+        </RegistrationReminderProvider>
       </AdminAuthProvider>
     </BrowserRouter>
   );

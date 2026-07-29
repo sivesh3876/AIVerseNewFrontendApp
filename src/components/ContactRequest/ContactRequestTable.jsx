@@ -26,6 +26,14 @@ const stageClass = (stage = "") =>
 
 const typeClass = (type = "") => {
   const value = String(type).toLowerCase();
+  if (value.includes("register")) return "register";
+  if (
+    value.includes("callback") ||
+    value.includes("call back") ||
+    value === "schedule"
+  ) {
+    return "schedule";
+  }
   if (value.includes("request demo") || value.includes("demo")) return "demo";
   if (value.includes("mail")) return "mail";
   return "message";

@@ -4641,6 +4641,17 @@
         background: rgba(124, 58, 237, 0.12);
         color     : #6d28d9;
     }
+
+    &--callback,
+    &--schedule {
+        background: rgba(234, 88, 12, 0.12);
+        color     : #c2410c;
+    }
+
+    &--register {
+        background: rgba(37, 99, 235, 0.12);
+        color     : #1d4ed8;
+    }
 }
 
 .admin_contact_filter {
