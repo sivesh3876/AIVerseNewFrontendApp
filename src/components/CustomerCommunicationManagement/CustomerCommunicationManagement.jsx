@@ -35,12 +35,14 @@ import {
   mergeSubmittedCapabilities,
   persistSubmittedCapability,
   prunePersistedCapabilitiesSyncedWithApi,
+  isPublicSolutionVisible,
   removePersistedSubmittedCapability,
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   deleteUseCase,
   fetchAllUseCases,
@@ -94,9 +96,9 @@ const SolutionDetailPanel = ({
   onDelete,
   onRequestDemo,
   isDeleting = false,
+  showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const showAdminActions = Boolean(detailSolution?.isApiSolution);
   const clientName = (detailSolution?.client || capability.client || "").trim();
   const aiFoundation = capability.aiFoundation || [];
 
@@ -255,6 +257,7 @@ const SolutionDetailPanel = ({
 const CustomerCommunicationManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
   const solutionQueryId = searchParams.get("solution");
@@ -348,8 +351,10 @@ const CustomerCommunicationManagement = () => {
 
     const timer = window.setTimeout(() => {
       const element = document.querySelector(`[data-solution-id="api-${highlightId}"]`);
-      element?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 300);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 400);
 
     return () => window.clearTimeout(timer);
   }, [highlightId, loadingApiSolutions, activeServiceIndex]);
@@ -487,7 +492,7 @@ const CustomerCommunicationManagement = () => {
   const apiCapabilities = useMemo(
     () =>
       apiSolutions
-        .filter((solution) => solution.IsSolutionActive !== false)
+        .filter(isPublicSolutionVisible)
         .map((solution) => {
           try {
             return hydrateCapability(
@@ -532,16 +537,35 @@ const CustomerCommunicationManagement = () => {
         ? []
         : activeService.features;
 
-  const submittedCapabilities = useMemo(
-    () =>
-      mergeSubmittedCapabilities({
-        apiCapabilities,
-        pendingCapabilities,
-        activeServiceId: activeService.id,
-        activeDomainCode,
-      }),
-    [apiCapabilities, pendingCapabilities, activeService.id, activeDomainCode],
-  );
+  const submittedCapabilities = useMemo(() => {
+    const merged = mergeSubmittedCapabilities({
+      apiCapabilities,
+      pendingCapabilities,
+      activeServiceId: activeService.id,
+      activeDomainCode,
+    });
+
+    const getNumericId = (capability) => {
+      const match = String(capability.id || "").match(/(\d+)$/);
+      return match ? Number(match[1]) : 0;
+    };
+
+    return [...merged].sort((left, right) => {
+      const leftIsHighlighted =
+        highlightId != null &&
+        (left.id === `api-${highlightId}` ||
+          left.id === `api-pending-${highlightId}`);
+      const rightIsHighlighted =
+        highlightId != null &&
+        (right.id === `api-${highlightId}` ||
+          right.id === `api-pending-${highlightId}`);
+
+      if (leftIsHighlighted && !rightIsHighlighted) return -1;
+      if (rightIsHighlighted && !leftIsHighlighted) return 1;
+
+      return getNumericId(right) - getNumericId(left);
+    });
+  }, [apiCapabilities, pendingCapabilities, activeService.id, activeDomainCode, highlightId]);
 
   useEffect(() => {
     if (!solutionQueryId) {
@@ -790,6 +814,9 @@ const CustomerCommunicationManagement = () => {
                 }
                 onRequestDemo={handleRequestDemo}
                 isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
+                showAdminActions={
+                  isAdminAuthenticated && Boolean(detailSolution.isApiSolution)
+                }
               />
             )}
           </>
@@ -826,7 +853,7 @@ const CustomerCommunicationManagement = () => {
                     (capability.id === `api-${highlightId}` ||
                       capability.id === `api-pending-${highlightId}`)
                   }
-                  showAdminActions
+                  showAdminActions={isAdminAuthenticated}
                   onEdit={handleEditCapability}
                   onDelete={handleDeleteCapability}
                   onRequestDemo={handleRequestDemo}

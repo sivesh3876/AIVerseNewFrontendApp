@@ -1,6 +1,10 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
+import {
+  persistDemoRequestSubmission,
+  removeDemoRequestRecord,
+  savePendingDemoRequest,
+  updateDemoRequestRecord,
+} from "../utils/demoRequestStorage";
+import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 
 const DEMO_REQUEST_ENDPOINT =
   import.meta.env.VITE_REQUEST_DEMO_EMAIL_ENDPOINT || "send-demo-request";
@@ -8,9 +12,9 @@ const DEMO_REQUEST_ENDPOINT =
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
 export const REQUEST_DEMO_EMAIL_SETUP_MESSAGE =
-  "Demo request API is not configured yet. Add VITE_API_BASE_URL in your .env file and restart the app.";
+  "Demo request API is not configured yet. Restart the dev server and try again.";
 
-export const isRequestDemoEmailConfigured = () => Boolean(API_BASE_URL.trim());
+export const isRequestDemoEmailConfigured = () => Boolean(getApiBaseUrl().trim());
 
 const parseJsonResponse = async (response) => {
   try {
@@ -28,26 +32,11 @@ const assertSuccessResponse = (response, result, fallbackMessage) => {
   }
 };
 
-const buildDemoRequestUrl = () => {
-  const url = new URL(`${API_BASE_URL}/${DEMO_REQUEST_ENDPOINT}`);
+const buildDemoRequestUrl = () =>
+  buildApiPath(DEMO_REQUEST_ENDPOINT, EMAIL_API_KEY ? { code: EMAIL_API_KEY } : {});
 
-  if (EMAIL_API_KEY) {
-    url.searchParams.set("code", EMAIL_API_KEY);
-  }
-
-  return url.toString();
-};
-
-const buildLegacyEmailUrl = (endpoint) => {
-  const url = new URL(`${API_BASE_URL}/${endpoint}`);
-
-  if (EMAIL_API_KEY) {
-    url.searchParams.set("code", EMAIL_API_KEY);
-  }
-
-  return url.toString();
-};
-
+const buildLegacyEmailUrl = (endpoint) =>
+  buildApiPath(endpoint, EMAIL_API_KEY ? { code: EMAIL_API_KEY } : {});
 export const parseSolutionId = (value) => {
   if (value == null || value === "") {
     return null;
@@ -192,10 +181,45 @@ export const sendRequestDemoEmail = async ({ capability, form }) => {
   }
 
   const payload = buildRequestDemoEmailPayload(capability, form);
-  const result = await postDemoRequest(payload);
-
-  return {
-    ...result,
-    successMessage: buildRequestDemoSuccessMessage(result),
+  const capabilityMeta = {
+    coeName: capability?.coe?.name || "",
+    evangelistNames: (capability?.evangelists || [])
+      .map((person) => person.name)
+      .filter((name) => name && name !== "Not assigned"),
   };
+
+  const pendingRecord = savePendingDemoRequest(payload, capabilityMeta);
+
+  try {
+    const result = await postDemoRequest(payload);
+    const record = persistDemoRequestSubmission(payload, result, capabilityMeta, {
+      pendingId: pendingRecord.id,
+    });
+
+    return {
+      ...result,
+      successMessage: buildRequestDemoSuccessMessage(result),
+      savedRecord: record,
+    };
+  } catch (error) {
+    const isNetworkError =
+      error?.message === "Failed to fetch" ||
+      (error?.name === "TypeError" &&
+        String(error?.message || "").toLowerCase().includes("fetch"));
+
+    updateDemoRequestRecord(pendingRecord.id, {
+      status: isNetworkError ? "Pending" : "Failed",
+      statusMessage: error.message || "Failed to submit demo request.",
+      emailSent: false,
+      recordStatus: "Active",
+    });
+
+    if (isNetworkError) {
+      throw new Error(
+        "Could not reach the email server from the browser. Your request was saved in Admin → Request Demo. Restart the dev server and try again.",
+      );
+    }
+
+    throw error;
+  }
 };

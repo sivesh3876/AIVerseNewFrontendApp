@@ -4,14 +4,22 @@ import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import {
   learnExploreTracks,
-  getResourceById,
   getTrackIndexById,
-  getResourcesByTrack,
 } from "./learnExploreData";
+import { BLOGS_CHANGED_EVENT } from "../../utils/adminBlogStorage";
+import {
+  getLearnExploreResourcesForTrack,
+  getPublicResourceById,
+} from "../../utils/publicBlogContent";
+import BlogResourceLink from "../BlogResourceLink/BlogResourceLink";
 import "./LearnExplore.scss";
 
 const ResourceCard = ({ resource }) => (
-  <article className="learn_explore__card" id={`resource-${resource.id}`}>
+  <BlogResourceLink
+    resource={resource}
+    className="learn_explore__card learn_explore__card--link"
+    id={`resource-${resource.id}`}
+  >
     <span
       className="learn_explore__card-badge"
       style={{ background: resource.badgeColor }}
@@ -24,7 +32,7 @@ const ResourceCard = ({ resource }) => (
     <time dateTime={resource.date}>{resource.date}</time>
 
     <span className="learn_explore__card-link">Read More &gt;</span>
-  </article>
+  </BlogResourceLink>
 );
 
 const LearnExplore = () => {
@@ -35,10 +43,29 @@ const LearnExplore = () => {
   const [activeTrackIndex, setActiveTrackIndex] = useState(() =>
     getTrackIndexById(trackId),
   );
+  const [resources, setResources] = useState(() =>
+    getLearnExploreResourcesForTrack(trackId),
+  );
+
+  useEffect(() => {
+    const refreshResources = () => {
+      const activeTrack = learnExploreTracks[activeTrackIndex];
+      setResources(getLearnExploreResourcesForTrack(activeTrack.id));
+    };
+
+    refreshResources();
+    window.addEventListener(BLOGS_CHANGED_EVENT, refreshResources);
+    window.addEventListener("storage", refreshResources);
+
+    return () => {
+      window.removeEventListener(BLOGS_CHANGED_EVENT, refreshResources);
+      window.removeEventListener("storage", refreshResources);
+    };
+  }, [activeTrackIndex]);
 
   useEffect(() => {
     if (articleId) {
-      const resource = getResourceById(articleId);
+      const resource = getPublicResourceById(articleId);
       if (resource) {
         setActiveTrackIndex(getTrackIndexById(resource.trackId));
         return;
@@ -58,7 +85,6 @@ const LearnExplore = () => {
   }, [articleId, activeTrackIndex]);
 
   const activeTrack = learnExploreTracks[activeTrackIndex];
-  const resources = getResourcesByTrack(activeTrack.id);
 
   const handleTrackChange = (index) => {
     setActiveTrackIndex(index);

@@ -1,12 +1,38 @@
-import { useRef } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { getResourcesByCategory } from "../LearnExplore/learnExploreData";
+import { BLOGS_CHANGED_EVENT } from "../../utils/adminBlogStorage";
+import { getBlogHubResources } from "../../utils/publicBlogContent";
+import BlogResourceLink from "../BlogResourceLink/BlogResourceLink";
 import { useScrollToSection } from "../../utils/pageScroll";
 import "./ResourcesHub.scss";
 
 const ResourcesHub = ({ title, description, category, eyebrow }) => {
-  const resources = getResourcesByCategory(category);
+  const [resources, setResources] = useState(() =>
+    category === "blogs"
+      ? getBlogHubResources()
+      : getResourcesByCategory(category),
+  );
   const heroRef = useRef(null);
+
+  useEffect(() => {
+    if (category !== "blogs") {
+      setResources(getResourcesByCategory(category));
+      return undefined;
+    }
+
+    const refreshResources = () => {
+      setResources(getBlogHubResources());
+    };
+
+    refreshResources();
+    window.addEventListener(BLOGS_CHANGED_EVENT, refreshResources);
+    window.addEventListener("storage", refreshResources);
+
+    return () => {
+      window.removeEventListener(BLOGS_CHANGED_EVENT, refreshResources);
+      window.removeEventListener("storage", refreshResources);
+    };
+  }, [category]);
 
   useScrollToSection(heroRef, [category]);
 
@@ -27,9 +53,9 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
           ) : (
             <div className="resources_hub__grid">
               {resources.map((resource) => (
-                <Link
+                <BlogResourceLink
                   key={resource.id}
-                  to={`/learn-explore?article=${resource.id}`}
+                  resource={resource}
                   className="resources_hub__card"
                 >
                   <span
@@ -42,7 +68,7 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
                   <p>{resource.description}</p>
                   <time dateTime={resource.date}>{resource.date}</time>
                   <span className="resources_hub__link">Read More &gt;</span>
-                </Link>
+                </BlogResourceLink>
               ))}
             </div>
           )}

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
-import SolutionEngagement from "../SolutionEngagement";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
+import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
 import {
   AI_FOUNDATION_HIGHLIGHT_EVENT,
@@ -37,6 +38,9 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
 
   const handleNavigate = () => {
+    if (solution.id) {
+      incrementSolutionView(solution.id);
+    }
     navigate(solution.detailUrl);
   };
 
@@ -92,6 +96,8 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
             </span>
           )}
         </div>
+
+        <SolutionEngagementBar solutionId={solution.id} />
       </div>
 
       <SolutionEngagement
