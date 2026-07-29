@@ -167,13 +167,14 @@ export const homeInsights = learnExploreResources
   }));
 
 export const featuredArticle = {
-  id: "agentic-systems-future",
+  id: "cert-ai-900",
+  certificationId: "cert-ai-900",
   badge: "Certification",
   title: "AI-901: Azure AI Fundamentals",
   description:
     "Prepare for the AI-901 exam and build a strong foundation in artificial intelligence and Microsoft Azure AI services. Explore core ML concepts, computer vision, natural language processing, and responsible AI principles.",
   linkText: "Read Full Article",
-  linkTo: "/learn-explore?track=all",
+  linkTo: "/learn-explore/certifications",
 };
 
 export const getResourceById = (resourceId) =>

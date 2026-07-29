@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { contactDetails, contactOffices, contactReasons, getOfficePhoneHref } from "./contactData";
 import { useScrollToSection } from "../../utils/pageScroll";
+import { addContactRequest } from "../../utils/contactRequestStorage";
 import "./Contact.scss";
 
 const Contact = () => {
@@ -12,6 +13,16 @@ const Contact = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    const form = event.target;
+    const data = new FormData(form);
+    addContactRequest({
+      name: data.get("name"),
+      email: data.get("email"),
+      company: data.get("company"),
+      reason: data.get("reason"),
+      message: data.get("message"),
+      type: "Message",
+    });
     setSubmitted(true);
   };
 

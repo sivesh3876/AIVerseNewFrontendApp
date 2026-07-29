@@ -5,6 +5,7 @@ import {
   sendContactEmail,
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";
+import { addContactRequest } from "../../utils/contactRequestStorage";
 import "./RequestDemoModal.scss";
 
 const INITIAL_FORM = {
@@ -57,11 +58,6 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!isEmailApiReady) {
-      setErrors({ form: REQUEST_DEMO_EMAIL_SETUP_MESSAGE });
-      return;
-    }
-
     if (!validateForm()) return;
 
     try {
@@ -69,12 +65,67 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
       setErrors({});
       setSuccessPopupMessage("");
 
-      const result = isContactMode
-        ? await sendContactEmail({ form })
-        : await sendRequestDemoEmail({ capability, form });
+      if (isContactMode) {
+        addContactRequest({
+          name: form.name,
+          email: form.email,
+          company: form.company,
+          phone: form.phone,
+          reason: "Contact Us",
+          message: form.message,
+          type: "Mail",
+        });
+
+        if (isEmailApiReady) {
+          try {
+            const result = await sendContactEmail({ form });
+            setSuccessPopupMessage(
+              result.successMessage || "Mail sent successfully.",
+            );
+            return;
+          } catch {
+            setSuccessPopupMessage(
+              "Your message has been received. Our team will get back to you shortly.",
+            );
+            return;
+          }
+        }
+
+        setSuccessPopupMessage(
+          "Thank you! Your message has been received. Our team will get back to you shortly.",
+        );
+        return;
+      }
+
+      // Request Demo → always create a Leads card first.
+      addContactRequest({
+        name: form.name,
+        email: form.email,
+        company: form.company,
+        phone: form.phone,
+        reason: capability?.title || "Request Demo",
+        message: form.message,
+        type: "Request Demo",
+        solutionTitle: capability?.title || "",
+      });
+
+      if (isEmailApiReady) {
+        try {
+          const result = await sendRequestDemoEmail({ capability, form });
+          setSuccessPopupMessage(
+            result.successMessage || "Mail sent successfully.",
+          );
+          return;
+        } catch {
+          setSuccessPopupMessage(
+            "Your demo request has been received. Our team will get back to you shortly.",
+          );
+          return;
+        }
+      }
 
       setSuccessPopupMessage(
-        result.successMessage || "Mail sent successfully.",
+        "Thank you! Your demo request has been received and added to Leads.",
       );
     } catch (error) {
       setErrors({
@@ -116,9 +167,10 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
             </button>
           </div>
 
-          {!isEmailApiReady && (
+          {!isEmailApiReady && !isContactMode && (
             <div className="request_demo_modal__setup-note" role="status">
-              {REQUEST_DEMO_EMAIL_SETUP_MESSAGE}
+              Email API is not configured yet. Your request will still be saved to
+              Leads as Type: Request Demo.
             </div>
           )}
 
@@ -230,9 +282,11 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
               <button
                 type="submit"
                 className="request_demo_modal__btn request_demo_modal__btn--primary"
-                disabled={isSending || !isEmailApiReady}
+                disabled={isSending}
                 title={
-                  isEmailApiReady ? "Send email" : REQUEST_DEMO_EMAIL_SETUP_MESSAGE
+                  isEmailApiReady
+                    ? "Send email"
+                    : "Save to Leads (email API optional)"
                 }
               >
                 {isSending ? "Sending..." : "Send Mail"}

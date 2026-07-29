@@ -38,6 +38,7 @@ export const footerSections = [
       { label: "About", to: "/about-us" },
       { label: "Careers", to: "/careers" },
       { label: "Contact Us", to: "/contact" },
+      { label: "Admin Login", to: "/admin/login" },
     ],
   },
 ];

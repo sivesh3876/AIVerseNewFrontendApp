@@ -9,6 +9,7 @@ import {
   navigateToSearchPath,
   searchSite,
 } from "../../utils/siteSearch";
+import CallbackScheduleModal from "../CallbackSchedule/CallbackScheduleModal";
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Navigation = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [callbackOpen, setCallbackOpen] = useState(false);
 
   const handleSectionNav = (sectionId) => {
     setMobileMenu(false);
@@ -89,6 +91,38 @@ const Navigation = () => {
 
           <div className="nav-right">
             <button
+              type="button"
+              className="nav-callback-btn"
+              onClick={() => {
+                setMobileMenu(false);
+                setCallbackOpen(true);
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M7 3v2M17 3v2M4 9h16M6 7h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M15.5 14.5c.8-.3 1.5-.2 2.1.2l.7.5c.6.4.7 1.2.3 1.8-.5.8-1.4 1.5-2.6 1.7-2.6.4-5.4-1-7.6-3.2S5.2 10.1 5.6 7.5c.2-1.2.9-2.1 1.7-2.6.6-.4 1.4-.3 1.8.3l.5.7c.4.6.5 1.3.2 2.1l-.3.8c-.2.4-.1.8.2 1.1l2.2 2.2c.3.3.7.4 1.1.2l.8-.3Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Schedule a Call
+            </button>
+            <Link
+              to="/admin/login"
+              className="nav-admin-link"
+              onClick={() => setMobileMenu(false)}
+            >
+              Login
+            </Link>
+            <button
               className="icon-btn"
               onClick={() => setShowSearch(!showSearch)}
             >
@@ -144,6 +178,11 @@ const Navigation = () => {
           )}
         </div>
       )}
+
+      <CallbackScheduleModal
+        open={callbackOpen}
+        onClose={() => setCallbackOpen(false)}
+      />
     </>
   );
 };

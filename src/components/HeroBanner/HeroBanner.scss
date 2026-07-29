@@ -98,6 +98,46 @@
     }
 }
 
+.register_btn {
+    position     : relative;
+    overflow     : hidden;
+    border       : 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    background   :
+        linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(24, 224, 204, 0.18) 50%, rgba(59, 130, 246, 0.2) 100%);
+    color        : #fff;
+    font-weight  : 600;
+    letter-spacing: 0.01em;
+    box-shadow   : 0 8px 24px rgba(8, 18, 34, 0.25);
+    transition   : transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, filter 0.25s ease;
+
+    &::before {
+        content   : "";
+        position  : absolute;
+        inset     : 0;
+        background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
+        transform : translateX(-120%);
+        transition: transform 0.55s ease;
+    }
+
+    &:hover {
+        transform   : translateY(-2px);
+        border-color: rgba(24, 224, 204, 0.75);
+        background  :
+            linear-gradient(135deg, rgba(24, 224, 204, 0.28) 0%, rgba(59, 130, 246, 0.28) 100%);
+        box-shadow  : 0 12px 28px rgba(24, 224, 204, 0.22);
+        filter      : brightness(1.05);
+
+        &::before {
+            transform: translateX(120%);
+        }
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
 .slider_dots {
     justify-content: center;
     display        : flex;
@@ -173,7 +213,8 @@
         width         : 100%;
 
         .primary_btn,
-        .secondary_btn {
+        .secondary_btn,
+        .register_btn {
             width: 100%;
         }
     }

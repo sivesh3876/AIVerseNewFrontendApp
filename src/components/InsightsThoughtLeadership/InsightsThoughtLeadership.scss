@@ -137,6 +137,12 @@
         transform-origin: top center;
         transition      : border-color 0.3s, box-shadow 0.3s, transform 0.2s;
 
+        &--link {
+            text-decoration: none;
+            color          : inherit;
+            cursor         : pointer;
+        }
+
         &:hover {
             border-color: rgba(24, 224, 204, 0.3);
             box-shadow  : 0 8px 24px rgba(13, 30, 50, 0.08);

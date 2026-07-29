@@ -4,6 +4,7 @@ import "./HeroBanner.scss";
 import slider1 from "../../assets/images/slider1.svg";
 import slider2 from "../../assets/images/slider2.svg";
 import slider3 from "../../assets/images/slider1.svg";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
 
 const slides = [
   {
@@ -17,7 +18,7 @@ const slides = [
       "Seamless Omnichannel Support",
     ],
     primaryBtn: "Explore Solutions",
-    secondaryBtn: "Get Started",
+    secondaryBtn: "Register",
   },
   {
     image: slider2,
@@ -30,7 +31,7 @@ const slides = [
       "Predictive Operational Analytics",
     ],
     primaryBtn: "Explore Solutions",
-    secondaryBtn: "Get Started",
+    secondaryBtn: "Register",
   },
   {
     image: slider3,
@@ -43,12 +44,13 @@ const slides = [
       "Seamless Omnichannel Support",
     ],
     primaryBtn: "Explore Solutions",
-    secondaryBtn: "Get Started",
+    secondaryBtn: "Register",
   },
 ];
 
 const HeroBannerSlider = () => {
   const [activeSlide, setActiveSlide] = useState(0);
+  const { openRegisterModal } = useRegistrationReminder();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -80,9 +82,13 @@ const HeroBannerSlider = () => {
               {slides[activeSlide].primaryBtn}
             </Link>
 
-            <Link to="/get-started" className="secondary_btn">
+            <button
+              type="button"
+              className="secondary_btn register_btn"
+              onClick={() => openRegisterModal("Hero Registration")}
+            >
               {slides[activeSlide].secondaryBtn}
-            </Link>
+            </button>
           </div>
         </div>
       </div>
