@@ -100,14 +100,6 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
         <SolutionEngagementBar solutionId={solution.id} />
       </div>
 
-      <SolutionEngagement
-        solutionId={solution.id}
-        title={solution.title}
-        detailUrl={solution.detailUrl}
-        variant="home"
-        onActionClick={(event) => event.stopPropagation()}
-      />
-
       <div className="ai_capabilities__actions">
         <button
           type="button"
