@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
-import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
-import logo from "../../assets/images/logo.svg";
+import {
+  addContactRequest,
+  LEAD_TYPES,
+} from "../../utils/contactRequestStorage";
+// import logo from "../../assets/images/logo.svg";
 import "./CallbackScheduleModal.scss";
 
 const INITIAL_FORM = {
@@ -80,7 +83,8 @@ const CallbackScheduleModal = ({ open, onClose }) => {
 
     setIsSubmitting(true);
     try {
-      const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+      const fullName =
+        `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
       const preferredCallbackTime = `${form.preferDate}T${form.preferTime}`;
       addContactRequest({
         name: fullName,
@@ -128,12 +132,12 @@ const CallbackScheduleModal = ({ open, onClose }) => {
         <div className="callback_schedule_modal__glow" aria-hidden="true" />
 
         <header className="callback_schedule_modal__header">
-          <img
+          {/* <img
             src={logo}
             alt="AI Verse"
             className="callback_schedule_modal__logo"
-          />
-          <p className="callback_schedule_modal__eyebrow">AI Verse</p>
+          /> */}
+          {/* <p className="callback_schedule_modal__eyebrow">AI Verse</p> */}
           <h2 id="callback-schedule-title">Schedule a Call</h2>
           <p>
             Share your details and preferred time — our experts will reach out
@@ -143,7 +147,10 @@ const CallbackScheduleModal = ({ open, onClose }) => {
 
         {successMessage ? (
           <div className="callback_schedule_modal__success">
-            <div className="callback_schedule_modal__success-icon" aria-hidden="true">
+            <div
+              className="callback_schedule_modal__success-icon"
+              aria-hidden="true"
+            >
               ✓
             </div>
             <h3>Request Received</h3>
@@ -157,7 +164,11 @@ const CallbackScheduleModal = ({ open, onClose }) => {
             </button>
           </div>
         ) : (
-          <form className="callback_schedule_modal__form" onSubmit={handleSubmit} noValidate>
+          <form
+            className="callback_schedule_modal__form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
             <div className="callback_schedule_modal__row">
               <label className="callback_schedule_modal__field">
                 <span>First Name *</span>
@@ -227,7 +238,10 @@ const CallbackScheduleModal = ({ open, onClose }) => {
                     disabled={isSubmitting}
                     min={new Date().toISOString().slice(0, 10)}
                   />
-                  <span className="callback_schedule_modal__picker-icon" aria-hidden="true">
+                  <span
+                    className="callback_schedule_modal__picker-icon"
+                    aria-hidden="true"
+                  >
                     <svg viewBox="0 0 24 24" fill="none">
                       <path
                         d="M7 3v2M17 3v2M4 9h16M6 7h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
@@ -254,7 +268,10 @@ const CallbackScheduleModal = ({ open, onClose }) => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                   />
-                  <span className="callback_schedule_modal__picker-icon" aria-hidden="true">
+                  <span
+                    className="callback_schedule_modal__picker-icon"
+                    aria-hidden="true"
+                  >
                     <svg viewBox="0 0 24 24" fill="none">
                       <circle
                         cx="12"
@@ -278,16 +295,28 @@ const CallbackScheduleModal = ({ open, onClose }) => {
             </div>
 
             {errors.form && (
-              <p className="callback_schedule_modal__form-error">{errors.form}</p>
+              <p className="callback_schedule_modal__form-error">
+                {errors.form}
+              </p>
             )}
 
-            <button
-              type="submit"
-              className="callback_schedule_modal__submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Scheduling…" : "Schedule Now"}
-            </button>
+            <div className="callback_schedule_modal__actions">
+              <button
+                type="submit"
+                className="callback_schedule_modal__submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Scheduling…" : "Schedule Now"}
+              </button>
+              <button
+                type="button"
+                className="callback_schedule_modal__cancel"
+                onClick={handleClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         )}
       </div>
