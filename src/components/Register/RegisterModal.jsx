@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
+import {
+  addContactRequest,
+  LEAD_TYPES,
+} from "../../utils/contactRequestStorage";
 import { markRegistrationCompleted } from "../../utils/registrationStatusStorage";
-import logo from "../../assets/images/logo.svg";
+// import logo from "../../assets/images/logo.svg";
 import "./RegisterModal.scss";
 
 const INITIAL_FORM = {
@@ -45,9 +48,9 @@ const RegisterModal = ({
     () =>
       Boolean(
         form.fullName.trim() &&
-          EMAIL_RE.test(form.email.trim()) &&
-          form.phone.trim() &&
-          form.consent,
+        EMAIL_RE.test(form.email.trim()) &&
+        form.phone.trim() &&
+        form.consent,
       ),
     [form],
   );
@@ -148,7 +151,7 @@ const RegisterModal = ({
         <div className="register_modal__glow" aria-hidden="true" />
 
         <header className="register_modal__header">
-          <img src={logo} alt="AI Verse" className="register_modal__logo" />
+          {/* <img src={logo} alt="AI Verse" className="register_modal__logo" /> */}
           <h2 id="register-modal-title">Register for AI Verse</h2>
           <p>
             Register to access AI Verse solutions, AI resources, and enterprise
@@ -216,12 +219,12 @@ const RegisterModal = ({
                 checked={form.consent}
                 onChange={handleChange}
               />
-              <span>
-                I agree to the Privacy Policy and Terms of Service. *
-              </span>
+              <span>I agree to the Privacy Policy and Terms of Service. *</span>
             </label>
             {errors.consent && (
-              <em className="register_modal__consent-error">{errors.consent}</em>
+              <em className="register_modal__consent-error">
+                {errors.consent}
+              </em>
             )}
 
             {errors.form && (

@@ -5,6 +5,7 @@ import slider1 from "../../assets/images/slider1.svg";
 import slider2 from "../../assets/images/slider2.svg";
 import slider3 from "../../assets/images/slider1.svg";
 import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
+import GlobalSearch from "../GlobalSearch";
 
 const slides = [
   {
@@ -65,6 +66,9 @@ const HeroBannerSlider = () => {
       className="hero_slider"
       style={{ backgroundImage: `url(${slides[activeSlide].image})` }}
     >
+      <div className="hero_search">
+        <GlobalSearch variant="hero" />
+      </div>
       <div className="hero_content">
         <div className="hero_content_info" key={activeSlide}>
           <h1>{slides[activeSlide].title}</h1>
