@@ -90,7 +90,10 @@ const IndustryExperienceGrid = ({ industryId }) => {
                 return (
                   <Link
                     key={item.id}
-                    to={`/industry-solutions?industry=${industryId}&solution=${item.id}`}
+                    to={
+                      item.href ||
+                      `/industry-solutions?industry=${industryId}&solution=${item.id}`
+                    }
                     className="industry_experience__card"
                     style={{
                       background: pillar.cardBg,
