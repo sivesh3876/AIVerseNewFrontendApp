@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
 import { markRegistrationCompleted } from "../../utils/registrationStatusStorage";
+import {
+  isRequestDemoEmailConfigured,
+  sendContactEmail,
+} from "../../services/requestDemoEmailService";
 import logo from "../../assets/images/logo.svg";
 import "./RegisterModal.scss";
 
@@ -87,30 +91,61 @@ const RegisterModal = ({
     onClose?.();
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate() || !isValid) return;
 
     setIsSubmitting(true);
+    setErrors({});
+
+    const leadSource = source || "Hero Registration";
+    const fullName = form.fullName.trim();
+    const email = form.email.trim();
+    const phone = form.phone.trim();
+    const message = [
+      "AI Verse registration request",
+      `Source: ${leadSource}`,
+      `Phone: ${phone}`,
+      "Consent: Privacy Policy and Terms of Service accepted",
+    ].join("\n");
+
     try {
-      const leadSource = source || "Hero Registration";
+      // Save to Leads immediately so Admin cards update in this browser.
       addContactRequest({
-        name: form.fullName.trim(),
-        email: form.email.trim(),
+        name: fullName,
+        email,
         company: "—",
-        phone: form.phone.trim(),
+        phone,
         country: "—",
         industry: "—",
-        reason: LEAD_TYPES.REGISTER,
+        reason: "Register",
         type: LEAD_TYPES.REGISTER,
         source: leadSource,
-        message: `Source: ${leadSource}`,
+        message,
       });
+
+      if (isRequestDemoEmailConfigured()) {
+        try {
+          await sendContactEmail({
+            form: {
+              name: fullName,
+              email,
+              company: "",
+              phone,
+              message,
+              subject: "Register for AI Verse",
+              leadType: LEAD_TYPES.REGISTER,
+            },
+          });
+        } catch {
+          // Local lead is already saved for Admin → Leads.
+        }
+      }
 
       markRegistrationCompleted();
       onRegistered?.();
       setSuccessMessage(
-        "Thank you for registering with AI Verse. Our team will connect with you shortly.",
+        "Thank you for registering with AI Verse. Your details are now on the Leads page.",
       );
       setForm(INITIAL_FORM);
       closeTimerRef.current = setTimeout(() => {

@@ -149,6 +149,9 @@ const ContactRequestDrawer = ({
               <InfoField label="Country">{request.country}</InfoField>
               <InfoField label="Industry">{request.industry}</InfoField>
               <InfoField label="Type">{request.type || "Message"}</InfoField>
+              <InfoField label="Reason for Contact">
+                {request.reason || "—"}
+              </InfoField>
               {request.jobTitle ? (
                 <InfoField label="Job Title">{request.jobTitle}</InfoField>
               ) : null}

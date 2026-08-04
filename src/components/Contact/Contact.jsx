@@ -3,27 +3,75 @@ import { Link } from "react-router-dom";
 import { contactDetails, contactOffices, contactReasons, getOfficePhoneHref } from "./contactData";
 import { useScrollToSection } from "../../utils/pageScroll";
 import { addContactRequest } from "../../utils/contactRequestStorage";
+import {
+  isRequestDemoEmailConfigured,
+  sendContactEmail,
+} from "../../services/requestDemoEmailService";
 import "./Contact.scss";
 
 const Contact = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const heroRef = useRef(null);
 
   useScrollToSection(heroRef, []);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const form = event.target;
     const data = new FormData(form);
-    addContactRequest({
-      name: data.get("name"),
-      email: data.get("email"),
-      company: data.get("company"),
-      reason: data.get("reason"),
-      message: data.get("message"),
+    const payload = {
+      name: String(data.get("name") || "").trim(),
+      email: String(data.get("email") || "").trim(),
+      company: String(data.get("company") || "").trim(),
+      phone: "",
+      reason: String(data.get("reason") || "").trim() || "General Inquiry",
+      message: String(data.get("message") || "").trim(),
       type: "Message",
-    });
-    setSubmitted(true);
+      source: "Contact Us",
+    };
+
+    if (!payload.name || !payload.email || !payload.message) {
+      setSubmitError("Please fill all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      // Save immediately so Admin → Leads shows all form details.
+      addContactRequest(payload);
+
+      if (isRequestDemoEmailConfigured()) {
+        await sendContactEmail({
+          form: {
+            name: payload.name,
+            email: payload.email,
+            company: payload.company,
+            phone: payload.phone,
+            message: payload.message,
+            subject: payload.reason
+              ? `Contact Inquiry: ${payload.reason}`
+              : "Contact Inquiry: AI Verse",
+            leadType: "Message",
+          },
+        });
+      }
+
+      setSubmitted(true);
+      form.reset();
+    } catch (error) {
+      // Local lead is already saved; still confirm success to the user.
+      setSubmitError(
+        error?.message ||
+          "Saved to Leads. Server email notification could not be sent.",
+      );
+      setSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,6 +127,7 @@ const Contact = () => {
               {submitted ? (
                 <p className="contact__success">
                   Thank you for reaching out. Our team will get back to you shortly.
+                  {submitError ? ` (${submitError})` : ""}
                 </p>
               ) : (
                 <>
@@ -99,7 +148,7 @@ const Contact = () => {
 
                   <label>
                     Reason for Contact
-                    <select name="reason" defaultValue="">
+                    <select name="reason" defaultValue="" required>
                       <option value="" disabled>
                         Select a topic
                       </option>
@@ -121,8 +170,12 @@ const Contact = () => {
                     />
                   </label>
 
-                  <button type="submit" className="contact__submit">
-                    Send Message
+                  <button
+                    type="submit"
+                    className="contact__submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </button>
                 </>
               )}

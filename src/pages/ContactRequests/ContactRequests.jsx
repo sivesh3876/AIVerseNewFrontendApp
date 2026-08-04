@@ -18,6 +18,11 @@ import {
   getDeletedDemoLeadKeys,
   markDemoLeadDeleted,
 } from "../../utils/contactRequestStorage";
+import {
+  getContactRequestsFromApi,
+  isContactRequestsApiConfigured,
+  updateContactRequestStageOnApi,
+} from "../../services/contactRequestApiService";
 import { updateContactRequestStageApi } from "../../services/contactRequestStageService";
 import { createFollowUpApi } from "../../services/contactRequestFollowUpService";
 import { createNoteApi } from "../../services/contactRequestNoteService";
@@ -42,7 +47,7 @@ const normalizeLead = (request) => ({
     (request.reason === "Contact Us" ? "Mail" : "Message"),
 });
 
-const buildInitialRequests = () => {
+const buildLocalRequests = () => {
   const deletedDemoKeys = new Set(getDeletedDemoLeadKeys());
 
   const stored = getContactRequests().map((request) => ({
@@ -91,7 +96,8 @@ const ContactRequests = () => {
 
   const [viewMode, setViewMode] = useState("kanban");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [requests, setRequests] = useState(buildInitialRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [followUpsByLead, setFollowUpsByLead] = useState({});
   const [notesByLead, setNotesByLead] = useState({});
   const [selectedRequestKey, setSelectedRequestKey] = useState(null);
@@ -131,19 +137,72 @@ const ContactRequests = () => {
     }
   }, [currentPage, totalPages]);
 
+  const loadRequests = useCallback(async ({ showToast = false } = {}) => {
+    setLoading(true);
+    try {
+      if (isContactRequestsApiConfigured()) {
+        const apiLeads = await getContactRequestsFromApi();
+        const localLeads = buildLocalRequests();
+
+        const apiEmails = new Set(
+          apiLeads.map(
+            (lead) =>
+              `${String(lead.email || "").toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}`,
+          ),
+        );
+
+        const uniqueLocal = localLeads.filter((lead) => {
+          if (!lead.isStored) {
+            return apiLeads.length === 0;
+          }
+          const key = `${String(lead.email || "").toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}`;
+          return !apiEmails.has(key);
+        });
+
+        setRequests([
+          ...apiLeads.map(normalizeLead),
+          ...uniqueLocal.map(normalizeLead),
+        ]);
+
+        if (showToast) {
+          setToast({ type: "success", message: "Leads refreshed from server." });
+        }
+      } else {
+        setRequests(buildLocalRequests());
+      }
+    } catch (error) {
+      setRequests(buildLocalRequests());
+      if (showToast) {
+        setToast({
+          type: "error",
+          message: error?.message || "Could not refresh leads from server.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleRefresh = useCallback(() => {
-    setRequests(buildInitialRequests());
     setFollowUpsByLead({});
     setNotesByLead({});
     setCurrentPage(1);
-  }, []);
+    loadRequests({ showToast: true });
+  }, [loadRequests]);
 
   useEffect(() => {
-    const refreshRequests = () => setRequests(buildInitialRequests());
+    loadRequests();
+  }, [loadRequests]);
+
+  useEffect(() => {
+    const refreshRequests = () => loadRequests();
     window.addEventListener("aiverse:contact-requests-updated", refreshRequests);
     return () =>
-      window.removeEventListener("aiverse:contact-requests-updated", refreshRequests);
-  }, []);
+      window.removeEventListener(
+        "aiverse:contact-requests-updated",
+        refreshRequests,
+      );
+  }, [loadRequests]);
 
   const openDrawer = (request) => {
     setSelectedRequestKey(request.requestKey);
@@ -174,7 +233,7 @@ const ContactRequests = () => {
     try {
       if (leadToDelete.isStored) {
         deleteContactRequest(leadToDelete.id);
-      } else {
+      } else if (!leadToDelete.isApi) {
         markDemoLeadDeleted(leadToDelete.requestKey);
       }
 
@@ -199,7 +258,12 @@ const ContactRequests = () => {
       }
 
       setLeadToDelete(null);
-      setToast({ type: "success", message: "Lead deleted successfully." });
+      setToast({
+        type: "success",
+        message: leadToDelete.isApi
+          ? "Lead hidden from this view. Server delete is not enabled yet."
+          : "Lead deleted successfully.",
+      });
     } finally {
       setDeletingLead(false);
     }
@@ -213,14 +277,32 @@ const ContactRequests = () => {
 
       await updateContactRequestStageApi(requestKey, newStage);
 
+      if (selectedRequest.isApi) {
+        try {
+          await updateContactRequestStageOnApi({
+            id: selectedRequest.id,
+            stage: newStage,
+          });
+        } catch {
+          // Keep UI update even if stage persistence endpoint is unavailable.
+        }
+      }
+
       setRequests((prev) =>
         prev.map((request) => {
           if (request.requestKey !== requestKey) return request;
 
           if (request.isStored) {
-            const persisted = updateStoredContactRequestStage(request.id, newStage);
+            const persisted = updateStoredContactRequestStage(
+              request.id,
+              newStage,
+            );
             return persisted
-              ? { ...persisted, requestKey: request.requestKey, isStored: true }
+              ? {
+                  ...persisted,
+                  requestKey: request.requestKey,
+                  isStored: true,
+                }
               : appendStageActivity(request, newStage);
           }
 
@@ -259,7 +341,10 @@ const ContactRequests = () => {
           ),
         );
 
-        setToast({ type: "success", message: "Follow-up scheduled successfully." });
+        setToast({
+          type: "success",
+          message: "Follow-up scheduled successfully.",
+        });
       } catch (error) {
         setToast({
           type: "error",
@@ -329,7 +414,9 @@ const ContactRequests = () => {
         onRefresh={handleRefresh}
       />
 
-      {viewMode === "kanban" ? (
+      {loading ? (
+        <p style={{ margin: "16px 0", color: "#6b7280" }}>Loading leads...</p>
+      ) : viewMode === "kanban" ? (
         <ContactRequestKanban requests={requests} onCardClick={openDrawer} />
       ) : (
         <>

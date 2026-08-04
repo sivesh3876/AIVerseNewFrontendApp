@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
 import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
+import {
+  isRequestDemoEmailConfigured,
+  sendContactEmail,
+} from "../../services/requestDemoEmailService";
 import logo from "../../assets/images/logo.svg";
 import "./CallbackScheduleModal.scss";
 
@@ -10,6 +14,12 @@ const INITIAL_FORM = {
   phone: "",
   preferDate: "",
   preferTime: "",
+};
+
+const formatPreferLabel = (dateValue, timeValue) => {
+  const datePart = dateValue || "—";
+  const timePart = timeValue || "—";
+  return `${datePart} at ${timePart}`;
 };
 
 const CallbackScheduleModal = ({ open, onClose }) => {
@@ -74,27 +84,57 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     onClose?.();
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setErrors({});
+
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+    const preferLabel = formatPreferLabel(form.preferDate, form.preferTime);
+    const preferredCallbackTime = `${form.preferDate}T${form.preferTime}`;
+    const message = [
+      "Schedule a Call request",
+      `Preferred date: ${form.preferDate}`,
+      `Preferred time: ${form.preferTime}`,
+      `Contact number: ${form.phone.trim()}`,
+    ].join("\n");
+
     try {
-      const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-      const preferredCallbackTime = `${form.preferDate}T${form.preferTime}`;
+      // Save to Leads immediately (local), then sync to backend API.
       addContactRequest({
         name: fullName,
         email: form.email.trim(),
         phone: form.phone.trim(),
         company: "—",
-        reason: LEAD_TYPES.CALLBACK_SCHEDULE,
-        message: `Preferred call time: ${form.preferDate} ${form.preferTime}`,
+        reason: "Schedule a Call",
+        message,
         type: LEAD_TYPES.CALLBACK_SCHEDULE,
         preferredCallbackTime,
         source: "Schedule a Call",
       });
+
+      if (isRequestDemoEmailConfigured()) {
+        try {
+          await sendContactEmail({
+            form: {
+              name: fullName,
+              email: form.email.trim(),
+              company: "",
+              phone: form.phone.trim(),
+              message,
+              subject: `Schedule a Call: ${preferLabel}`,
+              leadType: LEAD_TYPES.CALLBACK_SCHEDULE,
+            },
+          });
+        } catch {
+          // Local lead is already saved for Admin → Leads.
+        }
+      }
+
       setSuccessMessage(
-        "Your call is scheduled. Our team will contact you soon.",
+        "Your call is scheduled. It is now available on the Leads page.",
       );
       setForm(INITIAL_FORM);
     } catch {
@@ -157,7 +197,11 @@ const CallbackScheduleModal = ({ open, onClose }) => {
             </button>
           </div>
         ) : (
-          <form className="callback_schedule_modal__form" onSubmit={handleSubmit} noValidate>
+          <form
+            className="callback_schedule_modal__form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
             <div className="callback_schedule_modal__row">
               <label className="callback_schedule_modal__field">
                 <span>First Name *</span>
@@ -227,7 +271,10 @@ const CallbackScheduleModal = ({ open, onClose }) => {
                     disabled={isSubmitting}
                     min={new Date().toISOString().slice(0, 10)}
                   />
-                  <span className="callback_schedule_modal__picker-icon" aria-hidden="true">
+                  <span
+                    className="callback_schedule_modal__picker-icon"
+                    aria-hidden="true"
+                  >
                     <svg viewBox="0 0 24 24" fill="none">
                       <path
                         d="M7 3v2M17 3v2M4 9h16M6 7h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
@@ -254,7 +301,10 @@ const CallbackScheduleModal = ({ open, onClose }) => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                   />
-                  <span className="callback_schedule_modal__picker-icon" aria-hidden="true">
+                  <span
+                    className="callback_schedule_modal__picker-icon"
+                    aria-hidden="true"
+                  >
                     <svg viewBox="0 0 24 24" fill="none">
                       <circle
                         cx="12"
