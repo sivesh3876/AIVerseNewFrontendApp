@@ -57,6 +57,24 @@ const ContactRequestCard = ({ request, onClick }) => (
     <div className="admin_contact_card__meta">
       <span>{request.email}</span>
       <span>{request.phone}</span>
+      {request.reason ? (
+        <span className="admin_contact_card__reason" title={request.reason}>
+          Reason: {request.reason}
+        </span>
+      ) : null}
+      {request.preferredCallbackTime ? (
+        <span
+          className="admin_contact_card__callback"
+          title={request.preferredCallbackTime}
+        >
+          Call: {formatDate(request.preferredCallbackTime)}
+        </span>
+      ) : null}
+      {request.message && request.message !== "—" ? (
+        <span className="admin_contact_card__message" title={request.message}>
+          {request.message}
+        </span>
+      ) : null}
     </div>
 
     <div className="admin_contact_card__badges">
