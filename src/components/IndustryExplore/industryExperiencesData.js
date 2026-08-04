@@ -598,9 +598,10 @@ export const industryExperiences = {
         },
         {
           id: "customer-service-automation",
-          title: "Customer Service Automation",
+          title: "WMS Customer Onboarding Accelerator",
           description:
             "AI assistants resolve delivery queries, reroute requests, and document issues across digital channels.",
+          href: "/explore-solutions?service=agentic-automation&solution=api-104",
           detail: {
             overview:
               "AI assistants handle delivery inquiries, reroute requests, and issue logging across chat, email, and customer portals with seamless escalation to agents.",
