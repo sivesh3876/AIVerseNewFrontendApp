@@ -3,6 +3,7 @@ import {
   experiencePillars,
   getIndustryExperienceMeta,
 } from "./industryExperiencesData";
+import { getIndustryDomainCode } from "./industrySolutionsData";
 import "./IndustryExperienceGrid.scss";
 
 const PillarIcon = ({ pillarId }) => {
@@ -45,9 +46,15 @@ const PILLAR_IDS = ["cx", "ex", "bx"];
 
 const IndustryExperienceGrid = ({ industryId }) => {
   const meta = getIndustryExperienceMeta(industryId);
+  const domainCode = getIndustryDomainCode(industryId);
   const maxRows = Math.max(
     ...PILLAR_IDS.map((pillarId) => meta.pillars[pillarId]?.length ?? 0),
   );
+
+  const resolveCardLink = (item) =>
+    item.apiSolutionId
+      ? `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industryId}&solution=api-${item.apiSolutionId}`
+      : `/industry-solutions?industry=${industryId}&solution=${item.id}`;
 
   return (
     <section className="industry_experience">
@@ -90,10 +97,7 @@ const IndustryExperienceGrid = ({ industryId }) => {
                 return (
                   <Link
                     key={item.id}
-                    to={
-                      item.href ||
-                      `/industry-solutions?industry=${industryId}&solution=${item.id}`
-                    }
+                    to={resolveCardLink(item)}
                     className="industry_experience__card"
                     style={{
                       background: pillar.cardBg,
