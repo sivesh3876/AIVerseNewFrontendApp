@@ -26,6 +26,7 @@ export const useAdminSolutions = () => {
 
   return {
     solutions,
+    setSolutions,
     loading,
     error,
     loadSolutions,
