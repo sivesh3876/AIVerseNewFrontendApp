@@ -47,6 +47,11 @@ import {
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
 } from "../../services/usecasesService";
+import {
+  SOLUTION_STATUS_STORAGE_KEY,
+  SOLUTION_STATUS_UPDATED_EVENT,
+  applyInactiveSolutionOverrides,
+} from "../../utils/solutionStatusStorage";
 import "./CustomerCommunicationManagement.scss";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -401,6 +406,37 @@ const CustomerCommunicationManagement = () => {
       fetchRequestIdRef.current += 1;
     };
   }, [submitted]);
+
+  useEffect(() => {
+    const syncInactiveStatus = async () => {
+      try {
+        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        setApiSolutions(data);
+        setPendingCapabilities(
+          loadPersistedSubmittedCapabilities().map(hydrateCapability),
+        );
+      } catch {
+        setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
+        setPendingCapabilities((prev) => [...prev]);
+      }
+    };
+
+    const syncStatusAcrossTabs = (event) => {
+      if (event.key === SOLUTION_STATUS_STORAGE_KEY) {
+        syncInactiveStatus();
+      }
+    };
+
+    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveStatus);
+    window.addEventListener("storage", syncStatusAcrossTabs);
+    return () => {
+      window.removeEventListener(
+        SOLUTION_STATUS_UPDATED_EVENT,
+        syncInactiveStatus,
+      );
+      window.removeEventListener("storage", syncStatusAcrossTabs);
+    };
+  }, []);
 
   const handleEditCapability = (capability) => {
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);

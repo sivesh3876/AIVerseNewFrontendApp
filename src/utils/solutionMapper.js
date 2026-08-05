@@ -218,6 +218,8 @@ const truncateText = (value, maxLength = 110) => {
   return `${text.slice(0, maxLength).trim()}…`;
 };
 
+import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
+
 export const getSolutionOrderNumber = (solution = {}) => {
   const raw =
     solution.OrderNumber ??
@@ -229,24 +231,54 @@ export const getSolutionOrderNumber = (solution = {}) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const isPublicSolutionVisible = (solution = {}) => {
-  if (solution?.IsSolutionActive === false) return false;
-
-  const publishValue =
-    solution.Publish ??
-    solution.publish ??
-    solution.IsPublished ??
-    solution.isPublished ??
-    solution.PublicationStatus ??
-    solution.publicationStatus;
-
-  if (publishValue == null || publishValue === "") return true;
-
-  const normalized = String(publishValue).trim().toLowerCase();
-  return !["no", "false", "0", "draft", "inactive", "archive"].includes(
-    normalized,
-  );
+const isExplicitlyInactiveFlag = (value) => {
+  if (value === false || value === 0) return true;
+  if (value == null || value === "") return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ["false", "0", "no", "inactive"].includes(normalized);
 };
+
+/** True when a solution should be treated as Inactive in admin + public views. */
+export const isSolutionMarkedInactive = (solution = {}) => {
+  const rawId = solution?.ID ?? solution?.id;
+  if (rawId != null && isSolutionIdMarkedInactiveLocally(rawId)) {
+    return true;
+  }
+
+  const numericId = String(rawId || "").match(/(\d+)$/);
+  if (numericId && isSolutionIdMarkedInactiveLocally(numericId[1])) {
+    return true;
+  }
+
+  if (
+    isExplicitlyInactiveFlag(
+      solution?.IsSolutionActive ?? solution?.isSolutionActive,
+    )
+  ) {
+    return true;
+  }
+
+  const publishValue = String(
+    solution?.Publish ?? solution?.publish ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["no", "false", "0", "inactive"].includes(publishValue)) return true;
+
+  const publicationStatus = String(
+    solution?.PublicationStatus ?? solution?.publicationStatus ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["draft", "inactive", "archive", "unpublished"].includes(publicationStatus)) {
+    return true;
+  }
+
+  return false;
+};
+
+export const isPublicSolutionVisible = (solution = {}) =>
+  !isSolutionMarkedInactive(solution);
 
 export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
   [...solutions]
@@ -686,6 +718,21 @@ export const removePersistedSubmittedCapability = (capabilityId) => {
   savePersistedSubmittedCapabilities(next);
 };
 
+const normalizeCapabilityTitle = (value) =>
+  String(value || "").trim().toLowerCase();
+
+/** Optimistic cards are stored with temporary ids, so title is the only reliable key. */
+export const removePersistedSubmittedCapabilitiesByTitle = (title) => {
+  const key = normalizeCapabilityTitle(title);
+  if (!key) return;
+
+  const existing = getPersistedSubmittedCapabilities();
+  const next = existing.filter(
+    (item) => normalizeCapabilityTitle(item?.title) !== key,
+  );
+  savePersistedSubmittedCapabilities(next);
+};
+
 export const loadPersistedSubmittedCapabilities = getPersistedSubmittedCapabilities;
 
 export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) => {
@@ -693,8 +740,15 @@ export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) =>
   if (persisted.length === 0) return;
 
   const apiIds = new Set(apiCapabilities.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
+  );
 
-  const remaining = persisted.filter((capability) => !apiIds.has(capability.id));
+  const remaining = persisted.filter(
+    (capability) =>
+      !apiIds.has(capability.id) &&
+      !apiTitles.has(normalizeCapabilityTitle(capability.title)),
+  );
 
   savePersistedSubmittedCapabilities(remaining);
 };
@@ -715,14 +769,27 @@ export const mergeSubmittedCapabilities = ({
   const fromApi = apiCapabilities.filter(matchesFilter);
 
   const apiIds = new Set(fromApi.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
+  );
 
   const fromPending = pendingCapabilities.filter((capability) => {
+    if (isSolutionMarkedInactive(capability)) {
+      return false;
+    }
+
     if (!matchesFilter(capability)) {
+      return false;
+    }
+
+    if (apiTitles.has(normalizeCapabilityTitle(capability.title))) {
       return false;
     }
 
     return capability.id && !apiIds.has(capability.id);
   });
 
-  return dedupeCapabilitiesById([...fromApi, ...fromPending]);
+  return dedupeCapabilitiesById([...fromApi, ...fromPending]).filter(
+    isPublicSolutionVisible,
+  );
 };

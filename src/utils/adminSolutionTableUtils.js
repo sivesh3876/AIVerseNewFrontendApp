@@ -1,15 +1,9 @@
+import { isSolutionMarkedInactive } from "./solutionMapper";
+
 const normalize = (value = "") => String(value).trim().toLowerCase();
 
 export const getSolutionStatusLabel = (solution) =>
-  solution?.IsSolutionActive === false ||
-  String(solution?.Publish || solution?.publish || "")
-    .trim()
-    .toLowerCase() === "no" ||
-  String(solution?.PublicationStatus || solution?.publicationStatus || "")
-    .trim()
-    .toLowerCase() === "draft"
-    ? "Inactive"
-    : "Active";
+  isSolutionMarkedInactive(solution) ? "Inactive" : "Active";
 
 const getSolutionCreatedDateValue = (solution = {}) =>
   solution.CreatedDate ??
