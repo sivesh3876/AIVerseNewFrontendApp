@@ -168,3 +168,16 @@ export const getIndustryById = (industryId) =>
 
 export const getIndustryDomainCode = (industryId) =>
   getIndustryById(industryId)?.domainCode || "Education";
+
+export const getIndustryByDomainCode = (domainCode) => {
+  if (!domainCode) return null;
+
+  const normalized = String(domainCode).replace(/\s+/g, "").toLowerCase();
+
+  return (
+    industrySolutionsData.find(
+      (industry) =>
+        industry.domainCode.replace(/\s+/g, "").toLowerCase() === normalized,
+    ) || null
+  );
+};

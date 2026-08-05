@@ -597,22 +597,22 @@ export const industryExperiences = {
           },
         },
         {
-          id: "customer-service-automation",
+          id: "wms-customer-onboarding-accelerator",
+          apiSolutionId: 104,
           title: "WMS Customer Onboarding Accelerator",
           description:
-            "AI assistants resolve delivery queries, reroute requests, and document issues across digital channels.",
-          href: "/explore-solutions?service=agentic-automation&solution=api-104",
+            "Guided onboarding that speeds up evaluation, integration, and WMS configuration with reusable EDI/API mapping.",
           detail: {
             overview:
-              "AI assistants handle delivery inquiries, reroute requests, and issue logging across chat, email, and customer portals with seamless escalation to agents.",
+              "This POC accelerates evaluation, integration onboarding, and WMS configuration through automation, reducing manual effort, dependency on SMEs, and onboarding iterations.",
             benefits: [
-              "Instant resolution for common delivery questions.",
-              "Structured issue capture with automated ticket creation.",
-              "Integrated workflows with TMS and WMS systems.",
+              "Guided onboarding experience with reduced manual effort.",
+              "Reusable EDI/API mapping structures for faster integration.",
+              "WMS-oriented configuration outputs generated automatically.",
             ],
             outcomes: [
-              "Lower contact centre volume and handle times.",
-              "Consistent service quality across regions and channels.",
+              "Shorter customer onboarding cycles with fewer iterations.",
+              "Lower dependency on SMEs during integration onboarding.",
             ],
           },
         },
