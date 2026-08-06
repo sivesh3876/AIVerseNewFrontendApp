@@ -40,6 +40,7 @@ import {
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
+import { getIndustryByDomainCode } from "../IndustryExplore/industrySolutionsData";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
 import { useAdminAuth } from "../../context/AdminAuthContext";
@@ -49,6 +50,11 @@ import {
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
 } from "../../services/usecasesService";
+import {
+  SOLUTION_STATUS_STORAGE_KEY,
+  SOLUTION_STATUS_UPDATED_EVENT,
+  applyInactiveSolutionOverrides,
+} from "../../utils/solutionStatusStorage";
 import "./CustomerCommunicationManagement.scss";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -263,6 +269,9 @@ const CustomerCommunicationManagement = () => {
   const solutionQueryId = searchParams.get("solution");
   const isDetailView = Boolean(solutionQueryId);
   const activeDomainCode = searchParams.get("domain");
+  const industryId = searchParams.get("industry");
+  const resolvedIndustryId =
+    industryId || getIndustryByDomainCode(activeDomainCode)?.id || null;
   const highlightId = searchParams.get("highlight");
   const submitted = searchParams.get("submitted") === "1";
   const mainRef = useRef(null);
@@ -367,7 +376,17 @@ const CustomerCommunicationManagement = () => {
         setLoadingApiSolutions(true);
         setSolutionsFetchError(null);
 
-        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        const data = filterOutDeletedSolutions(await fetchAllUseCases()).filter(
+          (solution) => {
+            const title = String(solution?.Title || "").trim().toLowerCase();
+            return (
+              title &&
+              title !== "solution title *" &&
+              title !== "solution title*" &&
+              title !== "untitled solution"
+            );
+          },
+        );
         if (requestId !== fetchRequestIdRef.current) return;
 
         setApiSolutions(data);
@@ -415,6 +434,32 @@ const CustomerCommunicationManagement = () => {
       fetchRequestIdRef.current += 1;
     };
   }, [submitted]);
+
+  // When Admin marks a solution Inactive, hide its card immediately on Explore.
+  useEffect(() => {
+    const syncInactiveVisibility = () => {
+      setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
+      setPendingCapabilities(
+        loadPersistedSubmittedCapabilities().map(hydrateCapability),
+      );
+    };
+
+    const onStorage = (event) => {
+      if (event.key === SOLUTION_STATUS_STORAGE_KEY || event.key === null) {
+        syncInactiveVisibility();
+      }
+    };
+
+    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveVisibility);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(
+        SOLUTION_STATUS_UPDATED_EVENT,
+        syncInactiveVisibility,
+      );
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const handleEditCapability = (capability) => {
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);
@@ -479,12 +524,30 @@ const CustomerCommunicationManagement = () => {
   };
 
   const handleIndustryChange = (domainCode) => {
-    navigate(`/explore-solutions?domain=${domainCode}`, {
-      replace: true,
-    });
+    const industry = getIndustryByDomainCode(domainCode);
+
+    navigate(
+      `/explore-solutions?domain=${encodeURIComponent(domainCode)}${industry ? `&industry=${industry.id}` : ""}`,
+      { replace: true },
+    );
   };
 
   const handleBackToSolutions = () => {
+    if (activeDomainCode && resolvedIndustryId) {
+      navigate(
+        `/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}&industry=${resolvedIndustryId}`,
+        { replace: true },
+      );
+      return;
+    }
+
+    if (activeDomainCode) {
+      navigate(`/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}`, {
+        replace: true,
+      });
+      return;
+    }
+
     const serviceLine = detailSolution?.serviceLine || activeService.id;
     navigate(`/explore-solutions?service=${serviceLine}`, { replace: true });
   };
@@ -665,13 +728,20 @@ const CustomerCommunicationManagement = () => {
 
   useEffect(() => {
     if (!detailSolution?.serviceLine || !solutionQueryId) return;
+    if (activeDomainCode) return;
     if (serviceId === detailSolution.serviceLine) return;
 
     navigate(
       `/explore-solutions?service=${detailSolution.serviceLine}&solution=${encodeURIComponent(solutionQueryId)}`,
       { replace: true },
     );
-  }, [detailSolution?.serviceLine, navigate, serviceId, solutionQueryId]);
+  }, [
+    activeDomainCode,
+    detailSolution?.serviceLine,
+    navigate,
+    serviceId,
+    solutionQueryId,
+  ]);
 
   const detailDocuments = useMemo(
     () => buildDocumentsFromCapability(detailPrimaryCapability || {}),
@@ -680,6 +750,17 @@ const CustomerCommunicationManagement = () => {
 
   const handleCapabilityNavigate = (capability) => {
     if (!capability.id) return;
+
+    if (activeDomainCode) {
+      const industrySuffix = resolvedIndustryId
+        ? `&industry=${resolvedIndustryId}`
+        : "";
+
+      navigate(
+        `/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}${industrySuffix}&solution=${encodeURIComponent(capability.id)}`,
+      );
+      return;
+    }
 
     const serviceForCapability =
       getServiceIdForDomain(capability.businessDomain) || activeService.id;

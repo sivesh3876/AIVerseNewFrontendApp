@@ -1,17 +1,30 @@
 import { selectTopOrderedSolutions } from "../utils/solutionMapper";
+import { applyInactiveSolutionOverrides } from "../utils/solutionStatusStorage";
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 
 export const getUsecasesApiBaseUrl = () => getApiBaseUrl();
 
-export const fetchAllUseCases = async () => {
-  const response = await fetch(buildApiPath("get-usecases"));
+export const fetchAllUseCases = async ({
+  includeInactive = false,
+  applyLocalOverrides = true,
+} = {}) => {
+  const response = await fetch(
+    buildApiPath(
+      "get-usecases",
+      includeInactive ? { include_inactive: "true" } : {},
+    ),
+  );
   const result = await response.json();
 
   if (!response.ok || result.status !== "success" || !Array.isArray(result.data)) {
     throw new Error(result.message || "Failed to fetch solutions");
   }
 
-  return result.data;
+  if (!applyLocalOverrides) {
+    return result.data;
+  }
+
+  return applyInactiveSolutionOverrides(result.data);
 };
 
 export const fetchTopOrderedSolutions = async (limit = 8) => {

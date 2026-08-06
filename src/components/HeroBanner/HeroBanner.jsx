@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./HeroBanner.scss";
 import slider1 from "../../assets/images/slider1.svg";
@@ -53,19 +53,53 @@ const HeroBannerSlider = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const { openRegisterModal } = useRegistrationReminder();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+  const goToPrevSlide = () => {
+    setActiveSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  const goToNextSlide = () => {
+    setActiveSlide((prev) => (prev + 1) % slides.length);
+  };
 
   return (
     <section
       className="hero_slider"
       style={{ backgroundImage: `url(${slides[activeSlide].image})` }}
     >
+      <button
+        type="button"
+        className="hero_arrow hero_arrow--prev"
+        aria-label="Previous slide"
+        onClick={goToPrevSlide}
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M15 6l-6 6 6 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        className="hero_arrow hero_arrow--next"
+        aria-label="Next slide"
+        onClick={goToNextSlide}
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M9 6l6 6-6 6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
       <div className="hero_search">
         <GlobalSearch variant="hero" />
       </div>
@@ -97,10 +131,14 @@ const HeroBannerSlider = () => {
         </div>
       </div>
 
-      <div className="slider_dots">
+      <div className="slider_dots" role="tablist" aria-label="Hero pages">
         {slides.map((_, index) => (
-          <span
+          <button
             key={index}
+            type="button"
+            role="tab"
+            aria-label={`Go to page ${index + 1}`}
+            aria-selected={activeSlide === index}
             className={activeSlide === index ? "active" : ""}
             onClick={() => setActiveSlide(index)}
           />
