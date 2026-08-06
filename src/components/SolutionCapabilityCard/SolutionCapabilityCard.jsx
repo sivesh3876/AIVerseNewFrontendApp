@@ -97,7 +97,7 @@ const SolutionCapabilityCard = ({
             <h4>{capability.title}</h4>
             {capability.client && (
               <span className="ccm_dashboard__client-badge">
-                Client: {capability.client}
+                AI Foundation: {capability.client}
               </span>
             )}
           </div>
