@@ -82,7 +82,7 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           )}
           {solution.client && (
             <span className="ai_capabilities__client">
-              Client: {solution.client}
+              AI Foundation: {solution.client}
             </span>
           )}
         </div>

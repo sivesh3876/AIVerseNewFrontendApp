@@ -141,7 +141,7 @@ const SolutionDetailPanel = ({
       {clientName && (
         <div className="ccm_dashboard__detail-client">
           <span className="ccm_dashboard__client-badge">
-            Client: {clientName}
+            AI Foundation: {clientName}
           </span>
         </div>
       )}
