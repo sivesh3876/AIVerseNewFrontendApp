@@ -50,6 +50,11 @@ import {
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
 } from "../../services/usecasesService";
+import {
+  SOLUTION_STATUS_STORAGE_KEY,
+  SOLUTION_STATUS_UPDATED_EVENT,
+  applyInactiveSolutionOverrides,
+} from "../../utils/solutionStatusStorage";
 import "./CustomerCommunicationManagement.scss";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -371,7 +376,17 @@ const CustomerCommunicationManagement = () => {
         setLoadingApiSolutions(true);
         setSolutionsFetchError(null);
 
-        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        const data = filterOutDeletedSolutions(await fetchAllUseCases()).filter(
+          (solution) => {
+            const title = String(solution?.Title || "").trim().toLowerCase();
+            return (
+              title &&
+              title !== "solution title *" &&
+              title !== "solution title*" &&
+              title !== "untitled solution"
+            );
+          },
+        );
         if (requestId !== fetchRequestIdRef.current) return;
 
         setApiSolutions(data);
@@ -419,6 +434,32 @@ const CustomerCommunicationManagement = () => {
       fetchRequestIdRef.current += 1;
     };
   }, [submitted]);
+
+  // When Admin marks a solution Inactive, hide its card immediately on Explore.
+  useEffect(() => {
+    const syncInactiveVisibility = () => {
+      setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
+      setPendingCapabilities(
+        loadPersistedSubmittedCapabilities().map(hydrateCapability),
+      );
+    };
+
+    const onStorage = (event) => {
+      if (event.key === SOLUTION_STATUS_STORAGE_KEY || event.key === null) {
+        syncInactiveVisibility();
+      }
+    };
+
+    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveVisibility);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(
+        SOLUTION_STATUS_UPDATED_EVENT,
+        syncInactiveVisibility,
+      );
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const handleEditCapability = (capability) => {
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);

@@ -97,7 +97,7 @@ const AdminSolutionNewAITableToolbar = ({
   }, [filterOpen]);
 
   const activeFilterCount = [
-    statusFilter !== "all",
+    statusFilter !== "Active",
     domainFilter !== "all",
   ].filter(Boolean).length;
 

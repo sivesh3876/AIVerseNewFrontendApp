@@ -1,13 +1,36 @@
 const normalize = (value = "") => String(value).trim().toLowerCase();
 
+const isFalsyActiveFlag = (value) => {
+  if (value === false || value === 0) return true;
+  if (value == null || value === "") return false;
+  return ["false", "0", "no", "inactive"].includes(normalize(value));
+};
+
+/** Drop unfinished/test rows that should not appear in Admin catalogs. */
+export const isPlaceholderSolution = (solution = {}) => {
+  const title = String(solution?.Title || "").trim();
+  if (!title) return true;
+
+  const normalized = title.toLowerCase().replace(/\s+/g, " ");
+  return (
+    normalized === "solution title *" ||
+    normalized === "solution title*" ||
+    normalized === "solution title" ||
+    normalized === "untitled" ||
+    normalized === "untitled solution" ||
+    /^solution title\s*\*?$/i.test(title)
+  );
+};
+
+export const filterCatalogSolutions = (solutions = []) =>
+  solutions.filter((solution) => !isPlaceholderSolution(solution));
+
 export const getSolutionStatusLabel = (solution) =>
-  solution?.IsSolutionActive === false ||
-  String(solution?.Publish || solution?.publish || "")
-    .trim()
-    .toLowerCase() === "no" ||
-  String(solution?.PublicationStatus || solution?.publicationStatus || "")
-    .trim()
-    .toLowerCase() === "draft"
+  isFalsyActiveFlag(solution?.IsSolutionActive) ||
+  normalize(solution?.Publish || solution?.publish) === "no" ||
+  ["draft", "inactive", "unpublished"].includes(
+    normalize(solution?.PublicationStatus || solution?.publicationStatus),
+  )
     ? "Inactive"
     : "Active";
 
