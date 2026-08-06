@@ -10,6 +10,7 @@ import { enterpriseServicesData } from "../components/CustomerCommunicationManag
 import {
   buildDocumentsFromApiSolution,
 } from "./solutionDocuments";
+import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
 
 const capabilityIconMap = {
   brain: BrainIcon,
@@ -301,7 +302,26 @@ export const getSolutionOrderNumber = (solution = {}) => {
 };
 
 export const isPublicSolutionVisible = (solution = {}) => {
-  if (solution?.IsSolutionActive === false) return false;
+  const rawId = solution?.ID ?? solution?.id;
+  if (rawId != null && isSolutionIdMarkedInactiveLocally(rawId)) {
+    return false;
+  }
+  const numericId = String(rawId || "").match(/(\d+)$/);
+  if (numericId && isSolutionIdMarkedInactiveLocally(numericId[1])) {
+    return false;
+  }
+
+  const activeFlag = solution?.IsSolutionActive ?? solution?.isSolutionActive;
+  if (activeFlag === false || activeFlag === 0) return false;
+  if (
+    activeFlag != null &&
+    activeFlag !== "" &&
+    ["false", "0", "no", "inactive"].includes(
+      String(activeFlag).trim().toLowerCase(),
+    )
+  ) {
+    return false;
+  }
 
   const publishValue =
     solution.Publish ??
@@ -440,6 +460,7 @@ export const mapApiSolutionToCapability = (
   return {
     id: `api-${solution.ID}`,
     isApiSolution: true,
+    IsSolutionActive: solution.IsSolutionActive,
     title: solution.Title || "Untitled Solution",
     iconKey: "brain",
     description: solution.SolutionContext || "No description available.",
@@ -762,6 +783,20 @@ export const removePersistedSubmittedCapability = (capabilityId) => {
   savePersistedSubmittedCapabilities(next);
 };
 
+const normalizeCapabilityTitle = (value) =>
+  String(value || "").trim().toLowerCase();
+
+export const removePersistedSubmittedCapabilitiesByTitle = (title) => {
+  const key = normalizeCapabilityTitle(title);
+  if (!key) return;
+
+  const existing = getPersistedSubmittedCapabilities();
+  const next = existing.filter(
+    (item) => normalizeCapabilityTitle(item?.title) !== key,
+  );
+  savePersistedSubmittedCapabilities(next);
+};
+
 export const loadPersistedSubmittedCapabilities = getPersistedSubmittedCapabilities;
 
 export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) => {
@@ -788,11 +823,14 @@ export const mergeSubmittedCapabilities = ({
       activeDomainCode,
     });
 
-  const fromApi = apiCapabilities.filter(matchesFilter);
+  const fromApi = apiCapabilities.filter(
+    (capability) => matchesFilter(capability) && isPublicSolutionVisible(capability),
+  );
 
   const pendingById = new Map(
     pendingCapabilities
       .filter(matchesFilter)
+      .filter(isPublicSolutionVisible)
       .filter((capability) => capability?.id)
       .map((capability) => [capability.id, capability]),
   );
@@ -816,7 +854,7 @@ export const mergeSubmittedCapabilities = ({
   const apiIds = new Set(mergedFromApi.map((capability) => capability.id));
 
   const fromPending = pendingCapabilities.filter((capability) => {
-    if (!matchesFilter(capability)) {
+    if (!matchesFilter(capability) || !isPublicSolutionVisible(capability)) {
       return false;
     }
 

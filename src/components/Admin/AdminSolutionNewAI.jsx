@@ -9,6 +9,11 @@ import {
   getUniqueSolutionValues,
 } from "../../utils/adminSolutionTableUtils";
 import { getSolutionEngagement } from "../../utils/solutionEngagementStorage";
+import {
+  removePersistedSubmittedCapabilitiesByTitle,
+  removePersistedSubmittedCapability,
+} from "../../utils/solutionMapper";
+import { setSolutionInactiveLocally } from "../../utils/solutionStatusStorage";
 import AddNewAISolution from "../AddNewAISolution";
 import AdminBlogActionDropdown from "./AdminBlogActionDropdown";
 import AdminBlogPagination from "./AdminBlogPagination";
@@ -65,7 +70,7 @@ const AdminSolutionNewAI = () => {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [domainFilter, setDomainFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [engagementTick, setEngagementTick] = useState(0);
@@ -125,7 +130,7 @@ const AdminSolutionNewAI = () => {
 
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
-    statusFilter !== "all" ||
+    statusFilter !== "Active" ||
     domainFilter !== "all";
 
   const viewSolution = useMemo(
@@ -237,12 +242,26 @@ const AdminSolutionNewAI = () => {
     if (updatingStatusId) return;
 
     const isActive = status === "Active";
+    const solutionId = solution.ID;
     try {
-      setUpdatingStatusId(solution.ID);
+      setUpdatingStatusId(solutionId);
+      // Hide from Explore immediately, even before API round-trip / deploy.
+      setSolutionInactiveLocally(solutionId, !isActive);
+
+      if (!isActive) {
+        removePersistedSubmittedCapability(String(solutionId));
+        removePersistedSubmittedCapability(`api-${solutionId}`);
+        removePersistedSubmittedCapabilitiesByTitle(solution.Title);
+      }
+
       await updateUseCaseStatus(solution, isActive);
       await loadSolutions();
     } catch (statusError) {
-      window.alert(statusError.message || "Failed to update solution status.");
+      window.alert(
+        statusError.message ||
+          "Server update failed. Local Inactive flag was still saved so Explore hides the card.",
+      );
+      await loadSolutions();
     } finally {
       setUpdatingStatusId(null);
     }
@@ -250,7 +269,7 @@ const AdminSolutionNewAI = () => {
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setStatusFilter("all");
+    setStatusFilter("Active");
     setDomainFilter("all");
   };
 

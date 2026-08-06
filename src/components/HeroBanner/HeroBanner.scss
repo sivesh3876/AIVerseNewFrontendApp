@@ -1,10 +1,49 @@
 .hero_slider {
+    position           : relative;
     padding            : 0 15px;
     min-height         : 420px;
     background-size    : cover;
     background-position: center;
     background-repeat  : no-repeat;
     transition         : background-image 0.5s ease-in-out;
+}
+
+.hero_arrow {
+    position     : absolute;
+    top          : 55%;
+    z-index      : 6;
+    display      : inline-flex;
+    align-items  : center;
+    justify-content: center;
+    width        : 44px;
+    height       : 44px;
+    padding      : 0;
+    border       : 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    background   : rgba(13, 30, 50, 0.55);
+    color        : #fff;
+    cursor       : pointer;
+    backdrop-filter: blur(6px);
+    transition   : background 0.2s, border-color 0.2s, transform 0.2s;
+
+    svg {
+        width : 22px;
+        height: 22px;
+    }
+
+    &:hover {
+        background  : rgba(24, 224, 204, 0.25);
+        border-color: rgba(24, 224, 204, 0.75);
+        transform   : scale(1.05);
+    }
+
+    &--prev {
+        left: 18px;
+    }
+
+    &--next {
+        right: 18px;
+    }
 }
 
 .hero_content {
@@ -153,12 +192,20 @@
     gap            : 10px;
     padding-bottom : 32px;
 
-    span {
+    button {
         width        : 8px;
         height       : 8px;
+        padding      : 0;
+        border       : none;
         border-radius: 50%;
         background   : rgba(255, 255, 255, 0.4);
         cursor       : pointer;
+        transition   : background 0.2s, transform 0.2s;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.7);
+            transform : scale(1.15);
+        }
     }
 
     .active {
@@ -170,6 +217,25 @@
 @media (max-width: 992px) {
     .hero_slider {
         min-height: 360px;
+    }
+
+    .hero_arrow {
+        width : 38px;
+        height: 38px;
+        top   : 58%;
+
+        &--prev {
+            left: 10px;
+        }
+
+        &--next {
+            right: 10px;
+        }
+
+        svg {
+            width : 18px;
+            height: 18px;
+        }
     }
 
     .hero_content {
