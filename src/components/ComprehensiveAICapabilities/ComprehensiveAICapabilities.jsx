@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
-import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
+import OnboardingAcceleratorModal from "./OnboardingAcceleratorModal";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
-import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
 import {
   AI_FOUNDATION_HIGHLIGHT_EVENT,
@@ -13,124 +12,14 @@ import {
   getFoundationExplorePath,
   readPendingFoundationHighlight,
 } from "../../utils/foundationNavigation";
-import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
+import {
+  ONBOARDING_ACCELERATOR,
+  OnboardingAcceleratorCard,
+  SolutionCard,
+  SolutionCardSkeleton,
+} from "./HomeCapabilityCards";
 
 const HOME_SOLUTION_LIMIT = 8;
-
-const SolutionCardSkeleton = ({ index }) => (
-  <article
-    className="ai_capabilities__card ai_capabilities__card--skeleton"
-    style={{ animationDelay: `${index * 0.08}s` }}
-    aria-hidden="true"
-  >
-    <div className="ai_capabilities__skeleton-icon" />
-    <div className="ai_capabilities__skeleton-line ai_capabilities__skeleton-line--title" />
-    <div className="ai_capabilities__skeleton-line" />
-    <div className="ai_capabilities__skeleton-line ai_capabilities__skeleton-line--short" />
-    <div className="ai_capabilities__skeleton-actions" />
-  </article>
-);
-
-const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }) => {
-  const navigate = useNavigate();
-  const Icon =
-    HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
-  const hasRecordedDemo = Boolean(solution.recordedDemoLink);
-
-  const handleNavigate = () => {
-    if (solution.id) {
-      incrementSolutionView(solution.id);
-    }
-    navigate(solution.detailUrl);
-  };
-
-  return (
-    <article
-      ref={cardRef}
-      className={`ai_capabilities__card${
-        isHighlighted ? " is-foundation-highlight" : ""
-      }`}
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      <div
-        className="ai_capabilities__card-body"
-        role="button"
-        tabIndex={0}
-        onClick={handleNavigate}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            handleNavigate();
-          }
-        }}
-      >
-        <div className="ai_capabilities__card-head">
-          <div className="ai_capabilities__icon">
-            <Icon />
-          </div>
-
-          <div className="ai_capabilities__head-meta">
-            {solution.orderNumber != null && (
-              <span className="ai_capabilities__order">
-                #{String(solution.orderNumber).padStart(2, "0")}
-              </span>
-            )}
-            <span className="ai_capabilities__domain">
-              {solution.domainLabel}
-            </span>
-          </div>
-        </div>
-
-        <h3>{solution.title}</h3>
-        <p>{solution.description}</p>
-
-        <div className="ai_capabilities__meta">
-          {solution.techHighlight && (
-            <span className="ai_capabilities__chip">
-              {solution.techHighlight}
-            </span>
-          )}
-          {solution.client && (
-            <span className="ai_capabilities__client">
-              Client: {solution.client}
-            </span>
-          )}
-        </div>
-
-        <SolutionEngagementBar solutionId={solution.id} />
-      </div>
-
-      <div className="ai_capabilities__actions">
-        <button
-          type="button"
-          className="ai_capabilities__btn ai_capabilities__btn--primary"
-          onClick={handleNavigate}
-        >
-          View Solution
-        </button>
-
-        {hasRecordedDemo ? (
-          <a
-            href={solution.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            Watch Demo
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-            onClick={() => onRequestDemo(solution.capabilityForDemo)}
-          >
-            Request Demo
-          </button>
-        )}
-      </div>
-    </article>
-  );
-};
 
 const ComprehensiveAICapabilities = () => {
   const navigate = useNavigate();
@@ -142,6 +31,7 @@ const ComprehensiveAICapabilities = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [demoTarget, setDemoTarget] = useState(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [highlightedSolutionId, setHighlightedSolutionId] = useState(null);
 
   const clearHighlight = useCallback(() => {
@@ -166,7 +56,7 @@ const ComprehensiveAICapabilities = () => {
         const matchIndex = solutions.findIndex(
           (solution) => solution.id === match.id,
         );
-        const cardElement = cardRefs.current[matchIndex];
+        const cardElement = cardRefs.current[matchIndex + 1];
 
         setHighlightedSolutionId(match.id);
 
@@ -298,9 +188,16 @@ const ComprehensiveAICapabilities = () => {
         </header>
 
         <div className="ai_capabilities__grid">
+          <OnboardingAcceleratorCard
+            onOpenWms={() => setOnboardingOpen(true)}
+          />
+
           {loading &&
             Array.from({ length: HOME_SOLUTION_LIMIT }, (_, index) => (
-              <SolutionCardSkeleton key={`skeleton-${index}`} index={index} />
+              <SolutionCardSkeleton
+                key={`skeleton-${index}`}
+                index={index + 1}
+              />
             ))}
 
           {!loading &&
@@ -308,10 +205,10 @@ const ComprehensiveAICapabilities = () => {
               <SolutionCard
                 key={solution.id}
                 solution={solution}
-                index={index}
+                index={index + 1}
                 onRequestDemo={setDemoTarget}
                 cardRef={(element) => {
-                  cardRefs.current[index] = element;
+                  cardRefs.current[index + 1] = element;
                 }}
                 isHighlighted={highlightedSolutionId === solution.id}
               />
@@ -335,6 +232,15 @@ const ComprehensiveAICapabilities = () => {
         <RequestDemoModal
           capability={demoTarget}
           onClose={() => setDemoTarget(null)}
+        />
+      )}
+
+      {onboardingOpen && (
+        <OnboardingAcceleratorModal
+          title={ONBOARDING_ACCELERATOR.title}
+          subtitle={ONBOARDING_ACCELERATOR.domainLabel}
+          src={ONBOARDING_ACCELERATOR.url}
+          onClose={() => setOnboardingOpen(false)}
         />
       )}
     </section>

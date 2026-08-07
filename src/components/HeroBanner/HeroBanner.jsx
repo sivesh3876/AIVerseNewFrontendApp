@@ -1,110 +1,65 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
 import "./HeroBanner.scss";
 import slider1 from "../../assets/images/slider1.svg";
-import slider2 from "../../assets/images/slider2.svg";
-import slider3 from "../../assets/images/slider1.svg";
 import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
 import GlobalSearch from "../GlobalSearch";
+import HomeCapabilitiesPreview from "../ComprehensiveAICapabilities/HomeCapabilitiesPreview";
+import HeroJourneySteps from "./HeroJourneySteps";
 
-const slides = [
-  {
-    image: slider1,
-    title: "Transform Customer Interactions with AI",
-    description:
-      "Deliver personalized, seamless experiences across all touchpoints with AI-powered solutions that understand and anticipate customer needs.",
-    bullets: [
-      "Conversational AI & Intelligent Chatbots",
-      "Hyper-Personalization at Scale",
-      "Seamless Omnichannel Support",
-    ],
-    primaryBtn: "Explore Solutions",
-    secondaryBtn: "Register",
-  },
-  {
-    image: slider2,
-    title: "Optimize Operations with AI",
-    description:
-      "Drive efficiency and innovation with intelligent automation, predictive insights, and data-driven decision making across your enterprise.",
-    bullets: [
-      "Advanced Process Intelligence",
-      "End-to-End Intelligent Automation",
-      "Predictive Operational Analytics",
-    ],
-    primaryBtn: "Explore Solutions",
-    secondaryBtn: "Register",
-  },
-  {
-    image: slider3,
-    title: "Transform Customer Interactions with AI",
-    description:
-      "Deliver personalized, seamless experiences across all touchpoints with AI-powered solutions that understand and anticipate customer needs.",
-    bullets: [
-      "Conversational AI & Intelligent Chatbots",
-      "Hyper-Personalization at Scale",
-      "Seamless Omnichannel Support",
-    ],
-    primaryBtn: "Explore Solutions",
-    secondaryBtn: "Register",
-  },
-];
+const HERO_SEARCH_FORM_ID = "hero-banner-search";
+
+const heroSlide = {
+  image: slider1,
+  desc: "Try live AI use cases accross insurance, logistics, banking, education and more. No account required. Just explore, interact and discover what's possible.",
+};
 
 const HeroBannerSlider = () => {
-  const [activeSlide, setActiveSlide] = useState(0);
   const { openRegisterModal } = useRegistrationReminder();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <section
       className="hero_slider"
-      style={{ backgroundImage: `url(${slides[activeSlide].image})` }}
+      style={{ backgroundImage: `url(${heroSlide.image})` }}
     >
-      <div className="hero_search">
-        <GlobalSearch variant="hero" />
-      </div>
+      <div className="hero_slider__overlay" aria-hidden="true" />
+
       <div className="hero_content">
-        <div className="hero_content_info" key={activeSlide}>
-          <h1>{slides[activeSlide].title}</h1>
+        <h1>
+          See what AI can do for your{" "}
+          <span className="hero_content__accent">Industry</span> - right now
+        </h1>
+      </div>
+      <div className="hero_desc">
+        <p>{heroSlide.desc}</p>
+      </div>
 
-          <p>{slides[activeSlide].description}</p>
-
-          <ul>
-            {slides[activeSlide].bullets.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-
-          <div className="cta_group">
-            <Link to="/explore-solutions" className="primary_btn">
-              {slides[activeSlide].primaryBtn}
-            </Link>
-
-            <button
-              type="button"
-              className="secondary_btn register_btn"
-              onClick={() => openRegisterModal("Hero Registration")}
-            >
-              {slides[activeSlide].secondaryBtn}
-            </button>
+      <div className="hero_cta_card">
+        <div className="hero_cta_card__body">
+          <div className="hero_cta_card__search">
+            <GlobalSearch
+              variant="hero-card"
+              placeholder="Ask me anything"
+              formId={HERO_SEARCH_FORM_ID}
+              hideSubmit
+            />
           </div>
+
+          <HeroJourneySteps
+            onCreateAccount={() => openRegisterModal("Hero Registration")}
+          />
+
+          <p className="hero_cta_card__disclaimer">
+            *Content is generated with AI assistance*
+          </p>
         </div>
       </div>
 
-      <div className="slider_dots">
-        {slides.map((_, index) => (
-          <span
-            key={index}
-            className={activeSlide === index ? "active" : ""}
-            onClick={() => setActiveSlide(index)}
-          />
-        ))}
+      <div className="hero_capabilities">
+        <div className="hero_capabilities__header">
+          <h2>Live AI use cases — try them now</h2>
+          <p>Click any card to launch a live demo in seconds</p>
+        </div>
+        <HomeCapabilitiesPreview />
       </div>
     </section>
   );

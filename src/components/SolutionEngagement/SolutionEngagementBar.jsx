@@ -236,10 +236,12 @@ const SolutionEngagementBar = ({ solutionId, className = "" }) => {
       </div>
 
       {!isAuthenticated && (
-        <p className="solution_engagement__auth-hint">
-          <Link to="/admin/login">Sign in</Link> to like or dislike. Your
-          account is used automatically — no name entry needed.
-        </p>
+        <div className="solution_engagement__auth-hint">
+          <p>
+            <Link to="/admin/login">Sign in</Link> to like or dislike.
+          </p>
+          <p>Your account is used automatically — no name entry needed.</p>
+        </div>
       )}
 
       {showCommentForm && (

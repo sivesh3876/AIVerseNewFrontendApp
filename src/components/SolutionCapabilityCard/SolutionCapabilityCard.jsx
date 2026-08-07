@@ -8,7 +8,10 @@ import {
   AiFoundationLabelIcon,
   VideoCameraIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
-import { resolveCapabilityIcon, getServiceIdForDomain } from "../../utils/solutionMapper";
+import {
+  resolveCapabilityIcon,
+  getServiceIdForDomain,
+} from "../../utils/solutionMapper";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
 import SolutionEngagement from "../SolutionEngagement";
 
@@ -137,7 +140,7 @@ const SolutionCapabilityCard = ({
                   <PersonAvatar name={person.name} color={person.color} />
                   <div>
                     <strong>{person.name}</strong>
-                    <span>{person.title}</span>
+                    {/* <span>{person.title}</span> */}
                   </div>
                 </div>
               ))}
@@ -200,33 +203,37 @@ const SolutionCapabilityCard = ({
         />
 
         <div className="ccm_dashboard__capability-actions">
-        <button
-          type="button"
-          className="ccm_dashboard__action-btn"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRequestDemo?.(capability);
-          }}
-        >
-          Request Demo
-        </button>
-        {hasRecordedDemo ? (
-          <a
-            href={capability.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
             className="ccm_dashboard__action-btn"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequestDemo?.(capability);
+            }}
           >
-            Recorded Demo
-            <VideoCameraIcon />
-          </a>
-        ) : (
-          <button type="button" className="ccm_dashboard__action-btn" disabled>
-            Recorded Demo
-            <VideoCameraIcon />
+            Request Demo
           </button>
-        )}
+          {hasRecordedDemo ? (
+            <a
+              href={capability.recordedDemoLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ccm_dashboard__action-btn"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Recorded Demo
+              <VideoCameraIcon />
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="ccm_dashboard__action-btn"
+              disabled
+            >
+              Recorded Demo
+              <VideoCameraIcon />
+            </button>
+          )}
         </div>
       </div>
     </article>

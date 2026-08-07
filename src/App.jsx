@@ -65,11 +65,12 @@ const RouteScrollManager = () => {
 const AppShell = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const hideChrome = isAdminRoute;
 
   return (
     <>
       <RouteScrollManager />
-      {!isAdminRoute && <Navigation />}
+      {!hideChrome && <Navigation />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
@@ -142,7 +143,7 @@ const AppShell = () => {
           <Route path="user-management/:userId" element={<UserDetails />} />
         </Route>
       </Routes>
-      {!isAdminRoute && <Footer />}
+      {!hideChrome && <Footer />}
     </>
   );
 };

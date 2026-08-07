@@ -105,7 +105,11 @@ const SolutionDetailPanel = ({
   return (
     <section className="ccm_dashboard__content">
       <div className="ccm_dashboard__content-toolbar">
-        <button type="button" className="ccm_dashboard__back-link" onClick={onBack}>
+        <button
+          type="button"
+          className="ccm_dashboard__back-link"
+          onClick={onBack}
+        >
           &larr; Back to solutions
         </button>
 
@@ -163,10 +167,13 @@ const SolutionDetailPanel = ({
             COE
           </span>
           <div className="ccm_dashboard__person">
-            <PersonAvatar name={capability.coe.name} color={capability.coe.color} />
+            <PersonAvatar
+              name={capability.coe.name}
+              color={capability.coe.color}
+            />
             <div>
               <strong>{capability.coe.name}</strong>
-              <span>{capability.coe.title}</span>
+              {/* <span>{capability.coe.title}</span> */}
             </div>
           </div>
         </div>
@@ -182,7 +189,7 @@ const SolutionDetailPanel = ({
                 <PersonAvatar name={person.name} color={person.color} />
                 <div>
                   <strong>{person.name}</strong>
-                  <span>{person.title}</span>
+                  {/* <span>{person.title}</span> */}
                 </div>
               </div>
             ))}
@@ -195,7 +202,10 @@ const SolutionDetailPanel = ({
           <h3>Technology Stack</h3>
           <div className="ccm_dashboard__highlights-grid">
             {capability.techStack.map((tech) => (
-              <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
+              <article
+                className="ccm_dashboard__highlight"
+                key={`${tech.name}-${tech.label}`}
+              >
                 <h4>{tech.name}</h4>
                 <p>{tech.label}</p>
               </article>
@@ -289,11 +299,12 @@ const CustomerCommunicationManagement = () => {
   useEffect(() => {
     const fetchDirectories = async () => {
       try {
-        const [ownersResponse, evangelistsResponse, domainsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/get-solution-owners`),
-          fetch(`${API_BASE_URL}/get-ai-evangelists`),
-          fetch(`${API_BASE_URL}/get-business-domains`),
-        ]);
+        const [ownersResponse, evangelistsResponse, domainsResponse] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/get-solution-owners`),
+            fetch(`${API_BASE_URL}/get-ai-evangelists`),
+            fetch(`${API_BASE_URL}/get-business-domains`),
+          ]);
 
         const ownersResult = await ownersResponse.json();
         const evangelistsResult = await evangelistsResponse.json();
@@ -336,7 +347,9 @@ const CustomerCommunicationManagement = () => {
     const fromNavigation = location.state?.submittedSolution;
     if (fromNavigation) {
       persistSubmittedCapability(fromNavigation);
-      setPendingCapabilities(loadPersistedSubmittedCapabilities().map(hydrateCapability));
+      setPendingCapabilities(
+        loadPersistedSubmittedCapabilities().map(hydrateCapability),
+      );
     }
   }, [location.state?.submittedSolution]);
 
@@ -350,7 +363,9 @@ const CustomerCommunicationManagement = () => {
     if (!highlightId || loadingApiSolutions) return;
 
     const timer = window.setTimeout(() => {
-      const element = document.querySelector(`[data-solution-id="api-${highlightId}"]`);
+      const element = document.querySelector(
+        `[data-solution-id="api-${highlightId}"]`,
+      );
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -440,7 +455,10 @@ const CustomerCommunicationManagement = () => {
 
     const capability = deleteTarget;
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);
-    const deleteFromApi = shouldDeleteCapabilityFromApi(capability, apiCapabilities);
+    const deleteFromApi = shouldDeleteCapabilityFromApi(
+      capability,
+      apiCapabilities,
+    );
 
     setDeletingCapabilityId(capability.id);
 
@@ -466,7 +484,10 @@ const CustomerCommunicationManagement = () => {
       try {
         await deleteUseCase(solutionId);
       } catch (error) {
-        console.warn("Server delete failed; solution remains hidden on this browser.", error);
+        console.warn(
+          "Server delete failed; solution remains hidden on this browser.",
+          error,
+        );
       }
     }
   };
@@ -525,7 +546,9 @@ const CustomerCommunicationManagement = () => {
       ? resolveCapabilityIcon(detailPrimaryCapability)
       : activeService.navIcon;
   const bannerTitle =
-    detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
+    detailSolution?.title ||
+    activeIndustryDomain?.DomainName ||
+    activeService.label;
   const bannerSubtitle =
     detailSolution?.shortDescription ||
     activeIndustryDomain?.Description ||
@@ -565,7 +588,13 @@ const CustomerCommunicationManagement = () => {
 
       return getNumericId(right) - getNumericId(left);
     });
-  }, [apiCapabilities, pendingCapabilities, activeService.id, activeDomainCode, highlightId]);
+  }, [
+    apiCapabilities,
+    pendingCapabilities,
+    activeService.id,
+    activeDomainCode,
+    highlightId,
+  ]);
 
   useEffect(() => {
     if (!solutionQueryId) {
@@ -659,7 +688,9 @@ const CustomerCommunicationManagement = () => {
 
   useEffect(() => {
     if (detailSolution?.serviceLine) {
-      setActiveServiceIndex(getEnterpriseServiceIndexById(detailSolution.serviceLine));
+      setActiveServiceIndex(
+        getEnterpriseServiceIndexById(detailSolution.serviceLine),
+      );
     }
   }, [detailSolution?.serviceLine]);
 
@@ -689,9 +720,7 @@ const CustomerCommunicationManagement = () => {
     );
   };
 
-  const totalSolutionCount = isDetailView
-    ? 1
-    : submittedCapabilities.length;
+  const totalSolutionCount = isDetailView ? 1 : submittedCapabilities.length;
 
   return (
     <div className="ccm_dashboard">
@@ -700,7 +729,8 @@ const CustomerCommunicationManagement = () => {
           <h2>ALL ENTERPRISE SERVICES</h2>
           <ul>
             {enterpriseServicesData.map((service, index) => {
-              const isActive = !activeDomainCode && index === activeServiceIndex;
+              const isActive =
+                !activeDomainCode && index === activeServiceIndex;
               const NavIcon = service.navIcon;
 
               return (
@@ -711,12 +741,20 @@ const CustomerCommunicationManagement = () => {
                     onClick={() => handleServiceChange(index)}
                     aria-current={isActive ? "page" : undefined}
                   >
-                    <span className="ccm_dashboard__nav-icon" aria-hidden="true">
+                    <span
+                      className="ccm_dashboard__nav-icon"
+                      aria-hidden="true"
+                    >
                       <NavIcon />
                     </span>
-                    <span className="ccm_dashboard__nav-label">{service.label}</span>
+                    <span className="ccm_dashboard__nav-label">
+                      {service.label}
+                    </span>
                     {isActive && (
-                      <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
+                      <span
+                        className="ccm_dashboard__nav-arrow"
+                        aria-hidden="true"
+                      >
                         &rsaquo;
                       </span>
                     )}
@@ -728,7 +766,10 @@ const CustomerCommunicationManagement = () => {
         </nav>
 
         {industryDomains.length > 0 && (
-          <nav className="ccm_dashboard__nav ccm_dashboard__nav--industries" aria-label="Industries">
+          <nav
+            className="ccm_dashboard__nav ccm_dashboard__nav--industries"
+            aria-label="Industries"
+          >
             <h2>INDUSTRIES</h2>
             <ul>
               {industryDomains.map((domain) => {
@@ -742,9 +783,14 @@ const CustomerCommunicationManagement = () => {
                       onClick={() => handleIndustryChange(domain.DomainCode)}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <span className="ccm_dashboard__nav-label">{domain.DomainName}</span>
+                      <span className="ccm_dashboard__nav-label">
+                        {domain.DomainName}
+                      </span>
                       {isActive && (
-                        <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
+                        <span
+                          className="ccm_dashboard__nav-arrow"
+                          aria-hidden="true"
+                        >
                           &rsaquo;
                         </span>
                       )}
@@ -793,7 +839,9 @@ const CustomerCommunicationManagement = () => {
         {isDetailView ? (
           <>
             {loadingDetailSolution && (
-              <p className="ccm_dashboard__loading-note">Loading solution details...</p>
+              <p className="ccm_dashboard__loading-note">
+                Loading solution details...
+              </p>
             )}
 
             {detailSolutionError && !loadingDetailSolution && (
@@ -808,9 +856,15 @@ const CustomerCommunicationManagement = () => {
                 detailSolution={detailSolution}
                 documents={detailDocuments}
                 onBack={handleBackToSolutions}
-                onEdit={detailSolution.isApiSolution ? handleEditCapability : undefined}
+                onEdit={
+                  detailSolution.isApiSolution
+                    ? handleEditCapability
+                    : undefined
+                }
                 onDelete={
-                  detailSolution.isApiSolution ? handleDeleteCapability : undefined
+                  detailSolution.isApiSolution
+                    ? handleDeleteCapability
+                    : undefined
                 }
                 onRequestDemo={handleRequestDemo}
                 isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
@@ -821,67 +875,69 @@ const CustomerCommunicationManagement = () => {
             )}
           </>
         ) : (
-        <section className="ccm_dashboard__capabilities">
-          {submitted && (
-            <div className="ccm_dashboard__submitted-banner">
-              Your solution was saved successfully and is now visible below.
-            </div>
-          )}
+          <section className="ccm_dashboard__capabilities">
+            {submitted && (
+              <div className="ccm_dashboard__submitted-banner">
+                Your solution was saved successfully and is now visible below.
+              </div>
+            )}
 
-          <div className="ccm_dashboard__capabilities-header">
-            <div>
-              <h2>Key Capabilities</h2>
-              <p>
-                {submittedCapabilities.length > 0
-                  ? `${submittedCapabilities.length} solution(s) available`
-                  : "Submitted solutions for this enterprise service"}
+            <div className="ccm_dashboard__capabilities-header">
+              <div>
+                <h2>Key Capabilities</h2>
+                <p>
+                  {submittedCapabilities.length > 0
+                    ? `${submittedCapabilities.length} solution(s) available`
+                    : "Submitted solutions for this enterprise service"}
+                </p>
+              </div>
+              <span className="ccm_dashboard__badge">
+                {totalSolutionCount} Solutions
+              </span>
+            </div>
+
+            {submittedCapabilities.length > 0 && (
+              <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted">
+                {submittedCapabilities.map((capability) => (
+                  <SolutionCapabilityCard
+                    capability={capability}
+                    key={capability.id || capability.title}
+                    isHighlighted={
+                      highlightId != null &&
+                      (capability.id === `api-${highlightId}` ||
+                        capability.id === `api-pending-${highlightId}`)
+                    }
+                    showAdminActions={isAdminAuthenticated}
+                    onEdit={handleEditCapability}
+                    onDelete={handleDeleteCapability}
+                    onRequestDemo={handleRequestDemo}
+                    onNavigate={handleCapabilityNavigate}
+                    isDeleting={deletingCapabilityId === capability.id}
+                  />
+                ))}
+              </div>
+            )}
+
+            {solutionsFetchError && !loadingApiSolutions && (
+              <p className="ccm_dashboard__loading-note ccm_dashboard__loading-note--error">
+                {solutionsFetchError}
               </p>
-            </div>
-            <span className="ccm_dashboard__badge">
-              {totalSolutionCount} Solutions
-            </span>
-          </div>
+            )}
 
-          {submittedCapabilities.length > 0 && (
-            <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted">
-              {submittedCapabilities.map((capability) => (
-                <SolutionCapabilityCard
-                  capability={capability}
-                  key={capability.id || capability.title}
-                  isHighlighted={
-                    highlightId != null &&
-                    (capability.id === `api-${highlightId}` ||
-                      capability.id === `api-pending-${highlightId}`)
-                  }
-                  showAdminActions={isAdminAuthenticated}
-                  onEdit={handleEditCapability}
-                  onDelete={handleDeleteCapability}
-                  onRequestDemo={handleRequestDemo}
-                  onNavigate={handleCapabilityNavigate}
-                  isDeleting={deletingCapabilityId === capability.id}
-                />
-              ))}
-            </div>
-          )}
+            {!solutionsFetchError &&
+              !loadingApiSolutions &&
+              submittedCapabilities.length === 0 && (
+                <p className="ccm_dashboard__loading-note">
+                  No submitted solutions for this service yet.
+                </p>
+              )}
 
-          {solutionsFetchError && !loadingApiSolutions && (
-            <p className="ccm_dashboard__loading-note ccm_dashboard__loading-note--error">
-              {solutionsFetchError}
-            </p>
-          )}
-
-          {!solutionsFetchError &&
-            !loadingApiSolutions &&
-            submittedCapabilities.length === 0 && (
-            <p className="ccm_dashboard__loading-note">
-              No submitted solutions for this service yet.
-            </p>
-          )}
-
-          {loadingApiSolutions && submittedCapabilities.length === 0 && (
-            <p className="ccm_dashboard__loading-note">Loading submitted solutions...</p>
-          )}
-        </section>
+            {loadingApiSolutions && submittedCapabilities.length === 0 && (
+              <p className="ccm_dashboard__loading-note">
+                Loading submitted solutions...
+              </p>
+            )}
+          </section>
         )}
       </main>
 

@@ -1,0 +1,97 @@
+.onboarding_accelerator_modal {
+    &__overlay {
+        position       : fixed;
+        inset          : 0;
+        z-index        : 1200;
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        background     : rgba(13, 30, 50, 0.72);
+        backdrop-filter: blur(4px);
+    }
+
+    width         : 90vw;
+    height        : 90vh;
+    max-width     : 90vw;
+    max-height    : 90vh;
+    display       : flex;
+    flex-direction: column;
+    border-radius : 16px;
+    background    : #fff;
+    box-shadow    : 0 24px 48px rgba(13, 30, 50, 0.28);
+    overflow      : hidden;
+
+    &__header {
+        display        : flex;
+        align-items    : center;
+        justify-content: space-between;
+        gap            : 16px;
+        flex-shrink    : 0;
+        padding        : 16px 20px;
+        border-bottom  : 1px solid #e5e7eb;
+    }
+
+    &__header-copy {
+        min-width: 0;
+
+        h3 {
+            margin     : 0;
+            font-size  : 20px;
+            font-weight: 700;
+            line-height: 1.3;
+            color      : #0d1e32;
+        }
+
+        p {
+            margin     : 4px 0 0;
+            font-size  : 14px;
+            line-height: 1.45;
+            color      : #64748b;
+        }
+    }
+
+    &__close {
+        display        : inline-flex;
+        align-items    : center;
+        justify-content: center;
+        flex-shrink    : 0;
+        width          : 36px;
+        height         : 36px;
+        border         : 1px solid #dbe3ea;
+        border-radius  : 999px;
+        background     : #fff;
+        color          : #64748b;
+        font-size      : 24px;
+        line-height    : 1;
+        cursor         : pointer;
+        transition     : background 0.2s, color 0.2s, border-color 0.2s;
+
+        &:hover {
+            background  : #f8fafc;
+            border-color: #94a3b8;
+            color       : #0d1e32;
+        }
+    }
+
+    &__frame-wrap {
+        flex      : 1;
+        min-height: 0;
+        background: #f8fafc;
+    }
+
+    &__frame {
+        width : 100%;
+        height: 100%;
+        border: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .onboarding_accelerator_modal {
+        width     : 94vw;
+        height    : 92vh;
+        max-width : 94vw;
+        max-height: 92vh;
+        border-radius: 12px;
+    }
+}
