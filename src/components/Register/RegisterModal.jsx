@@ -110,7 +110,7 @@ const RegisterModal = ({
     ].join("\n");
 
     try {
-      // Save to Leads immediately so Admin cards update in this browser.
+      // Always persist locally so Admin → Leads shows the card immediately.
       addContactRequest({
         name: fullName,
         email,
@@ -137,8 +137,11 @@ const RegisterModal = ({
               leadType: LEAD_TYPES.REGISTER,
             },
           });
-        } catch {
-          // Local lead is already saved for Admin → Leads.
+        } catch (apiError) {
+          console.warn(
+            "Register saved to Leads locally; contact-us API sync failed.",
+            apiError,
+          );
         }
       }
 

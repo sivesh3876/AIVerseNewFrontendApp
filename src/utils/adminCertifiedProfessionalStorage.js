@@ -1,8 +1,18 @@
+import {
+  createCertifiedProfessional as createProfessionalApi,
+  deleteCertifiedProfessional as deleteProfessionalApi,
+  fetchCertifiedProfessionals,
+  updateCertifiedProfessional as updateProfessionalApi,
+} from "../services/certificationsApiService";
+
 export const CERTIFIED_PROFESSIONAL_STATUSES = ["Published", "Draft"];
 export const CERTIFIED_PROFESSIONALS_CHANGED_EVENT =
   "aiVerseCertifiedProfessionalsChanged";
 
 const STORAGE_KEY = "aiVerseAdminCertifiedProfessionals";
+
+/** In-memory cache of professionals from production API. */
+let apiProfessionalsCache = [];
 
 const DEFAULT_STORAGE = {
   records: {},
@@ -164,6 +174,48 @@ const normalizeStoredProfessional = (record = {}) => {
   };
 };
 
+const normalizeApiProfessional = (pro = {}) =>
+  normalizeStoredProfessional({
+    ...pro,
+    id: pro.id || (pro.apiId != null ? `prof-${pro.apiId}` : `prof-${Date.now()}`),
+    apiId: pro.apiId ?? null,
+    seedKey: pro.seedKey || null,
+    certificationId: pro.certificationId || "",
+  });
+
+const toApiProfessionalPayload = (certificationId, normalized, extra = {}) => ({
+  certificationId,
+  employeeName: normalized.employeeName,
+  employeeId: normalized.employeeId,
+  designation: normalized.designation,
+  department: normalized.department,
+  officeLocation: normalized.officeLocation,
+  email: normalized.email,
+  profilePhoto: normalized.profilePhoto,
+  certificationName: normalized.certificationName,
+  provider: normalized.provider,
+  completionDate: normalized.completionDate,
+  completionAt: normalized.completionAt,
+  expiryDate: normalized.expiryDate,
+  credentialId: normalized.credentialId,
+  examScore: normalized.examScore,
+  percentage: normalized.percentage,
+  certificatePdf: normalized.certificatePdf,
+  certificateFileName: normalized.certificateFileName,
+  certificateVerificationUrl: normalized.certificateVerificationUrl,
+  certificateUrl: normalized.certificateUrl,
+  linkedInUrl: normalized.linkedInUrl,
+  status: normalized.status,
+  ...extra,
+});
+
+export const refreshCertifiedProfessionalsFromApi = async () => {
+  const data = await fetchCertifiedProfessionals();
+  apiProfessionalsCache = data.map(normalizeApiProfessional);
+  window.dispatchEvent(new Event(CERTIFIED_PROFESSIONALS_CHANGED_EVENT));
+  return apiProfessionalsCache;
+};
+
 export const loadCertifiedProfessionals = (certificationId) => {
   if (!certificationId) return [];
 
@@ -172,10 +224,42 @@ export const loadCertifiedProfessionals = (certificationId) => {
     storage.records,
     certificationId,
   );
-  const records = hasStoredKey
+  const localRecords = hasStoredKey
     ? Array.isArray(storage.records[certificationId])
       ? storage.records[certificationId]
       : []
+    : [];
+
+  const apiForCert = apiProfessionalsCache.filter(
+    (item) => String(item.certificationId) === String(certificationId),
+  );
+  const apiIds = new Set(apiForCert.map((item) => String(item.id)));
+  const apiSeedKeys = new Set(
+    apiForCert
+      .map((item) => item.seedKey)
+      .filter(Boolean)
+      .map(String),
+  );
+
+  if (apiForCert.length > 0) {
+    const localExtras = localRecords
+      .filter(
+        (item) =>
+          item?.id &&
+          !apiIds.has(String(item.id)) &&
+          !apiSeedKeys.has(String(item.id)),
+      )
+      .map(normalizeStoredProfessional);
+
+    return [...apiForCert, ...localExtras].sort((a, b) => {
+      const aTime = a.completionAt ? new Date(a.completionAt).getTime() : 0;
+      const bTime = b.completionAt ? new Date(b.completionAt).getTime() : 0;
+      return bTime - aTime;
+    });
+  }
+
+  const records = hasStoredKey
+    ? localRecords
     : SEED_PROFESSIONALS[certificationId] || [];
 
   return [...records]
@@ -192,39 +276,45 @@ export const getCertifiedProfessionalById = (certificationId, professionalId) =>
     (item) => item.id === professionalId,
   ) || null;
 
-export const createCertifiedProfessionalRecord = (
+export const createCertifiedProfessionalRecord = async (
   certificationId,
   payload = {},
 ) => {
   if (!certificationId) return null;
 
-  const storage = readStorage();
   const normalized = normalizeProfessionalPayload(payload);
-  const record = {
-    id: `prof-${Date.now()}`,
-    certificationId,
-    ...normalized,
-  };
 
-  const existing = Array.isArray(storage.records[certificationId])
-    ? storage.records[certificationId]
-    : [];
-
-  storage.records[certificationId] = [...existing, record];
-  writeStorage(storage);
-  return record;
+  try {
+    const created = await createProfessionalApi(
+      toApiProfessionalPayload(certificationId, normalized),
+    );
+    await refreshCertifiedProfessionalsFromApi();
+    return normalizeApiProfessional(created);
+  } catch (apiError) {
+    const storage = readStorage();
+    const record = {
+      id: `prof-${Date.now()}`,
+      certificationId,
+      ...normalized,
+    };
+    const existing = Array.isArray(storage.records[certificationId])
+      ? storage.records[certificationId]
+      : [];
+    storage.records[certificationId] = [...existing, record];
+    writeStorage(storage);
+    console.warn("Professional API create failed; saved locally.", apiError);
+    return record;
+  }
 };
 
-export const updateCertifiedProfessionalRecord = (
+export const updateCertifiedProfessionalRecord = async (
   certificationId,
   professionalId,
   payload = {},
 ) => {
   if (!certificationId || !professionalId) return null;
 
-  const storage = readStorage();
-  const existing = loadCertifiedProfessionals(certificationId);
-  const current = existing.find((item) => item.id === professionalId);
+  const current = getCertifiedProfessionalById(certificationId, professionalId);
   if (!current) return null;
 
   const normalized = normalizeProfessionalPayload({
@@ -233,31 +323,79 @@ export const updateCertifiedProfessionalRecord = (
     completionAt: undefined,
   });
 
-  storage.records[certificationId] = existing.map((item) =>
-    item.id === professionalId
-      ? {
-          ...item,
-          ...normalized,
-          id: professionalId,
-          certificationId,
-        }
-      : item,
-  );
+  const apiMatch =
+    apiProfessionalsCache.find(
+      (item) =>
+        String(item.id) === String(professionalId) ||
+        String(item.seedKey) === String(professionalId) ||
+        String(item.apiId) === String(professionalId).replace(/^prof-/, ""),
+    ) || null;
 
-  writeStorage(storage);
-  return getCertifiedProfessionalById(certificationId, professionalId);
+  try {
+    if (apiMatch?.apiId != null) {
+      await updateProfessionalApi(
+        toApiProfessionalPayload(certificationId, normalized, {
+          apiId: apiMatch.apiId,
+          id: apiMatch.apiId,
+          seedKey: apiMatch.seedKey || null,
+        }),
+      );
+    } else {
+      await createProfessionalApi(
+        toApiProfessionalPayload(certificationId, normalized, {
+          seedKey: String(professionalId).startsWith("prof-seed-")
+            ? professionalId
+            : null,
+        }),
+      );
+    }
+
+    await refreshCertifiedProfessionalsFromApi();
+    return getCertifiedProfessionalById(certificationId, professionalId);
+  } catch (apiError) {
+    const storage = readStorage();
+    const existing = loadCertifiedProfessionals(certificationId);
+    storage.records[certificationId] = existing.map((item) =>
+      item.id === professionalId
+        ? {
+            ...item,
+            ...normalized,
+            id: professionalId,
+            certificationId,
+          }
+        : item,
+    );
+    writeStorage(storage);
+    console.warn("Professional API update failed; saved locally.", apiError);
+    return getCertifiedProfessionalById(certificationId, professionalId);
+  }
 };
 
-export const deleteCertifiedProfessionalRecord = (
+export const deleteCertifiedProfessionalRecord = async (
   certificationId,
   professionalId,
 ) => {
   if (!certificationId || !professionalId) return false;
 
-  const storage = readStorage();
-  const existing = loadCertifiedProfessionals(certificationId);
+  const existing = getCertifiedProfessionalById(certificationId, professionalId);
+  const apiId =
+    existing?.apiId ??
+    apiProfessionalsCache.find((item) => String(item.id) === String(professionalId))
+      ?.apiId;
 
-  storage.records[certificationId] = existing.filter(
+  try {
+    if (apiId != null) {
+      await deleteProfessionalApi(apiId);
+      await refreshCertifiedProfessionalsFromApi();
+      return true;
+    }
+  } catch (apiError) {
+    console.warn("Professional API delete failed; applying local delete.", apiError);
+  }
+
+  const storage = readStorage();
+  const current = loadCertifiedProfessionals(certificationId);
+  storage.records[certificationId] = current.filter(
     (item) => item.id !== professionalId,
   );
   writeStorage(storage);

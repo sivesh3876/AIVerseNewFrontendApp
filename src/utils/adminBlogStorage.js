@@ -3,6 +3,12 @@ import {
   getTrackById,
   learnExploreTracks,
 } from "../components/LearnExplore/learnExploreData";
+import {
+  createBlog as createBlogApi,
+  deleteBlog as deleteBlogApi,
+  fetchBlogs,
+  updateBlog as updateBlogApi,
+} from "../services/blogsApiService";
 import { normalizeBlogUrl } from "./blogResourceLinks";
 
 export const HOMEPAGE_CARD_COUNT = 6;
@@ -14,10 +20,15 @@ export const BLOG_CATEGORIES = [
   "RESEARCH",
   "TRENDS REPORT",
   "INDUSTRY REPORT",
+  "WHITEPAPER",
+  "CASE STUDY",
 ];
 export const BLOGS_CHANGED_EVENT = "aiVerseBlogsChanged";
 
 const STORAGE_KEY = "aiVerseAdminBlogs";
+
+/** In-memory cache of blogs loaded from production API. */
+let apiBlogsCache = [];
 
 const DEFAULT_STORAGE = {
   overrides: {},
@@ -254,7 +265,7 @@ const normalizeBlogPayload = (payload = {}) => {
 
   return {
     title: String(payload.title || "").trim(),
-    category: payload.category || BLOG_CATEGORIES[0],
+    category,
     trackId,
     trackLabel,
     author: String(payload.author || payload.defaultAuthor || "").trim() ||
@@ -322,82 +333,217 @@ const mergeBlogRecord = (baseBlog, overrides = {}) => {
   return merged;
 };
 
+const normalizeApiBlog = (blog = {}) => {
+  const apiId = blog.apiId ?? null;
+  const id =
+    blog.id ||
+    blog.seedKey ||
+    (apiId != null ? `blog-${apiId}` : `blog-${Date.now()}`);
+
+  return {
+    ...blog,
+    id,
+    apiId,
+    seedKey: blog.seedKey || null,
+    title: blog.title || "",
+    category: blog.category || BLOG_CATEGORIES[0],
+    trackId: blog.trackId || "",
+    trackLabel: blog.trackLabel || "—",
+    author: blog.author || "AI Verse Team",
+    description: blog.description || "",
+    url: blog.url || "",
+    date: blog.date || blog.publishedDate || "",
+    publishedDate: blog.publishedDate || blog.date || "",
+    publishedAt: blog.publishedAt || null,
+    viewCount: Number(blog.viewCount) || 0,
+    recordStatus: normalizeBlogStatus(blog.recordStatus),
+    showOnHomepage: Boolean(blog.showOnHomepage),
+    homepageOrder: blog.homepageOrder ?? null,
+    isCustom: Boolean(blog.isCustom ?? !blog.seedKey),
+  };
+};
+
+const toApiPayload = (normalized, extra = {}) => ({
+  title: normalized.title,
+  category: normalized.category,
+  trackId: normalized.trackId,
+  trackLabel: normalized.trackLabel,
+  author: normalized.author,
+  description: normalized.description,
+  url: normalized.url,
+  publishedDate: normalized.publishedDate,
+  publishedAt: normalized.publishedAt,
+  viewCount: normalized.viewCount,
+  recordStatus: normalized.recordStatus,
+  showOnHomepage: normalized.showOnHomepage,
+  homepageOrder: normalized.homepageOrder,
+  ...extra,
+});
+
+export const refreshBlogsFromApi = async ({ includeUnpublished = true } = {}) => {
+  const data = await fetchBlogs({ includeUnpublished });
+  apiBlogsCache = data.map(normalizeApiBlog);
+  window.dispatchEvent(new Event(BLOGS_CHANGED_EVENT));
+  return loadAdminBlogs();
+};
+
 export const loadAdminBlogs = () => {
   const storage = readStorage();
   const deleted = new Set(storage.deletedIds);
+  const apiById = new Map(apiBlogsCache.map((blog) => [String(blog.id), blog]));
+  const apiBySeed = new Map(
+    apiBlogsCache
+      .filter((blog) => blog.seedKey)
+      .map((blog) => [String(blog.seedKey), blog]),
+  );
 
   const seedBlogs = getResourcesByCategory("blogs")
     .filter((resource) => !deleted.has(resource.id))
-    .map((resource) =>
-      mergeBlogRecord(buildSeedBlog(resource), storage.overrides[resource.id]),
-    );
+    .map((resource) => {
+      const fromApi =
+        apiBySeed.get(String(resource.id)) || apiById.get(String(resource.id));
+      if (fromApi) return fromApi;
+      return mergeBlogRecord(
+        buildSeedBlog(resource),
+        storage.overrides[resource.id],
+      );
+    });
 
-  const customBlogs = storage.customBlogs
-    .filter((blog) => blog?.id && !deleted.has(blog.id))
+  const seedIds = new Set(seedBlogs.map((blog) => String(blog.id)));
+
+  const apiCustoms = apiBlogsCache.filter(
+    (blog) =>
+      !seedIds.has(String(blog.id)) &&
+      !deleted.has(blog.id) &&
+      !blog.seedKey,
+  );
+
+  const localCustoms = storage.customBlogs
+    .filter(
+      (blog) =>
+        blog?.id &&
+        !deleted.has(blog.id) &&
+        !apiById.has(String(blog.id)) &&
+        !seedIds.has(String(blog.id)),
+    )
     .map((blog) => mergeBlogRecord(blog, storage.overrides[blog.id]));
 
-  return [...seedBlogs, ...customBlogs].sort((a, b) => {
+  return [...seedBlogs, ...apiCustoms, ...localCustoms].sort((a, b) => {
     const aTime = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
     const bTime = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
     return bTime - aTime;
   });
 };
 
-export const createAdminBlogRecord = (payload = {}) => {
-  const storage = readStorage();
+export const createAdminBlogRecord = async (payload = {}) => {
   const normalized = normalizeBlogPayload(payload);
-  const id = `blog-${Date.now()}`;
 
-  const blog = {
-    id,
-    ...normalized,
-    isCustom: true,
-  };
-
-  applyHomepagePlacement(storage, id, normalized);
-  storage.customBlogs = [blog, ...storage.customBlogs];
-  writeStorage(storage);
-
-  return loadAdminBlogs().find((item) => item.id === id) || null;
+  try {
+    const created = await createBlogApi(toApiPayload(normalized));
+    await refreshBlogsFromApi({ includeUnpublished: true });
+    return normalizeApiBlog(created);
+  } catch (apiError) {
+    // Fallback for local/dev when API/table is unavailable.
+    const storage = readStorage();
+    const id = `blog-${Date.now()}`;
+    const blog = { id, ...normalized, isCustom: true };
+    applyHomepagePlacement(storage, id, normalized);
+    storage.customBlogs = [blog, ...storage.customBlogs];
+    writeStorage(storage);
+    console.warn("Blog API create failed; saved locally.", apiError);
+    return loadAdminBlogs().find((item) => item.id === id) || null;
+  }
 };
 
-export const updateAdminBlogRecord = (blogId, updates = {}) => {
-  const storage = readStorage();
-  const existingCustom = storage.customBlogs.find((blog) => blog.id === blogId);
+export const updateAdminBlogRecord = async (blogId, updates = {}) => {
+  const existing = loadAdminBlogs().find((blog) => String(blog.id) === String(blogId));
   const normalized = normalizeBlogPayload({
-    ...(existingCustom || {}),
-    ...(storage.overrides[blogId] || {}),
+    ...(existing || {}),
     ...updates,
     id: blogId,
   });
 
-  applyHomepagePlacement(storage, blogId, normalized);
+  const apiMatch =
+    apiBlogsCache.find(
+      (blog) =>
+        String(blog.id) === String(blogId) ||
+        String(blog.seedKey) === String(blogId) ||
+        String(blog.apiId) === String(blogId).replace(/^blog-/, ""),
+    ) || null;
 
-  if (existingCustom) {
-    storage.customBlogs = storage.customBlogs.map((blog) =>
-      blog.id === blogId ? { ...blog, ...normalized, id: blogId, isCustom: true } : blog,
+  try {
+    if (apiMatch?.apiId != null) {
+      await updateBlogApi(
+        toApiPayload(normalized, {
+          apiId: apiMatch.apiId,
+          id: apiMatch.apiId,
+          seedKey: apiMatch.seedKey || existing?.seedKey || null,
+        }),
+      );
+    } else if (existing && existing.isCustom === false) {
+      await createBlogApi(
+        toApiPayload(normalized, { seedKey: blogId }),
+      );
+    } else if (existing?.apiId != null) {
+      await updateBlogApi(
+        toApiPayload(normalized, { apiId: existing.apiId, id: existing.apiId }),
+      );
+    } else {
+      await createBlogApi(toApiPayload(normalized));
+    }
+
+    await refreshBlogsFromApi({ includeUnpublished: true });
+    return (
+      loadAdminBlogs().find((blog) => String(blog.id) === String(blogId)) ||
+      loadAdminBlogs()[0] ||
+      null
     );
-    delete storage.overrides[blogId];
-  } else {
-    storage.overrides[blogId] = {
-      ...(storage.overrides[blogId] || {}),
-      ...normalized,
-    };
-  }
+  } catch (apiError) {
+    const storage = readStorage();
+    const existingCustom = storage.customBlogs.find((blog) => blog.id === blogId);
+    applyHomepagePlacement(storage, blogId, normalized);
 
-  writeStorage(storage);
-  return loadAdminBlogs().find((item) => item.id === blogId) || null;
+    if (existingCustom) {
+      storage.customBlogs = storage.customBlogs.map((blog) =>
+        blog.id === blogId
+          ? { ...blog, ...normalized, id: blogId, isCustom: true }
+          : blog,
+      );
+      delete storage.overrides[blogId];
+    } else {
+      storage.overrides[blogId] = {
+        ...(storage.overrides[blogId] || {}),
+        ...normalized,
+      };
+    }
+
+    writeStorage(storage);
+    console.warn("Blog API update failed; saved locally.", apiError);
+    return loadAdminBlogs().find((blog) => blog.id === blogId) || null;
+  }
 };
 
-export const deleteAdminBlogRecord = (blogId) => {
+export const deleteAdminBlogRecord = async (blogId) => {
+  const existing = loadAdminBlogs().find((blog) => String(blog.id) === String(blogId));
+  const apiId =
+    existing?.apiId ??
+    apiBlogsCache.find((blog) => String(blog.id) === String(blogId))?.apiId;
+
+  try {
+    if (apiId != null) {
+      await deleteBlogApi(apiId);
+      await refreshBlogsFromApi({ includeUnpublished: true });
+      return true;
+    }
+  } catch (apiError) {
+    console.warn("Blog API delete failed; applying local delete.", apiError);
+  }
+
   const storage = readStorage();
-
   storage.customBlogs = storage.customBlogs.filter((blog) => blog.id !== blogId);
-
   if (!storage.deletedIds.includes(blogId)) {
     storage.deletedIds = [...storage.deletedIds, blogId];
   }
-
   delete storage.overrides[blogId];
   writeStorage(storage);
   return true;

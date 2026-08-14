@@ -5,10 +5,56 @@ const STORAGE_KEY = "aiverse_contact_requests";
 
 export const LEAD_TYPES = {
   MAIL_CONTACT: "Mail",
-  MESSAGE: "Message",
-  REQUEST_DEMO: "Request Demo",
-  CALLBACK_SCHEDULE: "Schedule",
+  MESSAGE: "Contact Request",
+  REQUEST_DEMO: "Demo Request",
+  CALLBACK_SCHEDULE: "Callback Schedule",
   REGISTER: "Register",
+};
+
+/** Display labels for Leads cards. */
+export const formatLeadTypeLabel = (type = "") => {
+  const value = String(type || "").trim().toLowerCase();
+
+  if (!value) return LEAD_TYPES.MAIL_CONTACT;
+
+  if (value.includes("register") || value.includes("registration")) {
+    return LEAD_TYPES.REGISTER;
+  }
+
+  if (
+    value.includes("callback") ||
+    value.includes("call back") ||
+    value === "schedule" ||
+    value.includes("schedule a call")
+  ) {
+    return LEAD_TYPES.CALLBACK_SCHEDULE;
+  }
+
+  if (
+    value.includes("demo") ||
+    value.includes("request demo") ||
+    value === "solution demo"
+  ) {
+    return LEAD_TYPES.REQUEST_DEMO;
+  }
+
+  if (
+    value === "message" ||
+    value.includes("message form") ||
+    value.includes("contact request")
+  ) {
+    return LEAD_TYPES.MESSAGE;
+  }
+
+  if (
+    value.includes("mail") ||
+    value.includes("contact us") ||
+    value === "contact"
+  ) {
+    return LEAD_TYPES.MAIL_CONTACT;
+  }
+
+  return String(type).trim() || LEAD_TYPES.MAIL_CONTACT;
 };
 
 const getAll = () => {
@@ -37,53 +83,62 @@ const normalizeStage = (stage) => (stage === "New" ? "Contacted" : stage || "Con
 
 const normalizeLeadType = (type) => {
   const value = String(type || "").trim();
+  const lower = value.toLowerCase();
 
   if (
     value === LEAD_TYPES.MAIL_CONTACT ||
+    value === "Mail" ||
     value === "Mail Contact Form" ||
     value === "Contact Us" ||
-    value === "mail"
+    value === "Contact Request" ||
+    lower === "mail"
   ) {
     return LEAD_TYPES.MAIL_CONTACT;
   }
 
   if (
     value === LEAD_TYPES.MESSAGE ||
+    value === "Message" ||
     value === "Message Form" ||
-    value.toLowerCase() === "message"
+    value === "Contact Request" ||
+    lower === "message"
   ) {
     return LEAD_TYPES.MESSAGE;
   }
 
   if (
     value === LEAD_TYPES.REQUEST_DEMO ||
+    value === "Request Demo" ||
     value === "Demo" ||
+    value === "Demo Request" ||
     value === "Solution Demo" ||
-    value.toLowerCase().includes("request demo")
+    lower.includes("request demo") ||
+    lower.includes("demo")
   ) {
     return LEAD_TYPES.REQUEST_DEMO;
   }
 
   if (
     value === LEAD_TYPES.CALLBACK_SCHEDULE ||
+    value === "Schedule" ||
     value === "Callback Shedule" ||
     value === "Callback Schedule" ||
-    value.toLowerCase().includes("callback") ||
-    value.toLowerCase().includes("call back") ||
-    value.toLowerCase() === "schedule"
+    lower.includes("callback") ||
+    lower.includes("call back") ||
+    lower === "schedule"
   ) {
     return LEAD_TYPES.CALLBACK_SCHEDULE;
   }
 
   if (
     value === LEAD_TYPES.REGISTER ||
-    value.toLowerCase() === "register" ||
-    value.toLowerCase().includes("registration")
+    lower === "register" ||
+    lower.includes("registration")
   ) {
     return LEAD_TYPES.REGISTER;
   }
 
-  return value || LEAD_TYPES.MESSAGE;
+  return formatLeadTypeLabel(value);
 };
 
 export const addContactRequest = ({

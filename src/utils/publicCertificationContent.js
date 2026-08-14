@@ -1,10 +1,12 @@
 import {
   CERTIFICATIONS_CHANGED_EVENT,
   loadAdminCertifications,
+  refreshCertificationsFromApi,
 } from "./adminCertificationStorage";
 import {
   CERTIFIED_PROFESSIONALS_CHANGED_EVENT,
   loadCertifiedProfessionals,
+  refreshCertifiedProfessionalsFromApi,
 } from "./adminCertifiedProfessionalStorage";
 import { getProviderBadgeColor } from "./providerBadgeColors";
 import { stripHtml } from "./htmlContent";
@@ -14,15 +16,34 @@ export const PUBLIC_CERTIFICATION_EVENTS = [
   CERTIFIED_PROFESSIONALS_CHANGED_EVENT,
 ];
 
+export const refreshPublicCertificationData = async () => {
+  const results = await Promise.allSettled([
+    // Full list kept in cache; Inactive filtered out via isPublicCertification.
+    refreshCertificationsFromApi({ includeUnpublished: true }),
+    refreshCertifiedProfessionalsFromApi(),
+  ]);
+
+  results.forEach((result) => {
+    if (result.status === "rejected") {
+      console.warn(
+        "Public certification data refresh partially failed.",
+        result.reason,
+      );
+    }
+  });
+};
+
 export const isPublicCertification = (certification) => {
   if (!certification) return false;
+
+  const status = String(certification.status || "").trim().toLowerCase();
+  if (status === "inactive") return false;
 
   const isPublished =
     certification.publish === "Yes" ||
     certification.publicationStatus === "Published";
 
-  // Published certifications are visible on the public Certification Details page
-  return isPublished && certification.status !== "Inactive";
+  return isPublished;
 };
 
 export const getPublicCertificationById = (certificationId) => {
@@ -56,6 +77,7 @@ export const toPublicHolderCard = (professional, certification) => {
     professional.certificatePdf ||
     professional.certificateVerificationUrl ||
     professional.certificateUrl ||
+    certification?.externalUrl ||
     "";
 
   return {
@@ -83,20 +105,51 @@ export const toPublicHolderCard = (professional, certification) => {
   };
 };
 
+/** Card for a published certification that has no professionals yet. */
+const toPublicCertificationCard = (certification) =>
+  toPublicHolderCard(
+    {
+      id: `cert-card-${certification.id}`,
+      certificationId: certification.id,
+      employeeName: certification.name,
+      designation: certification.code || certification.provider || "Certification",
+      certificationName: certification.name,
+      provider: certification.provider,
+      completionDate: certification.createdDate || "",
+      certificateUrl: certification.externalUrl || "",
+      status: "Published",
+    },
+    certification,
+  );
+
 export const getAllPublicCertifiedHolders = () => {
   const certifications = getPublicCertifications();
 
-  return certifications
+  const fromProfessionals = certifications
     .flatMap((certification) =>
       getPublicCertifiedHolders(certification.id).map((professional) =>
         toPublicHolderCard(professional, certification),
       ),
+    );
+
+  const coveredCertIds = new Set(
+    fromProfessionals.map((holder) => String(holder.certificationId)),
+  );
+
+  // Newly added published certifications appear even before professionals are added.
+  const certificationOnlyCards = certifications
+    .filter(
+      (certification) =>
+        !coveredCertIds.has(String(certification.id)) &&
+        (certification.isCustom || certification.apiId != null),
     )
-    .sort((a, b) => {
-      const aTime = a.completionDate ? new Date(a.completionDate).getTime() : 0;
-      const bTime = b.completionDate ? new Date(b.completionDate).getTime() : 0;
-      return bTime - aTime;
-    });
+    .map(toPublicCertificationCard);
+
+  return [...fromProfessionals, ...certificationOnlyCards].sort((a, b) => {
+    const aTime = a.completionDate ? new Date(a.completionDate).getTime() : 0;
+    const bTime = b.completionDate ? new Date(b.completionDate).getTime() : 0;
+    return bTime - aTime;
+  });
 };
 
 export const getPublicCertificationDetailsPage = (certificationId) => {

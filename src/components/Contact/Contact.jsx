@@ -28,7 +28,7 @@ const Contact = () => {
       phone: "",
       reason: String(data.get("reason") || "").trim() || "General Inquiry",
       message: String(data.get("message") || "").trim(),
-      type: "Message",
+      type: "Contact Request",
       source: "Contact Us",
     };
 
@@ -55,7 +55,7 @@ const Contact = () => {
             subject: payload.reason
               ? `Contact Inquiry: ${payload.reason}`
               : "Contact Inquiry: AI Verse",
-            leadType: "Message",
+            leadType: "Contact Request",
           },
         });
       }

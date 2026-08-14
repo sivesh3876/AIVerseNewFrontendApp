@@ -26,15 +26,15 @@ const COLUMN_COUNT = 11;
 
 const formatCell = (value) => value || "—";
 
-const syncCertificationTotal = (certificationId) => {
-  syncCertificationTotalCount(
+const syncCertificationTotal = async (certificationId) => {
+  await syncCertificationTotalCount(
     certificationId,
     getCertifiedProfessionalCount(certificationId),
   );
 };
 
-const syncCertificationTotalCount = (certificationId, total) => {
-  updateAdminCertificationRecord(certificationId, {
+const syncCertificationTotalCount = async (certificationId, total) => {
+  await updateAdminCertificationRecord(certificationId, {
     totalCertified: total,
   });
 };
@@ -153,37 +153,40 @@ const AdminCertifiedProfessionalsSection = ({
     setFormMode("add");
   };
 
-  const handleSaveProfessional = (payload) => {
+  const handleSaveProfessional = async (payload) => {
     if (formMode === "edit" && selectedProfessionalId) {
-      const updated = updateCertifiedProfessionalRecord(
+      const updated = await updateCertifiedProfessionalRecord(
         certificationId,
         selectedProfessionalId,
         payload,
       );
       if (updated) {
         handleProfessionalUpdated(updated);
-        loadProfessionals();
+        await loadProfessionals();
       }
     } else {
-      const created = createCertifiedProfessionalRecord(certificationId, payload);
+      const created = await createCertifiedProfessionalRecord(
+        certificationId,
+        payload,
+      );
       if (created) {
-        loadProfessionals();
+        await loadProfessionals();
       }
     }
 
-    syncCertificationTotal(certificationId);
+    await syncCertificationTotal(certificationId);
     handleCloseForm();
   };
 
-  const handleConfirmDelete = (professional) => {
-    deleteCertifiedProfessionalRecord(certificationId, professional.id);
+  const handleConfirmDelete = async (professional) => {
+    await deleteCertifiedProfessionalRecord(certificationId, professional.id);
     setDeleteProfessionalId(null);
-    loadProfessionals();
-    syncCertificationTotal(certificationId);
+    await loadProfessionals();
+    await syncCertificationTotal(certificationId);
   };
 
-  const handleStatusChange = (professional, status) => {
-    const updated = updateCertifiedProfessionalRecord(
+  const handleStatusChange = async (professional, status) => {
+    const updated = await updateCertifiedProfessionalRecord(
       certificationId,
       professional.id,
       { status },

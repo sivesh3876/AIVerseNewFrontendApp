@@ -1,4 +1,5 @@
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
+import { formatLeadTypeLabel } from "../utils/contactRequestStorage";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
@@ -73,26 +74,27 @@ export const mapApiLeadToRequest = (lead = {}) => {
   }
 
   let type = lead.type || lead.LeadType || "Mail";
-  if (reason === "Schedule a Call" && ["Mail", "Message"].includes(type)) {
-    type = "Schedule";
+  if (reason === "Schedule a Call" && ["Mail", "Message", "Contact Request"].includes(type)) {
+    type = "Callback Schedule";
   }
-  if (reason === "Register" && ["Mail", "Message"].includes(type)) {
+  if (reason === "Register" && ["Mail", "Message", "Contact Request"].includes(type)) {
     type = "Register";
   }
   if (
     (solutionTitle || String(subject).toLowerCase().startsWith("request demo")) &&
-    ["Mail", "Message"].includes(type)
+    ["Mail", "Message", "Contact Request"].includes(type)
   ) {
-    type = "Request Demo";
+    type = "Demo Request";
   }
   if (String(type).toLowerCase().includes("demo")) {
-    type = "Request Demo";
+    type = "Demo Request";
   }
+  type = formatLeadTypeLabel(type);
 
   let source = lead.source || "Contact Us";
   if (reason === "Schedule a Call") source = lead.source || "Schedule a Call";
   if (reason === "Register") source = lead.source || "Register";
-  if (type === "Request Demo") source = lead.source || "Request Demo";
+  if (type === "Demo Request") source = lead.source || "Request Demo";
 
   return {
     id,
