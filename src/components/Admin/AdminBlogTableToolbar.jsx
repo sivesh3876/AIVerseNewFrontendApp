@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BLOG_RECORD_STATUSES } from "../../utils/adminBlogStorage";
+import { BLOG_ADMIN_DEFAULT_STATUS_FILTER } from "../../utils/adminBlogTableUtils";
 
 const SearchIcon = () => (
   <svg
@@ -101,7 +102,7 @@ const AdminBlogTableToolbar = ({
   }, [filterOpen]);
 
   const activeFilterCount = [
-    statusFilter !== "all",
+    statusFilter !== BLOG_ADMIN_DEFAULT_STATUS_FILTER,
     categoryFilter !== "all",
     trackFilter !== "all",
   ].filter(Boolean).length;
@@ -157,6 +158,9 @@ const AdminBlogTableToolbar = ({
                     value={statusFilter}
                     onChange={(event) => onStatusFilterChange(event.target.value)}
                   >
+                    <option value={BLOG_ADMIN_DEFAULT_STATUS_FILTER}>
+                      Active blogs
+                    </option>
                     <option value="all">All statuses</option>
                     {BLOG_RECORD_STATUSES.map((status) => (
                       <option key={status} value={status}>

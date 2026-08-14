@@ -102,7 +102,7 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     ].join("\n");
 
     try {
-      // Save to Leads immediately (local), then sync to backend API.
+      // Always persist locally so Admin → Leads shows the card immediately.
       addContactRequest({
         name: fullName,
         email: form.email.trim(),
@@ -126,10 +126,14 @@ const CallbackScheduleModal = ({ open, onClose }) => {
               message,
               subject: `Schedule a Call: ${preferLabel}`,
               leadType: LEAD_TYPES.CALLBACK_SCHEDULE,
+              preferredCallbackTime: preferLabel,
             },
           });
-        } catch {
-          // Local lead is already saved for Admin → Leads.
+        } catch (apiError) {
+          console.warn(
+            "Schedule a Call saved to Leads locally; contact-us API sync failed.",
+            apiError,
+          );
         }
       }
 

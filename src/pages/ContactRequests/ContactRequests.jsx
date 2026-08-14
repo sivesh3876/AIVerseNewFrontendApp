@@ -10,13 +10,10 @@ import ContactRequestFilterPanel from "../../components/ContactRequest/ContactRe
 import ContactRequestDrawer from "../../components/ContactRequest/ContactRequestDrawer";
 import ContactRequestToast from "../../components/ContactRequest/ContactRequestToast";
 import LeadDeleteModal from "../../components/ContactRequest/LeadDeleteModal";
-import { PLACEHOLDER_REQUESTS } from "../../components/ContactRequest/placeholders";
 import {
   getContactRequests,
   updateStoredContactRequestStage,
   deleteContactRequest,
-  getDeletedDemoLeadKeys,
-  markDemoLeadDeleted,
 } from "../../utils/contactRequestStorage";
 import {
   getContactRequestsFromApi,
@@ -44,25 +41,27 @@ const normalizeLead = (request) => ({
   stage: request.stage === "New" ? "Contacted" : request.stage || "Contacted",
   type:
     request.type ||
-    (request.reason === "Contact Us" ? "Mail" : "Message"),
+    (request.reason === "Contact Us" ? "Mail" : "Contact Request"),
 });
 
-const buildLocalRequests = () => {
-  const deletedDemoKeys = new Set(getDeletedDemoLeadKeys());
+const leadDedupeKey = (lead) =>
+  `${String(lead.email || "").trim().toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}|${String(lead.reason || lead.type || "").trim().toLowerCase()}`;
 
-  const stored = getContactRequests().map((request) => ({
+/** Real browser submissions (Schedule / Register / Contact / Demo) — not demo placeholders. */
+const buildStoredLocalLeads = () =>
+  getContactRequests().map((request) => ({
     ...normalizeLead(request),
     requestKey: `stored-${request.id}`,
     isStored: true,
+    isApi: false,
   }));
 
-  const demo = PLACEHOLDER_REQUESTS.map((request) => ({
-    ...normalizeLead(request),
-    requestKey: `demo-${request.id}`,
-    isStored: false,
-  })).filter((request) => !deletedDemoKeys.has(request.requestKey));
-
-  return [...stored, ...demo];
+const mergeApiAndStoredLeads = (apiLeads, storedLeads) => {
+  const covered = new Set(apiLeads.map(leadDedupeKey));
+  const uniqueStored = storedLeads.filter(
+    (lead) => !covered.has(leadDedupeKey(lead)),
+  );
+  return [...apiLeads.map(normalizeLead), ...uniqueStored.map(normalizeLead)];
 };
 
 const appendStageActivity = (request, stage) => ({
@@ -139,45 +138,52 @@ const ContactRequests = () => {
 
   const loadRequests = useCallback(async ({ showToast = false } = {}) => {
     setLoading(true);
+    const storedLeads = buildStoredLocalLeads();
+
     try {
-      if (isContactRequestsApiConfigured()) {
+      if (!isContactRequestsApiConfigured()) {
+        setRequests(storedLeads);
+        if (showToast || storedLeads.length === 0) {
+          setToast({
+            type: storedLeads.length ? "success" : "error",
+            message: storedLeads.length
+              ? `Showing ${storedLeads.length} locally saved lead(s). API base URL is not configured.`
+              : "Leads API is not configured. Submit Contact Us / Schedule / Register / Request Demo to create leads.",
+          });
+        }
+        return;
+      }
+
+      try {
         const apiLeads = await getContactRequestsFromApi();
-        const localLeads = buildLocalRequests();
-
-        const apiEmails = new Set(
-          apiLeads.map(
-            (lead) =>
-              `${String(lead.email || "").toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}`,
-          ),
-        );
-
-        const uniqueLocal = localLeads.filter((lead) => {
-          if (!lead.isStored) {
-            return apiLeads.length === 0;
-          }
-          const key = `${String(lead.email || "").toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}`;
-          return !apiEmails.has(key);
-        });
-
-        setRequests([
-          ...apiLeads.map(normalizeLead),
-          ...uniqueLocal.map(normalizeLead),
-        ]);
+        setRequests(mergeApiAndStoredLeads(apiLeads, storedLeads));
 
         if (showToast) {
-          setToast({ type: "success", message: "Leads refreshed from server." });
+          setToast({
+            type: "success",
+            message: `Leads refreshed (${apiLeads.length} from server${
+              storedLeads.length
+                ? `, plus local submissions not yet on server`
+                : ""
+            }).`,
+          });
         }
-      } else {
-        setRequests(buildLocalRequests());
-      }
-    } catch (error) {
-      setRequests(buildLocalRequests());
-      if (showToast) {
+      } catch (apiError) {
+        // Keep Schedule/Register/Contact local cards visible when API is down.
+        setRequests(storedLeads);
         setToast({
           type: "error",
-          message: error?.message || "Could not refresh leads from server.",
+          message:
+            apiError?.message ||
+            "Could not load leads from server. Showing locally saved submissions.",
         });
       }
+    } catch (error) {
+      setRequests(storedLeads);
+      setToast({
+        type: "error",
+        message: error?.message || "Could not load leads.",
+      });
     } finally {
       setLoading(false);
     }
@@ -233,8 +239,6 @@ const ContactRequests = () => {
     try {
       if (leadToDelete.isStored) {
         deleteContactRequest(leadToDelete.id);
-      } else if (!leadToDelete.isApi) {
-        markDemoLeadDeleted(leadToDelete.requestKey);
       }
 
       setRequests((prev) =>
@@ -275,18 +279,15 @@ const ContactRequests = () => {
 
       const { requestKey } = selectedRequest;
 
-      await updateContactRequestStageApi(requestKey, newStage);
-
+      // Persist stage to backend for API leads; surface errors to the drawer.
       if (selectedRequest.isApi) {
-        try {
-          await updateContactRequestStageOnApi({
-            id: selectedRequest.id,
-            stage: newStage,
-          });
-        } catch {
-          // Keep UI update even if stage persistence endpoint is unavailable.
-        }
+        await updateContactRequestStageOnApi({
+          id: selectedRequest.id,
+          stage: newStage,
+        });
       }
+
+      await updateContactRequestStageApi(requestKey, newStage);
 
       setRequests((prev) =>
         prev.map((request) => {
@@ -402,7 +403,7 @@ const ContactRequests = () => {
   return (
     <AdminDemoPageShell
       title="Leads"
-      description="Manage and track all inquiries submitted through the website Contact Us form."
+      description="Manage and track Contact Us, Schedule a Call, Register, and Request Demo inquiries (API + locally saved submissions)."
     >
       <ContactRequestSummary stats={stats} />
 

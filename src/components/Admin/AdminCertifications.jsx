@@ -161,10 +161,10 @@ const AdminCertifications = () => {
     setDeleteCertificationId(null);
   };
 
-  const handleConfirmDelete = (certification) => {
-    deleteAdminCertificationRecord(certification.id);
+  const handleConfirmDelete = async (certification) => {
+    await deleteAdminCertificationRecord(certification.id);
     setDeleteCertificationId(null);
-    loadCertifications();
+    await loadCertifications();
   };
 
   const handleOpenAdd = () => {
@@ -177,31 +177,35 @@ const AdminCertifications = () => {
     setSelectedCertificationId(null);
   };
 
-  const handleSaveCertification = (payload) => {
+  const handleSaveCertification = async (payload) => {
     if (formMode === "edit" && selectedCertificationId) {
-      const updated = updateAdminCertificationRecord(
+      const updated = await updateAdminCertificationRecord(
         selectedCertificationId,
         payload,
       );
       if (updated) {
         handleCertificationUpdated(updated);
-        loadCertifications();
+        await loadCertifications();
       }
     } else {
-      const created = createAdminCertificationRecord(payload);
+      const created = await createAdminCertificationRecord(payload);
       if (created) {
-        loadCertifications();
+        await loadCertifications();
       }
     }
 
     handleCloseForm();
   };
 
-  const handleStatusChange = (certification, status) => {
-    const updated = updateAdminCertificationRecord(certification.id, { status });
+  const handleStatusChange = async (certification, status) => {
+    const updated = await updateAdminCertificationRecord(certification.id, {
+      status,
+    });
     if (updated) {
       handleCertificationUpdated(updated);
     }
+    // Re-read merged list so public Listeners get the Inactive status immediately.
+    await loadCertifications();
   };
 
   const handleClearFilters = () => {

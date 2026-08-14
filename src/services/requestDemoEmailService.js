@@ -111,6 +111,11 @@ const postDemoRequest = async (payload) => {
 
 export const buildContactEmailPayload = (form = {}) => {
   const message = (form.message || "").trim();
+  const preferredCallbackTime = (
+    form.preferredCallbackTime ||
+    form.PreferredCallbackTime ||
+    ""
+  ).trim();
 
   return {
     FullName: (form.name || "").trim(),
@@ -120,6 +125,9 @@ export const buildContactEmailPayload = (form = {}) => {
     Message: message || "No message provided",
     Subject: form.subject || "Contact Inquiry: AI Verse",
     LeadType: form.leadType || "Mail",
+    ...(preferredCallbackTime
+      ? { PreferredCallbackTime: preferredCallbackTime }
+      : {}),
   };
 };
 
