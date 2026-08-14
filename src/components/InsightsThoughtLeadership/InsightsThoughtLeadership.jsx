@@ -13,7 +13,6 @@ import {
   PUBLIC_CERTIFICATION_EVENTS,
   refreshPublicCertificationData,
 } from "../../utils/publicCertificationContent";
-import { stripHtml } from "../../utils/htmlContent";
 
 const FEATURED_CERT_ID = "cert-ai-900";
 
@@ -28,11 +27,10 @@ const buildFeaturedCertificationCard = () => {
     id: certification.id,
     certificationId: certification.id,
     badge: "Certification",
-    title: certification.name,
-    description:
-      stripHtml(certification.description) || defaultFeaturedArticle.description,
-    linkText: "Read Full Article",
-    linkTo: `/learn-explore/certifications`,
+    title: defaultFeaturedArticle.title,
+    description: defaultFeaturedArticle.description,
+    linkText: defaultFeaturedArticle.linkText,
+    linkTo: "/learn-explore/certifications",
     image: insigts,
   };
 };

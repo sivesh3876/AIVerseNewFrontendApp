@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   exportAdminCertificationsToCsv,
@@ -56,6 +56,7 @@ const AdminCertifications = () => {
   const [levelFilter, setLevelFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const savingRef = useRef(false);
 
   const categoryOptions = useMemo(
     () => getUniqueCertificationValues(certifications, "category"),
@@ -178,23 +179,30 @@ const AdminCertifications = () => {
   };
 
   const handleSaveCertification = async (payload) => {
-    if (formMode === "edit" && selectedCertificationId) {
-      const updated = await updateAdminCertificationRecord(
-        selectedCertificationId,
-        payload,
-      );
-      if (updated) {
-        handleCertificationUpdated(updated);
-        await loadCertifications();
-      }
-    } else {
-      const created = await createAdminCertificationRecord(payload);
-      if (created) {
-        await loadCertifications();
-      }
-    }
+    if (savingRef.current) return;
+    savingRef.current = true;
 
-    handleCloseForm();
+    try {
+      if (formMode === "edit" && selectedCertificationId) {
+        const updated = await updateAdminCertificationRecord(
+          selectedCertificationId,
+          payload,
+        );
+        if (updated) {
+          handleCertificationUpdated(updated);
+          await loadCertifications();
+        }
+      } else {
+        const created = await createAdminCertificationRecord(payload);
+        if (created) {
+          await loadCertifications();
+        }
+      }
+
+      handleCloseForm();
+    } finally {
+      savingRef.current = false;
+    }
   };
 
   const handleStatusChange = async (certification, status) => {
@@ -280,7 +288,7 @@ const AdminCertifications = () => {
           <thead>
             <tr>
               <th>Action</th>
-              <th>Created Date</th>
+              <th>Date</th>
               <th>Certification Name</th>
               <th>Provider</th>
               <th>Category</th>

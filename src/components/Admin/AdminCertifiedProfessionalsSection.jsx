@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createCertifiedProfessionalRecord,
   deleteCertifiedProfessionalRecord,
@@ -59,6 +59,7 @@ const AdminCertifiedProfessionalsSection = ({
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const savingRef = useRef(false);
 
   const departmentOptions = useMemo(
     () => getUniqueProfessionalValues(professionals, "department"),
@@ -154,28 +155,35 @@ const AdminCertifiedProfessionalsSection = ({
   };
 
   const handleSaveProfessional = async (payload) => {
-    if (formMode === "edit" && selectedProfessionalId) {
-      const updated = await updateCertifiedProfessionalRecord(
-        certificationId,
-        selectedProfessionalId,
-        payload,
-      );
-      if (updated) {
-        handleProfessionalUpdated(updated);
-        await loadProfessionals();
-      }
-    } else {
-      const created = await createCertifiedProfessionalRecord(
-        certificationId,
-        payload,
-      );
-      if (created) {
-        await loadProfessionals();
-      }
-    }
+    if (savingRef.current) return;
+    savingRef.current = true;
 
-    await syncCertificationTotal(certificationId);
-    handleCloseForm();
+    try {
+      if (formMode === "edit" && selectedProfessionalId) {
+        const updated = await updateCertifiedProfessionalRecord(
+          certificationId,
+          selectedProfessionalId,
+          payload,
+        );
+        if (updated) {
+          handleProfessionalUpdated(updated);
+          await loadProfessionals();
+        }
+      } else {
+        const created = await createCertifiedProfessionalRecord(
+          certificationId,
+          payload,
+        );
+        if (created) {
+          await loadProfessionals();
+        }
+      }
+
+      await syncCertificationTotal(certificationId);
+      handleCloseForm();
+    } finally {
+      savingRef.current = false;
+    }
   };
 
   const handleConfirmDelete = async (professional) => {
