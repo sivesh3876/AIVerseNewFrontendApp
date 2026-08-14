@@ -1621,6 +1621,8 @@
 
     &__date-picker {
         position: relative;
+        z-index: 6;
+        overflow: visible;
         display: flex;
         align-items: center;
         cursor: pointer;

@@ -165,10 +165,10 @@ export const featuredArticle = {
   id: "cert-ai-900",
   certificationId: "cert-ai-900",
   badge: "Certification",
-  title: "AI-901: Azure AI Fundamentals",
+  title: "AI-Certified Workforce – Building a Future-Ready Talent Pool",
   description:
-    "Prepare for the AI-901 exam and build a strong foundation in artificial intelligence and Microsoft Azure AI services. Explore core ML concepts, computer vision, natural language processing, and responsible AI principles.",
-  linkText: "Read Full Article",
+    "Organisation is investing in AI upskilling and certification to empower employees, strengthen AI capabilities, and build a future-ready workforce. Showcase your organization’s AI readiness through its certification programs and the growing pool of AI-certified talent.",
+  linkText: "Explore AI Certifications & Certified Talent",
   linkTo: "/learn-explore/certifications",
 };
 

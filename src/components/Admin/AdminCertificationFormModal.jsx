@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CERTIFICATION_FORM_STATUSES,
   CERTIFICATION_LEVELS,
@@ -65,6 +65,8 @@ const AdminCertificationFormModal = ({
   const [draft, setDraft] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [isHydrated, setIsHydrated] = useState(mode === "add");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const isEdit = mode === "edit";
 
   const categoryOptions = useMemo(
@@ -167,14 +169,22 @@ const AdminCertificationFormModal = ({
     return true;
   };
 
-  const handleSave = (saveAction) => {
+  const handleSave = async (saveAction) => {
     setError("");
 
-    if (!validateForm()) {
+    if (!validateForm() || savingRef.current) {
       return;
     }
 
-    onSave?.(buildPayload(saveAction));
+    savingRef.current = true;
+    setSaving(true);
+
+    try {
+      await onSave?.(buildPayload(saveAction));
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   return (
@@ -400,6 +410,7 @@ const AdminCertificationFormModal = ({
             type="button"
             className="admin_request_demos__btn admin_request_demos__btn--secondary"
             onClick={onClose}
+            disabled={saving}
           >
             Cancel
           </button>
@@ -409,17 +420,17 @@ const AdminCertificationFormModal = ({
               type="button"
               className="admin_request_demos__btn"
               onClick={() => handleSave("draft")}
-              disabled={!isHydrated}
+              disabled={!isHydrated || saving}
             >
-              Save Draft
+              {saving ? "Saving…" : "Save Draft"}
             </button>
             <button
               type="button"
               className="admin_request_demos__btn admin_request_demos__btn--primary"
               onClick={() => handleSave("publish")}
-              disabled={!isHydrated}
+              disabled={!isHydrated || saving}
             >
-              Publish
+              {saving ? "Publishing…" : "Publish"}
             </button>
           </div>
         </footer>
