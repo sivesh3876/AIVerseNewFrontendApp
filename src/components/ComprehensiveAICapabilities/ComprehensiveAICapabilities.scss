@@ -224,8 +224,8 @@
 
     &__actions {
         display              : grid;
-        grid-template-columns: 1fr 1fr;
-        gap                  : 10px;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap                  : 8px;
         padding              : 0 16px 16px;
     }
 
@@ -233,16 +233,22 @@
         display        : inline-flex;
         align-items    : center;
         justify-content: center;
+        gap            : 6px;
         min-height     : 40px;
-        padding        : 10px 12px;
+        padding        : 10px 8px;
         border-radius  : 8px;
         border         : 1px solid transparent;
-        font-size      : 13px;
+        font-size      : 12px;
         font-weight    : 600;
         font-family    : inherit;
         text-decoration: none;
         cursor         : pointer;
         transition     : background 0.25s, color 0.25s, border-color 0.25s;
+
+        &:disabled {
+            opacity: 0.55;
+            cursor : not-allowed;
+        }
 
         &--primary {
             background: var(--theme-primary);
@@ -258,7 +264,7 @@
             border-color: var(--theme-border);
             color       : var(--theme-primary);
 
-            &:hover {
+            &:hover:not(:disabled) {
                 background  : var(--theme-primary-bg);
                 border-color: var(--theme-primary);
             }

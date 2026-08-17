@@ -5,12 +5,14 @@ import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapability
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
   CoeLabelIcon,
   EvangelistLabelIcon,
   VideoCameraIcon,
+  DocumentIcon,
 } from "./CapabilityIcons";
 import {
   enterpriseServicesData,
@@ -38,7 +40,11 @@ import {
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
-import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import {
+  buildDocumentsFromCapability,
+  excludeSalesDeskDocuments,
+  getSalesDeskDocumentUrl,
+} from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
@@ -102,7 +108,10 @@ const SolutionDetailPanel = ({
   showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
+  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
+  const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
+  const attachmentDocuments = excludeSalesDeskDocuments(documents);
 
   return (
     <section className="ccm_dashboard__content">
@@ -230,11 +239,32 @@ const SolutionDetailPanel = ({
             <VideoCameraIcon />
           </button>
         )}
+        {hasSalesDesk ? (
+          <a
+            href={salesDeskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ccm_dashboard__action-btn"
+          >
+            Sales Desk
+            <DocumentIcon />
+          </a>
+        ) : (
+          <button type="button" className="ccm_dashboard__action-btn">
+            Sales Desk
+            <DocumentIcon />
+          </button>
+        )}
       </div>
 
-      {documents.length > 0 && (
+      <SolutionEngagementBar
+        solutionId={capability.id}
+        className="ccm_dashboard__detail-engagement"
+      />
+
+      {attachmentDocuments.length > 0 && (
         <SolutionDocuments
-          documents={documents}
+          documents={attachmentDocuments}
           variant="full"
           title="Solution Resources & Attachments"
           subtitle="Review the solution overview, low level design, architecture diagrams, and any supporting documents."

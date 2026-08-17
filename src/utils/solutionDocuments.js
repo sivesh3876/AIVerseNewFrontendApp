@@ -17,6 +17,12 @@ export const DOCUMENT_TYPE_META = {
     accent: "#18E0CC",
     bg: "rgba(24, 224, 204, 0.12)",
   },
+  "sales-desk": {
+    label: "Sales Desk",
+    description: "Sales Desk PDF with customer-facing solution information.",
+    accent: "#2563EB",
+    bg: "rgba(37, 99, 235, 0.12)",
+  },
   "technical-spec": {
     label: "Technical Specification",
     description: "Implementation notes, APIs, and operational requirements.",
@@ -51,6 +57,10 @@ const inferTypeFromText = (value = "") => {
 
   if (text.includes("spec") || text.includes("technical")) {
     return "technical-spec";
+  }
+
+  if (text.includes("sales desk") || text.includes("salesdesk")) {
+    return "sales-desk";
   }
 
   if (text.includes("solution") || text.includes("overview") || text.includes("details")) {
@@ -90,10 +100,25 @@ const normalizeDocument = ({ id, type, label, url, fileName }) => {
   };
 };
 
+export const excludeSalesDeskDocuments = (documents = []) =>
+  documents.filter((doc) => doc.type !== "sales-desk");
+
+export const getSalesDeskDocumentUrl = (source = {}) => {
+  if (source.salesDeskDoc) return source.salesDeskDoc;
+  if (source.SalesDeskDoc) return source.SalesDeskDoc;
+
+  const documents = Array.isArray(source.documents)
+    ? source.documents
+    : buildDocumentsFromCapability(source);
+
+  return documents.find((document) => document.type === "sales-desk")?.url || null;
+};
+
 export const buildSolutionDocuments = ({
   solutionDetailsDoc,
   lowLevelDesignDoc,
   architectureDiagram,
+  salesDeskDoc,
   otherDocuments = [],
   documents = [],
 } = {}) => {
@@ -132,6 +157,17 @@ export const buildSolutionDocuments = ({
     );
   }
 
+  if (salesDeskDoc) {
+    resolved.push(
+      normalizeDocument({
+        id: "sales-desk-doc",
+        type: "sales-desk",
+        label: "Sales Desk",
+        url: salesDeskDoc,
+      }),
+    );
+  }
+
   otherDocuments.forEach((url, index) => {
     const fileName = getFileNameFromUrl(url);
     resolved.push(
@@ -165,6 +201,7 @@ export const buildDocumentsFromApiSolution = (solution = {}) =>
     solutionDetailsDoc: solution.SolutionDetailsDoc,
     lowLevelDesignDoc: solution.LowLevelDesignDoc,
     architectureDiagram: solution.ArchitectureDiagram,
+    salesDeskDoc: solution.SalesDeskDoc,
     otherDocuments: Array.isArray(solution.OtherDocuments)
       ? solution.OtherDocuments
       : [],
@@ -181,6 +218,7 @@ export const buildDocumentsFromCapability = (capability = {}) => {
     solutionDetailsDoc: capability.solutionDetailsDoc,
     lowLevelDesignDoc: capability.lowLevelDesignDoc,
     architectureDiagram: capability.architectureDiagram,
+    salesDeskDoc: capability.salesDeskDoc,
     otherDocuments: capability.otherDocuments || [],
     documents: capability.documents || [],
   });

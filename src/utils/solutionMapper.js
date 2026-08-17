@@ -195,15 +195,75 @@ const resolveRecordedDemoLink = (solution = {}) => {
   return recordedVideoLink || demoLink;
 };
 
+const TECH_STACK_NAME_KEYS = [
+  "name",
+  "Name",
+  "title",
+  "Title",
+  "technology",
+  "Technology",
+  "tech",
+  "Tech",
+  "value",
+  "Value",
+];
+
+const getTechStackSource = (solution = {}) =>
+  solution.TechHighlights ??
+  solution.TechnologyHighlights ??
+  solution.TechStack ??
+  solution.Technologies ??
+  solution.techHighlights ??
+  "";
+
+const normalizeTechStackItem = (item) => {
+  if (item == null) return null;
+
+  if (typeof item === "string" || typeof item === "number") {
+    const name = String(item)
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+    return name ? { name, label: "Technology" } : null;
+  }
+
+  if (typeof item === "object") {
+    const name = TECH_STACK_NAME_KEYS.map((key) => item[key]).find(Boolean);
+    const label = item.label || item.Label || item.role || item.category || "Technology";
+    const resolvedName = String(name || "")
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+
+    return resolvedName
+      ? { name: resolvedName, label: String(label).trim() || "Technology" }
+      : null;
+  }
+
+  return null;
+};
+
 const parseTechStack = (techHighlights) => {
+  if (Array.isArray(techHighlights)) {
+    return techHighlights.map(normalizeTechStackItem).filter(Boolean);
+  }
+
   const value =
     techHighlights === null || techHighlights === undefined
       ? ""
-      : String(techHighlights);
+      : String(techHighlights).trim();
+
+  if (!value) return [];
+
+  if (value.startsWith("[") || value.startsWith("{")) {
+    try {
+      return parseTechStack(JSON.parse(value));
+    } catch {
+      // Fall through to delimiter parsing.
+    }
+  }
 
   return value
-    .split(/[,;|]/)
-    .map((item) => item.trim())
+    .split(/[,;|\n]+/)
+    .map((item) => item.replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim())
     .filter(Boolean)
     .map((name) => ({ name, label: "Technology" }));
 };
@@ -306,7 +366,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
   const serviceId =
     getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation";
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
   const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
 
@@ -322,6 +382,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
+    salesDeskDoc: solution.SalesDeskDoc || null,
     detailUrl: `/explore-solutions?service=${serviceId}&solution=${encodeURIComponent(solutionApiId)}`,
     capabilityForDemo: {
       id: solutionApiId,
@@ -392,7 +453,7 @@ export const mapApiSolutionToCapability = (
   { evangelistDirectory = [], solutionOwners = [] } = {},
 ) => {
   const evangelists = parseEvangelists(solution.AiEvangelists, evangelistDirectory);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const recordedDemoLink = resolveRecordedDemoLink(solution);
 
   return {
@@ -423,6 +484,7 @@ export const mapApiSolutionToCapability = (
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
+    salesDeskDoc: solution.SalesDeskDoc || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
       ? solution.OtherDocuments
       : [],
