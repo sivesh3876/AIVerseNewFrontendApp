@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
+import { DocumentIcon } from "../CustomerCommunicationManagement/CapabilityIcons";
 import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
 import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
@@ -29,6 +30,8 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
   const Icon =
     HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
+  const salesDeskUrl = solution.salesDeskDoc;
+  const hasSalesDesk = Boolean(salesDeskUrl);
 
   const handleNavigate = () => {
     if (solution.id) {
@@ -115,6 +118,26 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             onClick={() => onRequestDemo(solution.capabilityForDemo)}
           >
             Request Demo
+          </button>
+        )}
+
+        {hasSalesDesk ? (
+          <a
+            href={salesDeskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ai_capabilities__btn ai_capabilities__btn--demo"
+          >
+            Sales Desk
+            <DocumentIcon />
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="ai_capabilities__btn ai_capabilities__btn--demo"
+          >
+            Sales Desk
+            <DocumentIcon />
           </button>
         )}
       </div>

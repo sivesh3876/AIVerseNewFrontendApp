@@ -6,9 +6,14 @@ import {
   CoeLabelIcon,
   EvangelistLabelIcon,
   VideoCameraIcon,
+  DocumentIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
 import { resolveCapabilityIcon } from "../../utils/solutionMapper";
-import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import {
+  buildDocumentsFromCapability,
+  excludeSalesDeskDocuments,
+  getSalesDeskDocumentUrl,
+} from "../../utils/solutionDocuments";
 
 const getInitials = (name) =>
   name
@@ -37,8 +42,12 @@ const SolutionCapabilityCard = ({
 }) => {
   const CardIcon = resolveCapabilityIcon(capability);
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
+  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
+  const hasSalesDesk = Boolean(salesDeskUrl);
   const isSubmitted = Boolean(capability.isApiSolution);
-  const documents = buildDocumentsFromCapability(capability);
+  const documents = excludeSalesDeskDocuments(
+    buildDocumentsFromCapability(capability),
+  );
 
   return (
     <article
@@ -147,8 +156,10 @@ const SolutionCapabilityCard = ({
               TECH STACK
             </span>
             <div className="ccm_dashboard__tags">
-              {capability.techStack.map((tech) => (
-                <div className="ccm_dashboard__tag" key={tech.name}>
+              {capability.techStack
+                .filter((tech) => tech?.name)
+                .map((tech, index) => (
+                <div className="ccm_dashboard__tag" key={`${tech.name}-${index}`}>
                   <strong>{tech.name}</strong>
                   <span>{tech.label}</span>
                 </div>
@@ -164,8 +175,6 @@ const SolutionCapabilityCard = ({
             onActionClick={(event) => event.stopPropagation()}
           />
         )}
-
-        <SolutionEngagementBar solutionId={capability.id} />
       </div>
 
       <div className="ccm_dashboard__capability-actions">
@@ -196,7 +205,33 @@ const SolutionCapabilityCard = ({
             <VideoCameraIcon />
           </button>
         )}
+        {hasSalesDesk ? (
+          <a
+            href={salesDeskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ccm_dashboard__action-btn"
+            onClick={(event) => event.stopPropagation()}
+          >
+            Sales Desk
+            <DocumentIcon />
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="ccm_dashboard__action-btn"
+            onClick={(event) => event.stopPropagation()}
+          >
+            Sales Desk
+            <DocumentIcon />
+          </button>
+        )}
       </div>
+
+      <SolutionEngagementBar
+        solutionId={capability.id}
+        className="ccm_dashboard__capability-engagement"
+      />
     </article>
   );
 };

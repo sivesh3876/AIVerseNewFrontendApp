@@ -160,10 +160,12 @@
         }
 
         p {
-            margin     : 0;
-            font-size  : 15px;
-            line-height: 1.6;
-            color      : #94a3b8;
+            margin      : 0;
+            font-size   : 15px;
+            line-height : 1.6;
+            color       : #94a3b8;
+            text-align  : justify;
+            text-justify: inter-word;
         }
     }
 
@@ -269,6 +271,8 @@
             font-size         : 14px;
             line-height       : 1.65;
             color             : #6b7280;
+            text-align        : justify;
+            text-justify      : inter-word;
             min-height        : 68px;
             display           : -webkit-box;
             -webkit-line-clamp: 3;
@@ -279,7 +283,7 @@
         &.is-submitted .ccm_dashboard__meta {
             flex      : 1;
             min-height: 0;
-            overflow  : hidden;
+            overflow  : visible;
         }
     }
 
@@ -317,6 +321,10 @@
         .ccm_dashboard__capability {
             min-height: 640px;
             max-height: 640px;
+        }
+
+        .ccm_dashboard__capability-body {
+            overflow-y: auto;
         }
     }
 
@@ -367,12 +375,12 @@
     }
 
     &__meta-block--tech {
-        flex      : 1;
-        min-height: 0;
+        flex-shrink: 0;
+        min-height : 0;
 
         .ccm_dashboard__tags {
             max-height   : 140px;
-            // overflow-y: auto;
+            overflow-y   : auto;
             padding-right: 4px;
         }
     }
@@ -615,6 +623,11 @@
         display   : flex;
         gap       : 12px;
         margin-top: auto;
+        flex-wrap : wrap;
+    }
+
+    &__capability-engagement {
+        margin-top: 16px;
     }
 
     &__submitted-banner {
@@ -789,10 +802,16 @@
         display   : flex;
         gap       : 12px;
         margin-top: 28px;
+        flex-wrap : wrap;
 
         .ccm_dashboard__action-btn {
             flex: 1;
+            min-width: 160px;
         }
+    }
+
+    &__detail-engagement {
+        margin-top: 20px;
     }
 
     &__detail-documents {
