@@ -4,7 +4,11 @@ import {
   LEAD_TYPES,
 } from "../../utils/contactRequestStorage";
 import { markRegistrationCompleted } from "../../utils/registrationStatusStorage";
-// import logo from "../../assets/images/logo.svg";
+import {
+  isRequestDemoEmailConfigured,
+  sendContactEmail,
+} from "../../services/requestDemoEmailService";
+import logo from "../../assets/images/logo.svg";
 import "./RegisterModal.scss";
 
 const INITIAL_FORM = {
@@ -90,30 +94,64 @@ const RegisterModal = ({
     onClose?.();
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate() || !isValid) return;
 
     setIsSubmitting(true);
+    setErrors({});
+
+    const leadSource = source || "Hero Registration";
+    const fullName = form.fullName.trim();
+    const email = form.email.trim();
+    const phone = form.phone.trim();
+    const message = [
+      "AI Verse registration request",
+      `Source: ${leadSource}`,
+      `Phone: ${phone}`,
+      "Consent: Privacy Policy and Terms of Service accepted",
+    ].join("\n");
+
     try {
-      const leadSource = source || "Hero Registration";
+      // Always persist locally so Admin → Leads shows the card immediately.
       addContactRequest({
-        name: form.fullName.trim(),
-        email: form.email.trim(),
+        name: fullName,
+        email,
         company: "—",
-        phone: form.phone.trim(),
+        phone,
         country: "—",
         industry: "—",
-        reason: LEAD_TYPES.REGISTER,
+        reason: "Register",
         type: LEAD_TYPES.REGISTER,
         source: leadSource,
-        message: `Source: ${leadSource}`,
+        message,
       });
+
+      if (isRequestDemoEmailConfigured()) {
+        try {
+          await sendContactEmail({
+            form: {
+              name: fullName,
+              email,
+              company: "",
+              phone,
+              message,
+              subject: "Register for AI Verse",
+              leadType: LEAD_TYPES.REGISTER,
+            },
+          });
+        } catch (apiError) {
+          console.warn(
+            "Register saved to Leads locally; contact-us API sync failed.",
+            apiError,
+          );
+        }
+      }
 
       markRegistrationCompleted();
       onRegistered?.();
       setSuccessMessage(
-        "Thank you for registering with AI Verse. Our team will connect with you shortly.",
+        "Thank you for registering with AI Verse. Your details are now on the Leads page.",
       );
       setForm(INITIAL_FORM);
       closeTimerRef.current = setTimeout(() => {

@@ -5,6 +5,7 @@ import {
   getAllPublicCertifiedHolders,
   getPublicCertificationDetailsPage,
   PUBLIC_CERTIFICATION_EVENTS,
+  refreshPublicCertificationData,
 } from "../../utils/publicCertificationContent";
 import {
   BeakerIcon,
@@ -180,7 +181,16 @@ const CertificationDetails = ({ certificationId = null }) => {
       setHolders(pageData.holders);
     };
 
-    refresh();
+    const loadFromApi = async () => {
+      try {
+        await refreshPublicCertificationData();
+      } catch (error) {
+        console.warn("Certification API unavailable for public page.", error);
+      }
+      refresh();
+    };
+
+    loadFromApi();
 
     PUBLIC_CERTIFICATION_EVENTS.forEach((eventName) => {
       window.addEventListener(eventName, refresh);

@@ -30,7 +30,7 @@ const DETAIL_FIELDS = [
     format: (value, certification) =>
       value || (certification.publicationStatus === "Published" ? "Yes" : "No"),
   },
-  { key: "createdDate", label: "Created Date" },
+  { key: "createdDate", label: "Date" },
 ];
 
 const getFieldValue = (field, certification) => {

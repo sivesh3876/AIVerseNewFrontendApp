@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   exportAdminCertificationsToCsv,
@@ -56,6 +56,7 @@ const AdminCertifications = () => {
   const [levelFilter, setLevelFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const savingRef = useRef(false);
 
   const categoryOptions = useMemo(
     () => getUniqueCertificationValues(certifications, "category"),
@@ -161,10 +162,10 @@ const AdminCertifications = () => {
     setDeleteCertificationId(null);
   };
 
-  const handleConfirmDelete = (certification) => {
-    deleteAdminCertificationRecord(certification.id);
+  const handleConfirmDelete = async (certification) => {
+    await deleteAdminCertificationRecord(certification.id);
     setDeleteCertificationId(null);
-    loadCertifications();
+    await loadCertifications();
   };
 
   const handleOpenAdd = () => {
@@ -177,31 +178,42 @@ const AdminCertifications = () => {
     setSelectedCertificationId(null);
   };
 
-  const handleSaveCertification = (payload) => {
-    if (formMode === "edit" && selectedCertificationId) {
-      const updated = updateAdminCertificationRecord(
-        selectedCertificationId,
-        payload,
-      );
-      if (updated) {
-        handleCertificationUpdated(updated);
-        loadCertifications();
-      }
-    } else {
-      const created = createAdminCertificationRecord(payload);
-      if (created) {
-        loadCertifications();
-      }
-    }
+  const handleSaveCertification = async (payload) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
 
-    handleCloseForm();
+    try {
+      if (formMode === "edit" && selectedCertificationId) {
+        const updated = await updateAdminCertificationRecord(
+          selectedCertificationId,
+          payload,
+        );
+        if (updated) {
+          handleCertificationUpdated(updated);
+          await loadCertifications();
+        }
+      } else {
+        const created = await createAdminCertificationRecord(payload);
+        if (created) {
+          await loadCertifications();
+        }
+      }
+
+      handleCloseForm();
+    } finally {
+      savingRef.current = false;
+    }
   };
 
-  const handleStatusChange = (certification, status) => {
-    const updated = updateAdminCertificationRecord(certification.id, { status });
+  const handleStatusChange = async (certification, status) => {
+    const updated = await updateAdminCertificationRecord(certification.id, {
+      status,
+    });
     if (updated) {
       handleCertificationUpdated(updated);
     }
+    // Re-read merged list so public Listeners get the Inactive status immediately.
+    await loadCertifications();
   };
 
   const handleClearFilters = () => {
@@ -276,7 +288,7 @@ const AdminCertifications = () => {
           <thead>
             <tr>
               <th>Action</th>
-              <th>Created Date</th>
+              <th>Date</th>
               <th>Certification Name</th>
               <th>Provider</th>
               <th>Category</th>

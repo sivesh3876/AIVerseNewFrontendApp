@@ -6,13 +6,13 @@ import {
   featuredArticle as defaultFeaturedArticle,
   homeInsights as defaultInsights,
 } from "../LearnExplore/learnExploreData";
-import { BLOGS_CHANGED_EVENT } from "../../utils/adminBlogStorage";
+import { BLOGS_CHANGED_EVENT, refreshBlogsFromApi } from "../../utils/adminBlogStorage";
 import { getHomepageInsightCards } from "../../utils/publicBlogContent";
 import {
   getPublicCertificationById,
   PUBLIC_CERTIFICATION_EVENTS,
+  refreshPublicCertificationData,
 } from "../../utils/publicCertificationContent";
-import { stripHtml } from "../../utils/htmlContent";
 
 const FEATURED_CERT_ID = "cert-ai-900";
 
@@ -27,11 +27,10 @@ const buildFeaturedCertificationCard = () => {
     id: certification.id,
     certificationId: certification.id,
     badge: "Certification",
-    title: certification.name,
-    description:
-      stripHtml(certification.description) || defaultFeaturedArticle.description,
-    linkText: "Read Full Article",
-    linkTo: `/learn-explore/certifications`,
+    title: defaultFeaturedArticle.title,
+    description: defaultFeaturedArticle.description,
+    linkText: defaultFeaturedArticle.linkText,
+    linkTo: "/learn-explore/certifications",
     image: insigts,
   };
 };
@@ -88,8 +87,25 @@ const InsightsThoughtLeadership = ({
       );
     };
 
-    refreshInsights();
-    refreshFeatured();
+    const loadFromApi = async () => {
+      try {
+        await refreshBlogsFromApi({ includeUnpublished: false });
+      } catch (error) {
+        console.warn("Blog API unavailable for homepage insights.", error);
+      }
+      try {
+        await refreshPublicCertificationData();
+      } catch (error) {
+        console.warn(
+          "Certification API unavailable for homepage featured card.",
+          error,
+        );
+      }
+      refreshInsights();
+      refreshFeatured();
+    };
+
+    loadFromApi();
 
     window.addEventListener(BLOGS_CHANGED_EVENT, refreshInsights);
     PUBLIC_CERTIFICATION_EVENTS.forEach((eventName) => {

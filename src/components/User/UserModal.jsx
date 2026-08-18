@@ -33,6 +33,62 @@ const buildDraftFromUser = (user) => ({
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const EyeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M2.5 12C4.5 7.5 8 5 12 5s7.5 2.5 9.5 7c-2 4.5-5.5 7-9.5 7s-7.5-2.5-9.5-7Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+    />
+    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.75" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path
+      d="M3 3l18 18M10.58 10.58A3 3 0 0 0 12 15a3 3 0 0 0 2.42-4.42M9.88 5.09A9.77 9.77 0 0 1 12 5c4 0 7.5 2.5 9.5 7a10.12 10.12 0 0 1-2.12 3.17M6.11 6.11C3.6 7.86 1.84 10.2 1 12c2 4.5 5.5 7 11 7 1.61 0 3.11-.32 4.47-.9"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const PasswordField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  autoComplete = "new-password",
+}) => {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <label className="admin_blog_form__field">
+      <span>{label}</span>
+      <div className="admin_password_field">
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+        />
+        <button
+          type="button"
+          className="admin_password_field__toggle"
+          onClick={() => setVisible((prev) => !prev)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+    </label>
+  );
+};
+
 // Single modal used for both "Add User" and "Edit User". In edit mode only the
 // business-editable fields (name, department, designation, role, status) are
 // shown, matching the requirement.
@@ -244,31 +300,23 @@ const UserModal = ({ mode = "add", user, saving = false, onClose, onSave }) => {
 
             {!isEdit && (
               <>
-                <label className="admin_blog_form__field">
-                  <span>Password *</span>
-                  <input
-                    type="password"
-                    value={draft.password}
-                    onChange={(event) =>
-                      handleChange("password", event.target.value)
-                    }
-                    placeholder="Enter a password"
-                    autoComplete="new-password"
-                  />
-                </label>
+                <PasswordField
+                  label="Password *"
+                  value={draft.password}
+                  onChange={(event) =>
+                    handleChange("password", event.target.value)
+                  }
+                  placeholder="Enter a password"
+                />
 
-                <label className="admin_blog_form__field">
-                  <span>Confirm Password *</span>
-                  <input
-                    type="password"
-                    value={draft.confirmPassword}
-                    onChange={(event) =>
-                      handleChange("confirmPassword", event.target.value)
-                    }
-                    placeholder="Re-enter the password"
-                    autoComplete="new-password"
-                  />
-                </label>
+                <PasswordField
+                  label="Confirm Password *"
+                  value={draft.confirmPassword}
+                  onChange={(event) =>
+                    handleChange("confirmPassword", event.target.value)
+                  }
+                  placeholder="Re-enter the password"
+                />
               </>
             )}
           </div>

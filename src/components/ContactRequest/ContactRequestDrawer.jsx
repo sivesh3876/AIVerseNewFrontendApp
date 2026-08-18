@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
 import PipelineStage from "./PipelineStage";
 import FollowUpList from "./FollowUpList";
 import FollowUpModal from "./FollowUpModal";
@@ -148,7 +149,10 @@ const ContactRequestDrawer = ({
               <InfoField label="Phone">{request.phone}</InfoField>
               <InfoField label="Country">{request.country}</InfoField>
               <InfoField label="Industry">{request.industry}</InfoField>
-              <InfoField label="Type">{request.type || "Message"}</InfoField>
+              <InfoField label="Type">{formatLeadTypeLabel(request.type)}</InfoField>
+              <InfoField label="Reason for Contact">
+                {request.reason || "—"}
+              </InfoField>
               {request.jobTitle ? (
                 <InfoField label="Job Title">{request.jobTitle}</InfoField>
               ) : null}

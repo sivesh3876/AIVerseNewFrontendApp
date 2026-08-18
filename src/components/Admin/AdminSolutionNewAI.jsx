@@ -55,7 +55,8 @@ const matchesSolutionRequest = (request, solution) => {
 
 const AdminSolutionNewAI = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { solutions, loading, error, loadSolutions } = useAdminSolutions();
+  const { solutions, setSolutions, loading, error, loadSolutions } =
+    useAdminSolutions();
   const { requests: demoRequests, loadRequests: loadDemoRequests } =
     useAdminDemoRequests();
 
@@ -239,14 +240,31 @@ const AdminSolutionNewAI = () => {
   };
 
   const handleStatusChange = async (solution, status) => {
-    if (updatingStatusId) return;
+    if (updatingStatusId != null) return;
+    if (getSolutionStatusLabel(solution) === status) return;
 
     const isActive = status === "Active";
     const solutionId = solution.ID;
+    const nextFields = {
+      IsSolutionActive: isActive,
+      Publish: isActive ? "Yes" : "No",
+      PublicationStatus: isActive ? "Published" : "Draft",
+    };
+
     try {
       setUpdatingStatusId(solutionId);
-      // Hide from Explore immediately, even before API round-trip / deploy.
+      // Persist locally so Inactive survives API reloads and hides on Explore.
       setSolutionInactiveLocally(solutionId, !isActive);
+
+      setSolutions((prev) =>
+        prev.map((item) =>
+          String(item.ID) === String(solutionId)
+            ? { ...item, ...nextFields }
+            : item,
+        ),
+      );
+
+      await updateUseCaseStatus(solution, isActive);
 
       if (!isActive) {
         removePersistedSubmittedCapability(String(solutionId));
@@ -254,12 +272,13 @@ const AdminSolutionNewAI = () => {
         removePersistedSubmittedCapabilitiesByTitle(solution.Title);
       }
 
-      await updateUseCaseStatus(solution, isActive);
       await loadSolutions();
     } catch (statusError) {
+      // Keep local inactive flag; only roll back UI if user cancelled intentionally.
+      // If API fails, still keep local override so Enterprise Services stay in sync.
       window.alert(
         statusError.message ||
-          "Server update failed. Local Inactive flag was still saved so Explore hides the card.",
+          "Server status update failed. Local status was still saved so Enterprise Services stay in sync.",
       );
       await loadSolutions();
     } finally {
@@ -476,6 +495,9 @@ const AdminSolutionNewAI = () => {
                     <td className="admin_demo_table__status-cell">
                       <AdminSolutionStatusDropdown
                         value={statusLabel}
+                        disabled={
+                          String(updatingStatusId) === String(solution.ID)
+                        }
                         onChange={(nextStatus) =>
                           handleStatusChange(solution, nextStatus)
                         }

@@ -1,3 +1,10 @@
+import {
+  createCertification as createCertificationApi,
+  deleteCertification as deleteCertificationApi,
+  fetchCertifications,
+  updateCertification as updateCertificationApi,
+} from "../services/certificationsApiService";
+
 export const CERTIFICATION_STATUSES = ["Active", "Inactive"];
 export const CERTIFICATION_FORM_STATUSES = ["Active", "Inactive"];
 export const CERTIFICATION_PUBLISH_OPTIONS = ["Yes", "No"];
@@ -18,6 +25,9 @@ export const CERTIFICATION_LEVELS = [
 export const CERTIFICATIONS_CHANGED_EVENT = "aiVerseCertificationsChanged";
 
 const STORAGE_KEY = "aiVerseAdminCertifications";
+
+/** In-memory cache of certifications from production API. */
+let apiCertificationsCache = [];
 
 const DEFAULT_STORAGE = {
   overrides: {},
@@ -339,23 +349,101 @@ const mergeCertificationRecord = (baseRecord, overrides = {}) => ({
   ),
 });
 
+const normalizeApiCertification = (cert = {}) => ({
+  ...cert,
+  id: cert.id || (cert.apiId != null ? `cert-${cert.apiId}` : `cert-${Date.now()}`),
+  apiId: cert.apiId ?? null,
+  seedKey: cert.seedKey || null,
+  status: normalizeStatus(cert.status),
+  publish: normalizePublish(cert.publish),
+  publicationStatus: normalizePublicationStatus(
+    cert.publicationStatus,
+    cert.publish,
+  ),
+  externalUrl: normalizeCertificationUrl(cert.externalUrl),
+  isCustom: Boolean(cert.isCustom ?? !cert.seedKey),
+});
+
+const toApiCertificationPayload = (normalized, extra = {}) => ({
+  name: normalized.name,
+  code: normalized.code,
+  provider: normalized.provider,
+  category: normalized.category,
+  level: normalized.level,
+  description: normalized.description,
+  thumbnailImage: normalized.thumbnailImage,
+  bannerImage: normalized.bannerImage,
+  attachmentFile: normalized.attachmentFile,
+  attachmentName: normalized.attachmentName,
+  attachmentMimeType: normalized.attachmentMimeType,
+  externalUrl: normalized.externalUrl,
+  duration: normalized.duration,
+  skillsCovered: normalized.skillsCovered,
+  prerequisites: normalized.prerequisites,
+  validity: normalized.validity,
+  totalCertified: normalized.totalCertified,
+  status: normalized.status,
+  publish: normalized.publish,
+  publicationStatus: normalized.publicationStatus,
+  createdDate: normalized.createdDate,
+  ...extra,
+});
+
+export const refreshCertificationsFromApi = async ({
+  includeUnpublished = true,
+} = {}) => {
+  // Always load the full set (including Inactive). Public pages filter with
+  // isPublicCertification so Inactive cards stay hidden without wiping status.
+  void includeUnpublished;
+  const data = await fetchCertifications({ includeUnpublished: true });
+  apiCertificationsCache = data.map(normalizeApiCertification);
+  window.dispatchEvent(new Event(CERTIFICATIONS_CHANGED_EVENT));
+  return loadAdminCertifications();
+};
+
 export const loadAdminCertifications = () => {
   const storage = readStorage();
   const deleted = new Set(storage.deletedIds);
+  const apiById = new Map(
+    apiCertificationsCache.map((item) => [String(item.id), item]),
+  );
+  const apiBySeed = new Map(
+    apiCertificationsCache
+      .filter((item) => item.seedKey)
+      .map((item) => [String(item.seedKey), item]),
+  );
 
   const seedRecords = SEED_CERTIFICATIONS.filter(
     (record) => !deleted.has(record.id),
-  ).map((record) =>
-    mergeCertificationRecord(record, storage.overrides[record.id]),
+  ).map((record) => {
+    const fromApi =
+      apiBySeed.get(String(record.id)) || apiById.get(String(record.id));
+    if (fromApi) return fromApi;
+    return mergeCertificationRecord(record, storage.overrides[record.id]);
+  });
+
+  const seedIds = new Set(seedRecords.map((item) => String(item.id)));
+
+  const apiCustoms = apiCertificationsCache.filter(
+    (item) =>
+      !seedIds.has(String(item.id)) &&
+      !deleted.has(item.id) &&
+      !item.seedKey,
   );
 
-  const customRecords = storage.customCertifications
-    .filter((record) => record?.id && !deleted.has(record.id))
+  const localCustoms = storage.customCertifications
+    .filter(
+      (record) =>
+        record?.id &&
+        !deleted.has(record.id) &&
+        !apiById.has(String(record.id)) &&
+        !seedIds.has(String(record.id)),
+    )
     .map((record) =>
       mergeCertificationRecord(record, storage.overrides[record.id]),
     );
 
-  return [...seedRecords, ...customRecords].sort((a, b) => {
+  return [...seedRecords, ...apiCustoms, ...localCustoms].sort((a, b) => {
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
@@ -365,23 +453,27 @@ export const loadAdminCertifications = () => {
 export const getAdminCertificationById = (id) =>
   loadAdminCertifications().find((item) => item.id === id) || null;
 
-export const createAdminCertificationRecord = (payload = {}) => {
-  const storage = readStorage();
+export const createAdminCertificationRecord = async (payload = {}) => {
   const normalized = normalizeCertificationPayload(payload);
-  const id = `cert-${Date.now()}`;
-  const record = {
-    id,
-    ...normalized,
-    isCustom: true,
-  };
 
-  storage.customCertifications = [...storage.customCertifications, record];
-  writeStorage(storage);
-  return record;
+  try {
+    const created = await createCertificationApi(
+      toApiCertificationPayload(normalized),
+    );
+    await refreshCertificationsFromApi({ includeUnpublished: true });
+    return normalizeApiCertification(created);
+  } catch (apiError) {
+    const storage = readStorage();
+    const id = `cert-${Date.now()}`;
+    const record = { id, ...normalized, isCustom: true };
+    storage.customCertifications = [...storage.customCertifications, record];
+    writeStorage(storage);
+    console.warn("Certification API create failed; saved locally.", apiError);
+    return record;
+  }
 };
 
-export const updateAdminCertificationRecord = (id, payload = {}) => {
-  const storage = readStorage();
+export const updateAdminCertificationRecord = async (id, payload = {}) => {
   const existing = getAdminCertificationById(id);
   if (!existing) return null;
 
@@ -397,23 +489,68 @@ export const updateAdminCertificationRecord = (id, payload = {}) => {
     id,
   });
 
-  const seed = SEED_CERTIFICATIONS.find((item) => item.id === id);
-  if (seed) {
-    storage.overrides[id] = {
-      ...(storage.overrides[id] || {}),
-      ...normalized,
-    };
-  } else {
-    storage.customCertifications = storage.customCertifications.map((item) =>
-      item.id === id ? { ...item, ...normalized, id } : item,
-    );
-  }
+  const apiMatch =
+    apiCertificationsCache.find(
+      (item) =>
+        String(item.id) === String(id) ||
+        String(item.seedKey) === String(id) ||
+        String(item.apiId) === String(id).replace(/^cert-/, ""),
+    ) || null;
 
-  writeStorage(storage);
-  return getAdminCertificationById(id);
+  try {
+    if (apiMatch?.apiId != null) {
+      await updateCertificationApi(
+        toApiCertificationPayload(normalized, {
+          apiId: apiMatch.apiId,
+          id: apiMatch.apiId,
+          seedKey: apiMatch.seedKey || existing.seedKey || null,
+        }),
+      );
+    } else if (existing.isCustom === false) {
+      await createCertificationApi(
+        toApiCertificationPayload(normalized, { seedKey: id }),
+      );
+    } else {
+      await createCertificationApi(toApiCertificationPayload(normalized));
+    }
+
+    await refreshCertificationsFromApi({ includeUnpublished: true });
+    return getAdminCertificationById(id);
+  } catch (apiError) {
+    const storage = readStorage();
+    const seed = SEED_CERTIFICATIONS.find((item) => item.id === id);
+    if (seed) {
+      storage.overrides[id] = {
+        ...(storage.overrides[id] || {}),
+        ...normalized,
+      };
+    } else {
+      storage.customCertifications = storage.customCertifications.map((item) =>
+        item.id === id ? { ...item, ...normalized, id } : item,
+      );
+    }
+    writeStorage(storage);
+    console.warn("Certification API update failed; saved locally.", apiError);
+    return getAdminCertificationById(id);
+  }
 };
 
-export const deleteAdminCertificationRecord = (id) => {
+export const deleteAdminCertificationRecord = async (id) => {
+  const existing = getAdminCertificationById(id);
+  const apiId =
+    existing?.apiId ??
+    apiCertificationsCache.find((item) => String(item.id) === String(id))?.apiId;
+
+  try {
+    if (apiId != null) {
+      await deleteCertificationApi(apiId);
+      await refreshCertificationsFromApi({ includeUnpublished: true });
+      return true;
+    }
+  } catch (apiError) {
+    console.warn("Certification API delete failed; applying local delete.", apiError);
+  }
+
   const storage = readStorage();
   const seed = SEED_CERTIFICATIONS.find((item) => item.id === id);
 
@@ -432,3 +569,4 @@ export const deleteAdminCertificationRecord = (id) => {
   writeStorage(storage);
   return true;
 };
+
