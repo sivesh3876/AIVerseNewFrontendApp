@@ -54,6 +54,19 @@ export const TechStackLabelIcon = () => (
   </svg>
 );
 
+export const AiFoundationLabelIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M12 3 4 7v6c0 5 3.5 8.5 8 9.5 4.5-1 8-4.5 8-9.5V7l-8-4Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path d="M12 3v17" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+  </svg>
+);
+
 export const CoeLabelIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.75" />

@@ -11,6 +11,32 @@ import { HOME_SOLUTION_ICONS } from "./HomeSolutionCardIcons";
 
 const HOME_SOLUTION_LIMIT = 8;
 
+const EyeSmallIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M1.5 12C3.5 7.5 7.5 5 12 5s8.5 2.5 10.5 7c-2 4.5-6 7-10.5 7S3.5 16.5 1.5 12Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+  </svg>
+);
+
+const PlaySmallIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="m10 8 6 4-6 4V8Z" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.75" />
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const BookmarkIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const SolutionCardSkeleton = ({ index }) => (
   <article
     className="ai_capabilities__card ai_capabilities__card--skeleton"
@@ -45,18 +71,7 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
       className="ai_capabilities__card"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      <div
-        className="ai_capabilities__card-body"
-        role="button"
-        tabIndex={0}
-        onClick={handleNavigate}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            handleNavigate();
-          }
-        }}
-      >
+      <div className="ai_capabilities__card-body" role="button" tabIndex={0} onClick={handleNavigate} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handleNavigate(); } }}>
         <div className="ai_capabilities__card-head">
           <div className="ai_capabilities__icon">
             <Icon />
@@ -74,7 +89,13 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           </div>
         </div>
 
-        <h3>{solution.title}</h3>
+        <div className="ai_capabilities__title-row">
+          <h3>{solution.title}</h3>
+          <span className="ai_capabilities__bookmark" aria-hidden="true">
+            <BookmarkIcon />
+          </span>
+        </div>
+
         <p>{solution.description}</p>
 
         <div className="ai_capabilities__meta">
@@ -90,7 +111,7 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           )}
         </div>
 
-        <SolutionEngagementBar solutionId={solution.id} />
+        <SolutionEngagementBar solutionId={solution.id} compact />
       </div>
 
       <div className="ai_capabilities__actions">
@@ -99,7 +120,11 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
           className="ai_capabilities__btn ai_capabilities__btn--primary"
           onClick={handleNavigate}
         >
-          View Solution
+          <EyeSmallIcon />
+          <span className="ai_capabilities__btn-text">
+            View Solution
+            <ArrowIcon />
+          </span>
         </button>
 
         {hasRecordedDemo ? (
@@ -109,7 +134,11 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             rel="noopener noreferrer"
             className="ai_capabilities__btn ai_capabilities__btn--demo"
           >
-            Watch Demo
+            <PlaySmallIcon />
+            <span className="ai_capabilities__btn-text">
+              Watch Demo
+              <ArrowIcon />
+            </span>
           </a>
         ) : (
           <button
@@ -117,7 +146,11 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             className="ai_capabilities__btn ai_capabilities__btn--demo"
             onClick={() => onRequestDemo(solution.capabilityForDemo)}
           >
-            Request Demo
+            <PlaySmallIcon />
+            <span className="ai_capabilities__btn-text">
+              Watch Demo
+              <ArrowIcon />
+            </span>
           </button>
         )}
 
@@ -128,16 +161,22 @@ const SolutionCard = ({ solution, index, onRequestDemo }) => {
             rel="noopener noreferrer"
             className="ai_capabilities__btn ai_capabilities__btn--demo"
           >
-            Sales Desk
             <DocumentIcon />
+            <span className="ai_capabilities__btn-text">
+              Sales Pitch
+              <ArrowIcon />
+            </span>
           </a>
         ) : (
           <button
             type="button"
             className="ai_capabilities__btn ai_capabilities__btn--demo"
           >
-            Sales Desk
             <DocumentIcon />
+            <span className="ai_capabilities__btn-text">
+              Sales Pitch
+              <ArrowIcon />
+            </span>
           </button>
         )}
       </div>

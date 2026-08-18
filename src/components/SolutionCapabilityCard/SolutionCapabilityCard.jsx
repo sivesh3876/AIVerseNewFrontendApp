@@ -2,9 +2,10 @@ import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import {
-  TechStackLabelIcon,
   CoeLabelIcon,
   EvangelistLabelIcon,
+  TechStackLabelIcon,
+  AiFoundationLabelIcon,
   VideoCameraIcon,
   DocumentIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
@@ -24,11 +25,20 @@ const getInitials = (name) =>
     .slice(0, 2)
     .toUpperCase();
 
-const PersonAvatar = ({ name, color }) => (
-  <span className={`ccm_dashboard__avatar ccm_dashboard__avatar--${color}`}>
+const PersonAvatar = ({ name, color, title }) => (
+  <span
+    className={`ccm_dashboard__avatar ccm_dashboard__avatar--${color}`}
+    title={title || name}
+  >
     {getInitials(name)}
   </span>
 );
+
+const parseAiFoundationItems = (client = "") =>
+  String(client)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const SolutionCapabilityCard = ({
   capability,
@@ -48,6 +58,10 @@ const SolutionCapabilityCard = ({
   const documents = excludeSalesDeskDocuments(
     buildDocumentsFromCapability(capability),
   );
+  const techStackItems = (capability.techStack || []).filter(
+    (tech) => tech?.name && tech.name !== "Not specified",
+  );
+  const aiFoundationItems = parseAiFoundationItems(capability.client);
 
   return (
     <article
@@ -97,23 +111,18 @@ const SolutionCapabilityCard = ({
         </div>
       )}
 
-      <div className="ccm_dashboard__capability-body">
-        <div className="ccm_dashboard__capability-head">
-          <span className="ccm_dashboard__capability-icon" aria-hidden="true">
-            <CardIcon />
-          </span>
-          <div className="ccm_dashboard__capability-heading">
-            <h4>{capability.title}</h4>
-            {capability.client && (
-              <span className="ccm_dashboard__client-badge">
-                AI Foundation: {capability.client}
-              </span>
-            )}
-          </div>
+      <div className="ccm_dashboard__capability-head">
+        <span className="ccm_dashboard__capability-icon" aria-hidden="true">
+          <CardIcon />
+        </span>
+        <div className="ccm_dashboard__capability-heading">
+          <h4>{capability.title}</h4>
         </div>
+      </div>
 
-        <p>{capability.description}</p>
+      <p className="ccm_dashboard__capability-description">{capability.description}</p>
 
+      <div className="ccm_dashboard__capability-scroll">
         <div className="ccm_dashboard__meta">
           <div className="ccm_dashboard__meta-block">
             <span className="ccm_dashboard__section-label">
@@ -137,7 +146,7 @@ const SolutionCapabilityCard = ({
               <EvangelistLabelIcon />
               AI EVANGELISTS
             </span>
-            <div className="ccm_dashboard__evangelists">
+            <div className="ccm_dashboard__evangelists ccm_dashboard__evangelists--list">
               {capability.evangelists.map((person) => (
                 <div className="ccm_dashboard__person" key={person.name}>
                   <PersonAvatar name={person.name} color={person.color} />
@@ -149,21 +158,46 @@ const SolutionCapabilityCard = ({
               ))}
             </div>
           </div>
+        </div>
 
+        <div className="ccm_dashboard__details-panel">
           <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--tech">
             <span className="ccm_dashboard__section-label">
               <TechStackLabelIcon />
               TECH STACK
             </span>
-            <div className="ccm_dashboard__tags">
-              {capability.techStack
-                .filter((tech) => tech?.name)
-                .map((tech, index) => (
-                <div className="ccm_dashboard__tag" key={`${tech.name}-${index}`}>
-                  <strong>{tech.name}</strong>
-                  <span>{tech.label}</span>
-                </div>
-              ))}
+            <div className="ccm_dashboard__highlights-grid ccm_dashboard__highlights-grid--card">
+              {techStackItems.length > 0 ? (
+                techStackItems.map((tech, index) => (
+                  <article
+                    className="ccm_dashboard__highlight ccm_dashboard__highlight--card"
+                    key={`${tech.name}-${index}`}
+                  >
+                    <h4>{tech.name}</h4>
+                    <p>{tech.label || "Technology"}</p>
+                  </article>
+                ))
+              ) : (
+                <span className="ccm_dashboard__info-empty">Not specified</span>
+              )}
+            </div>
+          </div>
+
+          <div className="ccm_dashboard__meta-block ccm_dashboard__meta-block--foundation">
+            <span className="ccm_dashboard__section-label">
+              <AiFoundationLabelIcon />
+              AI FOUNDATION
+            </span>
+            <div className="ccm_dashboard__info-box ccm_dashboard__info-box--scroll">
+              {aiFoundationItems.length > 0 ? (
+                aiFoundationItems.map((item) => (
+                  <div className="ccm_dashboard__info-item" key={item}>
+                    {item}
+                  </div>
+                ))
+              ) : (
+                <span>Not specified</span>
+              )}
             </div>
           </div>
         </div>
@@ -177,61 +211,64 @@ const SolutionCapabilityCard = ({
         )}
       </div>
 
-      <div className="ccm_dashboard__capability-actions">
-        <button
-          type="button"
-          className="ccm_dashboard__action-btn"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRequestDemo?.(capability);
-          }}
-        >
-          Request Demo
-        </button>
-        {hasRecordedDemo ? (
-          <a
-            href={capability.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ccm_dashboard__action-btn"
-            onClick={(event) => event.stopPropagation()}
-          >
-            Recorded Demo
-            <VideoCameraIcon />
-          </a>
-        ) : (
-          <button type="button" className="ccm_dashboard__action-btn" disabled>
-            Recorded Demo
-            <VideoCameraIcon />
-          </button>
-        )}
-        {hasSalesDesk ? (
-          <a
-            href={salesDeskUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ccm_dashboard__action-btn"
-            onClick={(event) => event.stopPropagation()}
-          >
-            Sales Desk
-            <DocumentIcon />
-          </a>
-        ) : (
+      <div className="ccm_dashboard__capability-footer">
+        <SolutionEngagementBar
+          solutionId={capability.id}
+          className="ccm_dashboard__capability-engagement"
+          compact
+        />
+
+        <div className="ccm_dashboard__capability-actions">
           <button
             type="button"
             className="ccm_dashboard__action-btn"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequestDemo?.(capability);
+            }}
           >
-            Sales Desk
-            <DocumentIcon />
+            Request Demo
           </button>
-        )}
+          {hasRecordedDemo ? (
+            <a
+              href={capability.recordedDemoLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ccm_dashboard__action-btn"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Recorded Demo
+              <VideoCameraIcon />
+            </a>
+          ) : (
+            <button type="button" className="ccm_dashboard__action-btn" disabled>
+              Recorded Demo
+              <VideoCameraIcon />
+            </button>
+          )}
+          {hasSalesDesk ? (
+            <a
+              href={salesDeskUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ccm_dashboard__action-btn"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Sales Pitch
+              <DocumentIcon />
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="ccm_dashboard__action-btn"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Sales Pitch
+              <DocumentIcon />
+            </button>
+          )}
+        </div>
       </div>
-
-      <SolutionEngagementBar
-        solutionId={capability.id}
-        className="ccm_dashboard__capability-engagement"
-      />
     </article>
   );
 };
