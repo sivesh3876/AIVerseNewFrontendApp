@@ -66,7 +66,7 @@ const CommentIcon = () => (
   </svg>
 );
 
-const SolutionEngagementBar = ({ solutionId, className = "" }) => {
+const SolutionEngagementBar = ({ solutionId, className = "", compact = false }) => {
   const { isAuthenticated, adminEmail, adminName } = useAdminAuth();
   const [engagement, setEngagement] = useState(() =>
     getSolutionEngagement(solutionId),
@@ -235,7 +235,7 @@ const SolutionEngagementBar = ({ solutionId, className = "" }) => {
         </button>
       </div>
 
-      {!isAuthenticated && (
+      {!compact && !isAuthenticated && (
         <p className="solution_engagement__auth-hint">
           <Link to="/admin/login">Sign in</Link> to like or dislike. Your
           account is used automatically — no name entry needed.

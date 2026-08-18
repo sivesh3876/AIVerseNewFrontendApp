@@ -246,12 +246,12 @@ const SolutionDetailPanel = ({
             rel="noopener noreferrer"
             className="ccm_dashboard__action-btn"
           >
-            Sales Desk
+            Sales Pitch
             <DocumentIcon />
           </a>
         ) : (
           <button type="button" className="ccm_dashboard__action-btn">
-            Sales Desk
+            Sales Pitch
             <DocumentIcon />
           </button>
         )}

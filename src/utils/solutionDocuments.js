@@ -18,8 +18,8 @@ export const DOCUMENT_TYPE_META = {
     bg: "rgba(24, 224, 204, 0.12)",
   },
   "sales-desk": {
-    label: "Sales Desk",
-    description: "Sales Desk PDF with customer-facing solution information.",
+    label: "Sales Pitch",
+    description: "Sales Pitch PDF with customer-facing solution information.",
     accent: "#2563EB",
     bg: "rgba(37, 99, 235, 0.12)",
   },
@@ -59,7 +59,12 @@ const inferTypeFromText = (value = "") => {
     return "technical-spec";
   }
 
-  if (text.includes("sales desk") || text.includes("salesdesk")) {
+  if (
+    text.includes("sales pitch") ||
+    text.includes("salespitch") ||
+    text.includes("sales desk") ||
+    text.includes("salesdesk")
+  ) {
     return "sales-desk";
   }
 
@@ -162,7 +167,7 @@ export const buildSolutionDocuments = ({
       normalizeDocument({
         id: "sales-desk-doc",
         type: "sales-desk",
-        label: "Sales Desk",
+        label: "Sales Pitch",
         url: salesDeskDoc,
       }),
     );

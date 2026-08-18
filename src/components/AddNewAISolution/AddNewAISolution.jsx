@@ -523,11 +523,11 @@ const AddNewAISolution = () => {
     }
 
     if (files.SalesDeskDoc && !isPdfFile(files.SalesDeskDoc)) {
-      newErrors.SalesDeskDoc = "Sales Desk document must be a PDF file";
+      newErrors.SalesDeskDoc = "Sales Pitch document must be a PDF file";
     }
 
     if (files.SalesDeskDoc && files.SalesDeskDoc.size > 50 * 1024 * 1024) {
-      newErrors.SalesDeskDoc = "Sales Desk PDF file size should not exceed 50MB";
+      newErrors.SalesDeskDoc = "Sales Pitch PDF file size should not exceed 50MB";
     }
 
     const otherDocsCombined = (files.OtherDocuments || []).reduce(
@@ -1118,9 +1118,9 @@ const AddNewAISolution = () => {
 
         <FileDropzone
           id="SalesDeskDoc"
-          label="Sales Desk"
+          label="Sales Pitch"
           accept=".pdf,application/pdf"
-          hint="Upload Sales Desk PDF document"
+          hint="Upload Sales Pitch PDF document"
           formatHint="PDF only (Max 50MB)"
           files={files.SalesDeskDoc}
           error={errors.SalesDeskDoc}
@@ -1128,7 +1128,7 @@ const AddNewAISolution = () => {
             if (file && !isPdfFile(file)) {
               setErrors((prev) => ({
                 ...prev,
-                SalesDeskDoc: "Sales Desk document must be a PDF file",
+                SalesDeskDoc: "Sales Pitch document must be a PDF file",
               }));
               return;
             }
@@ -1142,13 +1142,13 @@ const AddNewAISolution = () => {
 
         {isEditMode && !files.SalesDeskDoc && existingFiles.SalesDeskDoc && (
           <p className="add_ai_solution__existing-file">
-            Current Sales Desk document:{" "}
+            Current Sales Pitch document:{" "}
             <a
               href={existingFiles.SalesDeskDoc}
               target="_blank"
               rel="noopener noreferrer"
             >
-              View attached Sales Desk PDF
+              View attached Sales Pitch PDF
             </a>
           </p>
         )}

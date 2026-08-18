@@ -83,7 +83,7 @@ const getAttachmentLinks = (solution) => {
 
   if (solution.SalesDeskDoc) {
     links.push({
-      label: "Sales Desk PDF",
+      label: "Sales Pitch PDF",
       href: solution.SalesDeskDoc,
     });
   }
