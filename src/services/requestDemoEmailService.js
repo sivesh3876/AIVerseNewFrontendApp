@@ -73,7 +73,10 @@ export const buildRequestDemoSuccessMessage = (result = {}) => {
   const ccAddresses = result?.data?.notified_cc || [];
 
   if (toAddresses.length === 0 && ccAddresses.length === 0) {
-    return result?.message || "Demo request submitted successfully.";
+    return (
+      result?.message ||
+      "Demo request submitted successfully. It is now available on the Leads page."
+    );
   }
 
   const parts = [];
@@ -84,7 +87,7 @@ export const buildRequestDemoSuccessMessage = (result = {}) => {
     parts.push(`CC: ${ccAddresses.join(", ")}`);
   }
 
-  return `Demo request sent (${parts.join("; ")}).`;
+  return `Demo request sent (${parts.join("; ")}). It is now available on the Leads page.`;
 };
 
 const postDemoRequest = async (payload) => {
@@ -106,14 +109,27 @@ const postDemoRequest = async (payload) => {
   return result;
 };
 
-export const buildContactEmailPayload = (form = {}) => ({
-  FullName: (form.name || "").trim(),
-  Email: (form.email || "").trim(),
-  Company: (form.company || "").trim(),
-  Phone: (form.phone || "").trim(),
-  Message: (form.message || "").trim(),
-  Subject: "Contact Inquiry: AI Verse",
-});
+export const buildContactEmailPayload = (form = {}) => {
+  const message = (form.message || "").trim();
+  const preferredCallbackTime = (
+    form.preferredCallbackTime ||
+    form.PreferredCallbackTime ||
+    ""
+  ).trim();
+
+  return {
+    FullName: (form.name || "").trim(),
+    Email: (form.email || "").trim(),
+    Company: (form.company || "").trim(),
+    Phone: (form.phone || "").trim(),
+    Message: message || "No message provided",
+    Subject: form.subject || "Contact Inquiry: AI Verse",
+    LeadType: form.leadType || "Mail",
+    ...(preferredCallbackTime
+      ? { PreferredCallbackTime: preferredCallbackTime }
+      : {}),
+  };
+};
 
 export const buildContactSuccessMessage = (result = {}) =>
   result?.message || "Message sent successfully.";

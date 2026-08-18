@@ -5,7 +5,7 @@ import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapability
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
-import SolutionEngagement from "../SolutionEngagement";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -13,6 +13,7 @@ import {
   EvangelistLabelIcon,
   AiFoundationLabelIcon,
   VideoCameraIcon,
+  DocumentIcon,
 } from "./CapabilityIcons";
 import {
   enterpriseServicesData,
@@ -40,8 +41,11 @@ import {
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
-import { getIndustryByDomainCode } from "../IndustryExplore/industrySolutionsData";
-import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import {
+  buildDocumentsFromCapability,
+  excludeSalesDeskDocuments,
+  getSalesDeskDocumentUrl,
+} from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
@@ -105,8 +109,10 @@ const SolutionDetailPanel = ({
   showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
+  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
+  const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
-  const aiFoundation = capability.aiFoundation || [];
+  const attachmentDocuments = excludeSalesDeskDocuments(documents);
 
   return (
     <section className="ccm_dashboard__content">
@@ -145,7 +151,7 @@ const SolutionDetailPanel = ({
       {clientName && (
         <div className="ccm_dashboard__detail-client">
           <span className="ccm_dashboard__client-badge">
-            Client: {clientName}
+            AI Foundation: {clientName}
           </span>
         </div>
       )}
@@ -245,11 +251,32 @@ const SolutionDetailPanel = ({
             <VideoCameraIcon />
           </button>
         )}
+        {hasSalesDesk ? (
+          <a
+            href={salesDeskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ccm_dashboard__action-btn"
+          >
+            Sales Pitch
+            <DocumentIcon />
+          </a>
+        ) : (
+          <button type="button" className="ccm_dashboard__action-btn">
+            Sales Pitch
+            <DocumentIcon />
+          </button>
+        )}
       </div>
 
-      {documents.length > 0 && (
+      <SolutionEngagementBar
+        solutionId={capability.id}
+        className="ccm_dashboard__detail-engagement"
+      />
+
+      {attachmentDocuments.length > 0 && (
         <SolutionDocuments
-          documents={documents}
+          documents={attachmentDocuments}
           variant="full"
           title="Solution Resources & Attachments"
           subtitle="Review the solution overview, low level design, architecture diagrams, and any supporting documents."
@@ -435,29 +462,34 @@ const CustomerCommunicationManagement = () => {
     };
   }, [submitted]);
 
-  // When Admin marks a solution Inactive, hide its card immediately on Explore.
   useEffect(() => {
-    const syncInactiveVisibility = () => {
-      setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
-      setPendingCapabilities(
-        loadPersistedSubmittedCapabilities().map(hydrateCapability),
-      );
-    };
-
-    const onStorage = (event) => {
-      if (event.key === SOLUTION_STATUS_STORAGE_KEY || event.key === null) {
-        syncInactiveVisibility();
+    const syncInactiveStatus = async () => {
+      try {
+        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        setApiSolutions(data);
+        setPendingCapabilities(
+          loadPersistedSubmittedCapabilities().map(hydrateCapability),
+        );
+      } catch {
+        setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
+        setPendingCapabilities((prev) => [...prev]);
       }
     };
 
-    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveVisibility);
-    window.addEventListener("storage", onStorage);
+    const syncStatusAcrossTabs = (event) => {
+      if (event.key === SOLUTION_STATUS_STORAGE_KEY) {
+        syncInactiveStatus();
+      }
+    };
+
+    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveStatus);
+    window.addEventListener("storage", syncStatusAcrossTabs);
     return () => {
       window.removeEventListener(
         SOLUTION_STATUS_UPDATED_EVENT,
-        syncInactiveVisibility,
+        syncInactiveStatus,
       );
-      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("storage", syncStatusAcrossTabs);
     };
   }, []);
 

@@ -267,15 +267,75 @@ const resolveRecordedDemoLink = (solution = {}) => {
   return recordedVideoLink || demoLink;
 };
 
+const TECH_STACK_NAME_KEYS = [
+  "name",
+  "Name",
+  "title",
+  "Title",
+  "technology",
+  "Technology",
+  "tech",
+  "Tech",
+  "value",
+  "Value",
+];
+
+const getTechStackSource = (solution = {}) =>
+  solution.TechHighlights ??
+  solution.TechnologyHighlights ??
+  solution.TechStack ??
+  solution.Technologies ??
+  solution.techHighlights ??
+  "";
+
+const normalizeTechStackItem = (item) => {
+  if (item == null) return null;
+
+  if (typeof item === "string" || typeof item === "number") {
+    const name = String(item)
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+    return name ? { name, label: "Technology" } : null;
+  }
+
+  if (typeof item === "object") {
+    const name = TECH_STACK_NAME_KEYS.map((key) => item[key]).find(Boolean);
+    const label = item.label || item.Label || item.role || item.category || "Technology";
+    const resolvedName = String(name || "")
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+
+    return resolvedName
+      ? { name: resolvedName, label: String(label).trim() || "Technology" }
+      : null;
+  }
+
+  return null;
+};
+
 const parseTechStack = (techHighlights) => {
+  if (Array.isArray(techHighlights)) {
+    return techHighlights.map(normalizeTechStackItem).filter(Boolean);
+  }
+
   const value =
     techHighlights === null || techHighlights === undefined
       ? ""
-      : String(techHighlights);
+      : String(techHighlights).trim();
+
+  if (!value) return [];
+
+  if (value.startsWith("[") || value.startsWith("{")) {
+    try {
+      return parseTechStack(JSON.parse(value));
+    } catch {
+      // Fall through to delimiter parsing.
+    }
+  }
 
   return value
-    .split(/[,;|]/)
-    .map((item) => item.trim())
+    .split(/[,;|\n]+/)
+    .map((item) => item.replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim())
     .filter(Boolean)
     .map((name) => ({ name, label: "Technology" }));
 };
@@ -290,6 +350,8 @@ const truncateText = (value, maxLength = 110) => {
   return `${text.slice(0, maxLength).trim()}…`;
 };
 
+import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
+
 export const getSolutionOrderNumber = (solution = {}) => {
   const raw =
     solution.OrderNumber ??
@@ -301,43 +363,54 @@ export const getSolutionOrderNumber = (solution = {}) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const isPublicSolutionVisible = (solution = {}) => {
+const isExplicitlyInactiveFlag = (value) => {
+  if (value === false || value === 0) return true;
+  if (value == null || value === "") return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ["false", "0", "no", "inactive"].includes(normalized);
+};
+
+/** True when a solution should be treated as Inactive in admin + public views. */
+export const isSolutionMarkedInactive = (solution = {}) => {
   const rawId = solution?.ID ?? solution?.id;
   if (rawId != null && isSolutionIdMarkedInactiveLocally(rawId)) {
-    return false;
+    return true;
   }
+
   const numericId = String(rawId || "").match(/(\d+)$/);
   if (numericId && isSolutionIdMarkedInactiveLocally(numericId[1])) {
-    return false;
+    return true;
   }
 
-  const activeFlag = solution?.IsSolutionActive ?? solution?.isSolutionActive;
-  if (activeFlag === false || activeFlag === 0) return false;
   if (
-    activeFlag != null &&
-    activeFlag !== "" &&
-    ["false", "0", "no", "inactive"].includes(
-      String(activeFlag).trim().toLowerCase(),
+    isExplicitlyInactiveFlag(
+      solution?.IsSolutionActive ?? solution?.isSolutionActive,
     )
   ) {
-    return false;
+    return true;
   }
 
-  const publishValue =
-    solution.Publish ??
-    solution.publish ??
-    solution.IsPublished ??
-    solution.isPublished ??
-    solution.PublicationStatus ??
-    solution.publicationStatus;
+  const publishValue = String(
+    solution?.Publish ?? solution?.publish ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["no", "false", "0", "inactive"].includes(publishValue)) return true;
 
-  if (publishValue == null || publishValue === "") return true;
+  const publicationStatus = String(
+    solution?.PublicationStatus ?? solution?.publicationStatus ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["draft", "inactive", "archive", "unpublished"].includes(publicationStatus)) {
+    return true;
+  }
 
-  const normalized = String(publishValue).trim().toLowerCase();
-  return !["no", "false", "0", "draft", "inactive", "archive"].includes(
-    normalized,
-  );
+  return false;
 };
+
+export const isPublicSolutionVisible = (solution = {}) =>
+  !isSolutionMarkedInactive(solution);
 
 export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
   [...solutions]
@@ -365,7 +438,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
   const serviceId =
     getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation";
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
   const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
 
@@ -384,6 +457,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
+    salesDeskDoc: solution.SalesDeskDoc || null,
     detailUrl: `/explore-solutions?service=${serviceId}&solution=${encodeURIComponent(solutionApiId)}`,
     capabilityForDemo: {
       id: solutionApiId,
@@ -454,7 +528,7 @@ export const mapApiSolutionToCapability = (
   { evangelistDirectory = [], solutionOwners = [] } = {},
 ) => {
   const evangelists = parseEvangelists(solution.AiEvangelists, evangelistDirectory);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const recordedDemoLink = resolveRecordedDemoLink(solution);
 
   return {
@@ -487,6 +561,7 @@ export const mapApiSolutionToCapability = (
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
+    salesDeskDoc: solution.SalesDeskDoc || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
       ? solution.OtherDocuments
       : [],
@@ -786,6 +861,7 @@ export const removePersistedSubmittedCapability = (capabilityId) => {
 const normalizeCapabilityTitle = (value) =>
   String(value || "").trim().toLowerCase();
 
+/** Optimistic cards are stored with temporary ids, so title is the only reliable key. */
 export const removePersistedSubmittedCapabilitiesByTitle = (title) => {
   const key = normalizeCapabilityTitle(title);
   if (!key) return;
@@ -804,8 +880,15 @@ export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) =>
   if (persisted.length === 0) return;
 
   const apiIds = new Set(apiCapabilities.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
+  );
 
-  const remaining = persisted.filter((capability) => !apiIds.has(capability.id));
+  const remaining = persisted.filter(
+    (capability) =>
+      !apiIds.has(capability.id) &&
+      !apiTitles.has(normalizeCapabilityTitle(capability.title)),
+  );
 
   savePersistedSubmittedCapabilities(remaining);
 };
@@ -827,39 +910,28 @@ export const mergeSubmittedCapabilities = ({
     (capability) => matchesFilter(capability) && isPublicSolutionVisible(capability),
   );
 
-  const pendingById = new Map(
-    pendingCapabilities
-      .filter(matchesFilter)
-      .filter(isPublicSolutionVisible)
-      .filter((capability) => capability?.id)
-      .map((capability) => [capability.id, capability]),
+  const apiIds = new Set(fromApi.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
   );
 
-  const mergedFromApi = fromApi.map((capability) => {
-    const pending = pendingById.get(capability.id);
-    if (!pending) {
-      return capability;
+  const fromPending = pendingCapabilities.filter((capability) => {
+    if (isSolutionMarkedInactive(capability)) {
+      return false;
     }
 
-    const apiFoundation = capability.aiFoundation || [];
-    const pendingFoundation = pending.aiFoundation || [];
+    if (!matchesFilter(capability)) {
+      return false;
+    }
 
-    return {
-      ...capability,
-      aiFoundation:
-        apiFoundation.length > 0 ? apiFoundation : pendingFoundation,
-    };
-  });
-
-  const apiIds = new Set(mergedFromApi.map((capability) => capability.id));
-
-  const fromPending = pendingCapabilities.filter((capability) => {
-    if (!matchesFilter(capability) || !isPublicSolutionVisible(capability)) {
+    if (apiTitles.has(normalizeCapabilityTitle(capability.title))) {
       return false;
     }
 
     return capability.id && !apiIds.has(capability.id);
   });
 
-  return dedupeCapabilitiesById([...mergedFromApi, ...fromPending]);
+  return dedupeCapabilitiesById([...fromApi, ...fromPending]).filter(
+    isPublicSolutionVisible,
+  );
 };

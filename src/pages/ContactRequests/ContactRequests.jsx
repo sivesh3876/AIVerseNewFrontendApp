@@ -10,14 +10,16 @@ import ContactRequestFilterPanel from "../../components/ContactRequest/ContactRe
 import ContactRequestDrawer from "../../components/ContactRequest/ContactRequestDrawer";
 import ContactRequestToast from "../../components/ContactRequest/ContactRequestToast";
 import LeadDeleteModal from "../../components/ContactRequest/LeadDeleteModal";
-import { PLACEHOLDER_REQUESTS } from "../../components/ContactRequest/placeholders";
 import {
   getContactRequests,
   updateStoredContactRequestStage,
   deleteContactRequest,
-  getDeletedDemoLeadKeys,
-  markDemoLeadDeleted,
 } from "../../utils/contactRequestStorage";
+import {
+  getContactRequestsFromApi,
+  isContactRequestsApiConfigured,
+  updateContactRequestStageOnApi,
+} from "../../services/contactRequestApiService";
 import { updateContactRequestStageApi } from "../../services/contactRequestStageService";
 import { createFollowUpApi } from "../../services/contactRequestFollowUpService";
 import { createNoteApi } from "../../services/contactRequestNoteService";
@@ -39,25 +41,27 @@ const normalizeLead = (request) => ({
   stage: request.stage === "New" ? "Contacted" : request.stage || "Contacted",
   type:
     request.type ||
-    (request.reason === "Contact Us" ? "Mail" : "Message"),
+    (request.reason === "Contact Us" ? "Mail" : "Contact Request"),
 });
 
-const buildInitialRequests = () => {
-  const deletedDemoKeys = new Set(getDeletedDemoLeadKeys());
+const leadDedupeKey = (lead) =>
+  `${String(lead.email || "").trim().toLowerCase()}|${String(lead.submittedAt || "").slice(0, 10)}|${String(lead.reason || lead.type || "").trim().toLowerCase()}`;
 
-  const stored = getContactRequests().map((request) => ({
+/** Real browser submissions (Schedule / Register / Contact / Demo) — not demo placeholders. */
+const buildStoredLocalLeads = () =>
+  getContactRequests().map((request) => ({
     ...normalizeLead(request),
     requestKey: `stored-${request.id}`,
     isStored: true,
+    isApi: false,
   }));
 
-  const demo = PLACEHOLDER_REQUESTS.map((request) => ({
-    ...normalizeLead(request),
-    requestKey: `demo-${request.id}`,
-    isStored: false,
-  })).filter((request) => !deletedDemoKeys.has(request.requestKey));
-
-  return [...stored, ...demo];
+const mergeApiAndStoredLeads = (apiLeads, storedLeads) => {
+  const covered = new Set(apiLeads.map(leadDedupeKey));
+  const uniqueStored = storedLeads.filter(
+    (lead) => !covered.has(leadDedupeKey(lead)),
+  );
+  return [...apiLeads.map(normalizeLead), ...uniqueStored.map(normalizeLead)];
 };
 
 const appendStageActivity = (request, stage) => ({
@@ -91,7 +95,8 @@ const ContactRequests = () => {
 
   const [viewMode, setViewMode] = useState("kanban");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [requests, setRequests] = useState(buildInitialRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [followUpsByLead, setFollowUpsByLead] = useState({});
   const [notesByLead, setNotesByLead] = useState({});
   const [selectedRequestKey, setSelectedRequestKey] = useState(null);
@@ -131,19 +136,79 @@ const ContactRequests = () => {
     }
   }, [currentPage, totalPages]);
 
+  const loadRequests = useCallback(async ({ showToast = false } = {}) => {
+    setLoading(true);
+    const storedLeads = buildStoredLocalLeads();
+
+    try {
+      if (!isContactRequestsApiConfigured()) {
+        setRequests(storedLeads);
+        if (showToast || storedLeads.length === 0) {
+          setToast({
+            type: storedLeads.length ? "success" : "error",
+            message: storedLeads.length
+              ? `Showing ${storedLeads.length} locally saved lead(s). API base URL is not configured.`
+              : "Leads API is not configured. Submit Contact Us / Schedule / Register / Request Demo to create leads.",
+          });
+        }
+        return;
+      }
+
+      try {
+        const apiLeads = await getContactRequestsFromApi();
+        setRequests(mergeApiAndStoredLeads(apiLeads, storedLeads));
+
+        if (showToast) {
+          setToast({
+            type: "success",
+            message: `Leads refreshed (${apiLeads.length} from server${
+              storedLeads.length
+                ? `, plus local submissions not yet on server`
+                : ""
+            }).`,
+          });
+        }
+      } catch (apiError) {
+        // Keep Schedule/Register/Contact local cards visible when API is down.
+        setRequests(storedLeads);
+        setToast({
+          type: "error",
+          message:
+            apiError?.message ||
+            "Could not load leads from server. Showing locally saved submissions.",
+        });
+      }
+    } catch (error) {
+      setRequests(storedLeads);
+      setToast({
+        type: "error",
+        message: error?.message || "Could not load leads.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleRefresh = useCallback(() => {
-    setRequests(buildInitialRequests());
     setFollowUpsByLead({});
     setNotesByLead({});
     setCurrentPage(1);
-  }, []);
+    loadRequests({ showToast: true });
+  }, [loadRequests]);
 
   useEffect(() => {
-    const refreshRequests = () => setRequests(buildInitialRequests());
+    loadRequests();
+  }, [loadRequests]);
+
+  useEffect(() => {
+    const refreshRequests = () => loadRequests();
     window.addEventListener("aiverse:contact-requests-updated", refreshRequests);
     return () =>
-      window.removeEventListener("aiverse:contact-requests-updated", refreshRequests);
-  }, []);
+      window.removeEventListener(
+        "aiverse:contact-requests-updated",
+        refreshRequests,
+      );
+  }, [loadRequests]);
 
   const openDrawer = (request) => {
     setSelectedRequestKey(request.requestKey);
@@ -174,8 +239,6 @@ const ContactRequests = () => {
     try {
       if (leadToDelete.isStored) {
         deleteContactRequest(leadToDelete.id);
-      } else {
-        markDemoLeadDeleted(leadToDelete.requestKey);
       }
 
       setRequests((prev) =>
@@ -199,7 +262,12 @@ const ContactRequests = () => {
       }
 
       setLeadToDelete(null);
-      setToast({ type: "success", message: "Lead deleted successfully." });
+      setToast({
+        type: "success",
+        message: leadToDelete.isApi
+          ? "Lead hidden from this view. Server delete is not enabled yet."
+          : "Lead deleted successfully.",
+      });
     } finally {
       setDeletingLead(false);
     }
@@ -211,6 +279,14 @@ const ContactRequests = () => {
 
       const { requestKey } = selectedRequest;
 
+      // Persist stage to backend for API leads; surface errors to the drawer.
+      if (selectedRequest.isApi) {
+        await updateContactRequestStageOnApi({
+          id: selectedRequest.id,
+          stage: newStage,
+        });
+      }
+
       await updateContactRequestStageApi(requestKey, newStage);
 
       setRequests((prev) =>
@@ -218,9 +294,16 @@ const ContactRequests = () => {
           if (request.requestKey !== requestKey) return request;
 
           if (request.isStored) {
-            const persisted = updateStoredContactRequestStage(request.id, newStage);
+            const persisted = updateStoredContactRequestStage(
+              request.id,
+              newStage,
+            );
             return persisted
-              ? { ...persisted, requestKey: request.requestKey, isStored: true }
+              ? {
+                  ...persisted,
+                  requestKey: request.requestKey,
+                  isStored: true,
+                }
               : appendStageActivity(request, newStage);
           }
 
@@ -259,7 +342,10 @@ const ContactRequests = () => {
           ),
         );
 
-        setToast({ type: "success", message: "Follow-up scheduled successfully." });
+        setToast({
+          type: "success",
+          message: "Follow-up scheduled successfully.",
+        });
       } catch (error) {
         setToast({
           type: "error",
@@ -317,7 +403,7 @@ const ContactRequests = () => {
   return (
     <AdminDemoPageShell
       title="Leads"
-      description="Manage and track all inquiries submitted through the website Contact Us form."
+      description="Manage and track Contact Us, Schedule a Call, Register, and Request Demo inquiries (API + locally saved submissions)."
     >
       <ContactRequestSummary stats={stats} />
 
@@ -329,7 +415,9 @@ const ContactRequests = () => {
         onRefresh={handleRefresh}
       />
 
-      {viewMode === "kanban" ? (
+      {loading ? (
+        <p style={{ margin: "16px 0", color: "#6b7280" }}>Loading leads...</p>
+      ) : viewMode === "kanban" ? (
         <ContactRequestKanban requests={requests} onCardClick={openDrawer} />
       ) : (
         <>

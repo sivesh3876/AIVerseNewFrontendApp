@@ -88,6 +88,13 @@ const isValidUrl = (value) => {
   }
 };
 
+const isPdfFile = (file) => {
+  if (!file) return true;
+
+  const fileName = file.name.toLowerCase();
+  return file.type === "application/pdf" || fileName.endsWith(".pdf");
+};
+
 const FileDropzone = ({
   id,
   label,
@@ -242,6 +249,7 @@ const AddNewAISolution = () => {
     SolutionDetailsDoc: null,
     LowLevelDesignDoc: null,
     ArchitectureDiagram: null,
+    SalesDeskDoc: null,
     OtherDocuments: [],
     DemoRecordedVideo: null,
   });
@@ -249,6 +257,7 @@ const AddNewAISolution = () => {
     SolutionDetailsDoc: null,
     LowLevelDesignDoc: null,
     ArchitectureDiagram: null,
+    SalesDeskDoc: null,
     OtherDocuments: [],
     DemoRecordedVideoLink: null,
   });
@@ -372,6 +381,7 @@ const AddNewAISolution = () => {
             SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
             LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
             ArchitectureDiagram: solution.ArchitectureDiagram || null,
+            SalesDeskDoc: solution.SalesDeskDoc || null,
             OtherDocuments: Array.isArray(solution.OtherDocuments)
               ? solution.OtherDocuments
               : [],
@@ -512,6 +522,14 @@ const AddNewAISolution = () => {
       newErrors.ArchitectureDiagram = "Architecture diagram file size should not exceed 50MB";
     }
 
+    if (files.SalesDeskDoc && !isPdfFile(files.SalesDeskDoc)) {
+      newErrors.SalesDeskDoc = "Sales Pitch document must be a PDF file";
+    }
+
+    if (files.SalesDeskDoc && files.SalesDeskDoc.size > 50 * 1024 * 1024) {
+      newErrors.SalesDeskDoc = "Sales Pitch PDF file size should not exceed 50MB";
+    }
+
     const otherDocsCombined = (files.OtherDocuments || []).reduce(
       (sum, file) => sum + (file?.size || 0),
       0,
@@ -532,6 +550,7 @@ const AddNewAISolution = () => {
       SolutionDetailsDoc: null,
       LowLevelDesignDoc: null,
       ArchitectureDiagram: null,
+      SalesDeskDoc: null,
       OtherDocuments: [],
       DemoRecordedVideo: null,
     });
@@ -615,6 +634,10 @@ const AddNewAISolution = () => {
 
       if (files.ArchitectureDiagram) {
         formDataToSend.append("ArchitectureDiagram", files.ArchitectureDiagram);
+      }
+
+      if (files.SalesDeskDoc) {
+        formDataToSend.append("SalesDeskDoc", files.SalesDeskDoc);
       }
 
       if (files.OtherDocuments.length > 0) {
@@ -713,6 +736,7 @@ const AddNewAISolution = () => {
     (files.SolutionDetailsDoc?.size || 0) +
     (files.LowLevelDesignDoc?.size || 0) +
     (files.ArchitectureDiagram?.size || 0) +
+    (files.SalesDeskDoc?.size || 0) +
     (files.DemoRecordedVideo?.size || 0);
 
   return (
@@ -1088,6 +1112,43 @@ const AddNewAISolution = () => {
               rel="noopener noreferrer"
             >
               View attached document
+            </a>
+          </p>
+        )}
+
+        <FileDropzone
+          id="SalesDeskDoc"
+          label="Sales Pitch"
+          accept=".pdf,application/pdf"
+          hint="Upload Sales Pitch PDF document"
+          formatHint="PDF only (Max 50MB)"
+          files={files.SalesDeskDoc}
+          error={errors.SalesDeskDoc}
+          onFilesChange={(file) => {
+            if (file && !isPdfFile(file)) {
+              setErrors((prev) => ({
+                ...prev,
+                SalesDeskDoc: "Sales Pitch document must be a PDF file",
+              }));
+              return;
+            }
+
+            setErrors((prev) =>
+              prev.SalesDeskDoc ? { ...prev, SalesDeskDoc: "" } : prev,
+            );
+            setFiles((prev) => ({ ...prev, SalesDeskDoc: file }));
+          }}
+        />
+
+        {isEditMode && !files.SalesDeskDoc && existingFiles.SalesDeskDoc && (
+          <p className="add_ai_solution__existing-file">
+            Current Sales Pitch document:{" "}
+            <a
+              href={existingFiles.SalesDeskDoc}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View attached Sales Pitch PDF
             </a>
           </p>
         )}

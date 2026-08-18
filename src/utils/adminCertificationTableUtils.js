@@ -70,6 +70,7 @@ const escapeCsv = (value) => {
 };
 
 const EXPORT_COLUMNS = [
+  { key: "createdDate", label: "Date" },
   { key: "name", label: "Certification Name" },
   { key: "code", label: "Certification Code" },
   { key: "provider", label: "Provider" },
@@ -101,7 +102,6 @@ const EXPORT_COLUMNS = [
     label: "Description",
     format: (value) => stripHtml(value),
   },
-  { key: "createdDate", label: "Created Date" },
 ];
 
 export const exportAdminCertificationsToCsv = (certifications, filename) => {

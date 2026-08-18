@@ -1,10 +1,9 @@
-const STORAGE_KEY = "aiverse_inactive_solution_ids";
-export const SOLUTION_STATUS_STORAGE_KEY = STORAGE_KEY;
+export const SOLUTION_STATUS_STORAGE_KEY = "aiverse_inactive_solution_ids";
 export const SOLUTION_STATUS_UPDATED_EVENT = "aiverse:solution-status-updated";
 
 const readInactiveIds = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(SOLUTION_STATUS_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch {
@@ -15,7 +14,7 @@ const readInactiveIds = () => {
 const writeInactiveIds = (ids) => {
   try {
     localStorage.setItem(
-      STORAGE_KEY,
+      SOLUTION_STATUS_STORAGE_KEY,
       JSON.stringify([...new Set(ids.map(String))]),
     );
   } catch {
@@ -39,7 +38,7 @@ export const setSolutionInactiveLocally = (solutionId, isInactive) => {
   writeInactiveIds([...next]);
 };
 
-/** Merge local inactive flags onto API solutions (covers API lag / undeployed backend). */
+/** Merge local inactive flags onto API solutions (backend may not persist status). */
 export const applyInactiveSolutionOverrides = (solutions = []) => {
   const inactiveIds = getInactiveSolutionIdSet();
   if (inactiveIds.size === 0) return solutions;

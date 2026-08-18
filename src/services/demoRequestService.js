@@ -73,30 +73,31 @@ const fetchDemoRequestsFromEndpoint = async (endpoint) => {
   );
 
   if (!response.ok) {
-    return [];
+    return { ok: false, rows: [] };
   }
 
   let result = {};
   try {
     result = await response.json();
   } catch {
-    return [];
+    return { ok: false, rows: [] };
   }
 
   if (result.status && result.status !== "success") {
-    return [];
+    return { ok: false, rows: [] };
   }
 
-  const rows = parseDemoRequestsPayload(result);
-  return rows.map(normalizeApiDemoRequest);
+  const rows = parseDemoRequestsPayload(result).map(normalizeApiDemoRequest);
+  return { ok: true, rows };
 };
 
 const fetchDemoRequestsFromApi = async () => {
   for (const endpoint of DEMO_REQUESTS_ENDPOINTS) {
     try {
-      const rows = await fetchDemoRequestsFromEndpoint(endpoint);
-      if (rows.length > 0) {
-        return rows;
+      const result = await fetchDemoRequestsFromEndpoint(endpoint);
+      // Prefer first endpoint that responds successfully (even if empty).
+      if (result.ok) {
+        return result.rows;
       }
     } catch {
       // Try the next endpoint candidate.

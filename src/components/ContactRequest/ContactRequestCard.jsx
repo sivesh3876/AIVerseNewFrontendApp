@@ -1,3 +1,5 @@
+import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
+
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -26,12 +28,15 @@ const typeClass = (type = "") => {
   ) {
     return "schedule";
   }
-  if (value.includes("request demo") || value.includes("demo")) return "demo";
-  if (value.includes("mail")) return "mail";
+  if (value.includes("demo")) return "demo";
+  if (value.includes("mail") && !value.includes("contact")) return "mail";
   return "message";
 };
 
-const ContactRequestCard = ({ request, onClick }) => (
+const ContactRequestCard = ({ request, onClick }) => {
+  const typeLabel = formatLeadTypeLabel(request.type);
+
+  return (
   <button
     type="button"
     className="admin_contact_card"
@@ -57,15 +62,33 @@ const ContactRequestCard = ({ request, onClick }) => (
     <div className="admin_contact_card__meta">
       <span>{request.email}</span>
       <span>{request.phone}</span>
+      {request.reason ? (
+        <span className="admin_contact_card__reason" title={request.reason}>
+          Reason: {request.reason}
+        </span>
+      ) : null}
+      {request.preferredCallbackTime ? (
+        <span
+          className="admin_contact_card__callback"
+          title={request.preferredCallbackTime}
+        >
+          Call: {formatDate(request.preferredCallbackTime)}
+        </span>
+      ) : null}
+      {request.message && request.message !== "—" ? (
+        <span className="admin_contact_card__message" title={request.message}>
+          {request.message}
+        </span>
+      ) : null}
     </div>
 
     <div className="admin_contact_card__badges">
       <span
         className={`admin_contact_type admin_contact_type--${typeClass(
-          request.type,
+          typeLabel,
         )}`}
       >
-        Type: {request.type || "Message"}
+        Type: {typeLabel}
       </span>
     </div>
 
@@ -76,6 +99,7 @@ const ContactRequestCard = ({ request, onClick }) => (
       <span className="admin_contact_card__date">{formatDate(request.submittedAt)}</span>
     </div>
   </button>
-);
+  );
+};
 
 export default ContactRequestCard;

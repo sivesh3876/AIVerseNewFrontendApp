@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CERTIFIED_PROFESSIONAL_STATUSES } from "../../utils/adminCertifiedProfessionalStorage";
 import AdminCertificationFileUpload from "./AdminCertificationFileUpload";
 import AdminCertificationImageUpload from "./AdminCertificationImageUpload";
@@ -25,26 +25,97 @@ const EMPTY_FORM = {
   status: "Draft",
 };
 
-const getTodayLabel = () =>
-  new Date().toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+const padDatePart = (value) => String(value).padStart(2, "0");
 
-const toDateInputValue = (dateLabel = "") => {
-  if (!dateLabel) return "";
-  const parsed = new Date(dateLabel);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
+const toIsoDate = (year, month, day) =>
+  `${year}-${padDatePart(month)}-${padDatePart(day)}`;
+
+const getTodayIso = () => {
+  const now = new Date();
+  return toIsoDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
 };
 
-const formatDateFromInput = (value) =>
-  new Date(value).toLocaleDateString("en-IN", {
+const formatDateFromInput = (isoValue = "") => {
+  const [year, month, day] = String(isoValue).split("-").map(Number);
+  if (!year || !month || !day) return "";
+  return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+};
+
+const getTodayLabel = () => formatDateFromInput(getTodayIso());
+
+const toDateInputValue = (dateLabel = "") => {
+  const text = String(dateLabel || "").trim();
+  if (!text) return "";
+
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  const dmyMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]);
+    const month = Number(dmyMatch[2]);
+    const year = Number(dmyMatch[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return toIsoDate(year, month, day);
+    }
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return toIsoDate(
+    parsed.getFullYear(),
+    parsed.getMonth() + 1,
+    parsed.getDate(),
+  );
+};
+
+const DatePickerField = ({ label, value, onChange }) => {
+  const inputRef = useRef(null);
+
+  const openPicker = () => {
+    const input = inputRef.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    } catch {
+      input.focus();
+    }
+  };
+
+  return (
+    <label className="admin_blog_form__field">
+      <span>{label}</span>
+      <div className="admin_blog_form__date-picker" onClick={openPicker}>
+        <input
+          ref={inputRef}
+          type="date"
+          value={toDateInputValue(value)}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <span className="admin_blog_form__date-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M7 3v2M17 3v2M4 9h16M6 7h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      </div>
+    </label>
+  );
+};
 
 const buildDraftFromProfessional = (professional, certification) => ({
   employeeName: professional.employeeName || "",
@@ -82,6 +153,8 @@ const AdminCertifiedProfessionalFormModal = ({
   const [draft, setDraft] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [isHydrated, setIsHydrated] = useState(mode === "add");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const isEdit = mode === "edit";
 
   useEffect(() => {
@@ -130,7 +203,7 @@ const AdminCertifiedProfessionalFormModal = ({
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
@@ -139,27 +212,36 @@ const AdminCertifiedProfessionalFormModal = ({
       return;
     }
 
-    onSave?.({
-      employeeName: draft.employeeName.trim(),
-      employeeId: draft.employeeId.trim(),
-      designation: draft.designation.trim(),
-      department: draft.department.trim(),
-      officeLocation: draft.officeLocation.trim(),
-      email: draft.email.trim(),
-      profilePhoto: draft.profilePhoto,
-      certificationName: draft.certificationName.trim(),
-      provider: draft.provider.trim(),
-      completionDate: draft.completionDate || getTodayLabel(),
-      expiryDate: draft.expiryDate,
-      credentialId: draft.credentialId.trim(),
-      examScore: draft.examScore.trim(),
-      percentage: draft.percentage.trim(),
-      certificatePdf: draft.certificatePdf,
-      certificateFileName: draft.certificateFileName,
-      certificateVerificationUrl: draft.certificateVerificationUrl.trim(),
-      linkedInUrl: draft.linkedInUrl.trim(),
-      status: draft.status,
-    });
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+
+    try {
+      await onSave?.({
+        employeeName: draft.employeeName.trim(),
+        employeeId: draft.employeeId.trim(),
+        designation: draft.designation.trim(),
+        department: draft.department.trim(),
+        officeLocation: draft.officeLocation.trim(),
+        email: draft.email.trim(),
+        profilePhoto: draft.profilePhoto,
+        certificationName: draft.certificationName.trim(),
+        provider: draft.provider.trim(),
+        completionDate: draft.completionDate || getTodayLabel(),
+        expiryDate: draft.expiryDate,
+        credentialId: draft.credentialId.trim(),
+        examScore: draft.examScore.trim(),
+        percentage: draft.percentage.trim(),
+        certificatePdf: draft.certificatePdf,
+        certificateFileName: draft.certificateFileName,
+        certificateVerificationUrl: draft.certificateVerificationUrl.trim(),
+        linkedInUrl: draft.linkedInUrl.trim(),
+        status: draft.status,
+      });
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   return (
@@ -168,7 +250,9 @@ const AdminCertifiedProfessionalFormModal = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-professional-form-title"
-      onClick={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         className="admin_demo_modal admin_demo_modal--certification-form"
@@ -306,27 +390,17 @@ const AdminCertifiedProfessionalFormModal = ({
                 />
               </label>
 
-              <label className="admin_blog_form__field">
-                <span>Completion Date</span>
-                <input
-                  type="date"
-                  value={toDateInputValue(draft.completionDate)}
-                  onChange={(event) =>
-                    handleDateChange("completionDate", event.target.value)
-                  }
-                />
-              </label>
+              <DatePickerField
+                label="Completion Date"
+                value={draft.completionDate}
+                onChange={(value) => handleDateChange("completionDate", value)}
+              />
 
-              <label className="admin_blog_form__field">
-                <span>Expiry Date</span>
-                <input
-                  type="date"
-                  value={toDateInputValue(draft.expiryDate)}
-                  onChange={(event) =>
-                    handleDateChange("expiryDate", event.target.value)
-                  }
-                />
-              </label>
+              <DatePickerField
+                label="Expiry Date"
+                value={draft.expiryDate}
+                onChange={(value) => handleDateChange("expiryDate", value)}
+              />
 
               <label className="admin_blog_form__field">
                 <span>Credential ID</span>
@@ -423,15 +497,20 @@ const AdminCertifiedProfessionalFormModal = ({
               type="button"
               className="admin_request_demos__btn admin_request_demos__btn--secondary"
               onClick={onClose}
+              disabled={saving}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="admin_request_demos__btn admin_request_demos__btn--primary"
-              disabled={!isHydrated}
+              disabled={!isHydrated || saving}
             >
-              {isEdit ? "Save Changes" : "Add Certified Person"}
+              {saving
+                ? "Saving…"
+                : isEdit
+                  ? "Save Changes"
+                  : "Add Certified Person"}
             </button>
           </footer>
         </form>

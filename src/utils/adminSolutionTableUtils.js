@@ -1,3 +1,5 @@
+import { isSolutionMarkedInactive } from "./solutionMapper";
+
 const normalize = (value = "") => String(value).trim().toLowerCase();
 
 const isFalsyActiveFlag = (value) => {
@@ -26,13 +28,7 @@ export const filterCatalogSolutions = (solutions = []) =>
   solutions.filter((solution) => !isPlaceholderSolution(solution));
 
 export const getSolutionStatusLabel = (solution) =>
-  isFalsyActiveFlag(solution?.IsSolutionActive) ||
-  normalize(solution?.Publish || solution?.publish) === "no" ||
-  ["draft", "inactive", "unpublished"].includes(
-    normalize(solution?.PublicationStatus || solution?.publicationStatus),
-  )
-    ? "Inactive"
-    : "Active";
+  isSolutionMarkedInactive(solution) ? "Inactive" : "Active";
 
 const getSolutionCreatedDateValue = (solution = {}) =>
   solution.CreatedDate ??

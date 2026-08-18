@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   BLOG_FORM_STATUSES,
@@ -27,33 +27,77 @@ const EMPTY_FORM = {
   homepageOrder: 1,
 };
 
-const getTodayLabel = () =>
-  new Date().toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+const padDatePart = (value) => String(value).padStart(2, "0");
 
-const toDateInputValue = (dateLabel = "") => {
-  if (!dateLabel) return "";
-  const parsed = new Date(dateLabel);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
+const toIsoDate = (year, month, day) =>
+  `${year}-${padDatePart(month)}-${padDatePart(day)}`;
+
+const getTodayIso = () => {
+  const now = new Date();
+  return toIsoDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
 };
 
-const formatDateFromInput = (value) =>
-  new Date(value).toLocaleDateString("en-IN", {
+const formatDateFromInput = (isoValue = "") => {
+  const [year, month, day] = String(isoValue).split("-").map(Number);
+  if (!year || !month || !day) return "";
+  return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+};
+
+const getTodayLabel = () => formatDateFromInput(getTodayIso());
+
+const toDateInputValue = (dateLabel = "") => {
+  const text = String(dateLabel || "").trim();
+  if (!text) return "";
+
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+
+  const dmyMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]);
+    const month = Number(dmyMatch[2]);
+    const year = Number(dmyMatch[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return toIsoDate(year, month, day);
+    }
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return getTodayIso();
+
+  return toIsoDate(
+    parsed.getFullYear(),
+    parsed.getMonth() + 1,
+    parsed.getDate(),
+  );
+};
 
 const AdminBlogFormModal = ({ blog, mode = "add", onClose, onSave }) => {
   const { adminEmail } = useAdminAuth();
   const [draft, setDraft] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const dateInputRef = useRef(null);
   const isEdit = mode === "edit";
   const isDraft = draft.recordStatus === "Draft";
+
+  const openPublishedDatePicker = () => {
+    const input = dateInputRef.current;
+    if (!input || input.disabled) return;
+    try {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    } catch {
+      input.focus();
+    }
+  };
 
   const categoryOptions = useMemo(() => getBlogCategoryOptions(), [blog, mode]);
   const trackOptions = useMemo(() => getBlogTrackOptions(), [blog, mode]);
@@ -186,7 +230,9 @@ const AdminBlogFormModal = ({ blog, mode = "add", onClose, onSave }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="admin-blog-form-title"
-      onClick={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         className="admin_demo_modal admin_demo_modal--blog-form"
@@ -305,14 +351,33 @@ const AdminBlogFormModal = ({ blog, mode = "add", onClose, onSave }) => {
             {!isDraft && (
               <label className="admin_blog_form__field">
                 <span>Published Date *</span>
-                <input
-                  type="date"
-                  value={toDateInputValue(draft.publishedDate)}
-                  onChange={(event) =>
-                    handlePublishedDateChange(event.target.value)
-                  }
-                  required
-                />
+                <div
+                  className="admin_blog_form__date-picker"
+                  onClick={openPublishedDatePicker}
+                >
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={toDateInputValue(draft.publishedDate)}
+                    onChange={(event) =>
+                      handlePublishedDateChange(event.target.value)
+                    }
+                    required
+                  />
+                  <span
+                    className="admin_blog_form__date-icon"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M7 3v2M17 3v2M4 9h16M6 7h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
               </label>
             )}
 
@@ -341,8 +406,9 @@ const AdminBlogFormModal = ({ blog, mode = "add", onClose, onSave }) => {
                 <span>Show on homepage</span>
               </label>
               <p className="admin_blog_form__help">
-                Choose a homepage card position (1 to 6). If not selected, the blog
-                appears in the track-wise section with remaining blogs.
+                Published blogs always appear on the public{" "}
+                <strong>/blogs</strong> page. Optionally also pin the blog to a
+                homepage Insights card (positions 1–6).
               </p>
 
               {draft.showOnHomepage && (

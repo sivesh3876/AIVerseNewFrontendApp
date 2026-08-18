@@ -10,6 +10,8 @@ import {
 
   getUniqueBlogValues,
 
+  BLOG_ADMIN_DEFAULT_STATUS_FILTER,
+
 } from "../../utils/adminBlogTableUtils";
 
 import {
@@ -93,7 +95,7 @@ const AdminBlogs = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(BLOG_ADMIN_DEFAULT_STATUS_FILTER);
 
   const [categoryFilter, setCategoryFilter] = useState("all");
 
@@ -183,7 +185,7 @@ const AdminBlogs = () => {
 
     searchQuery.trim() ||
 
-    statusFilter !== "all" ||
+    statusFilter !== BLOG_ADMIN_DEFAULT_STATUS_FILTER ||
 
     categoryFilter !== "all" ||
 
@@ -271,14 +273,14 @@ const AdminBlogs = () => {
 
 
 
-  const handleConfirmDelete = (blog) => {
-
-    deleteAdminBlogRecord(blog.id);
-
-    setDeleteBlogId(null);
-
-    loadBlogs();
-
+  const handleConfirmDelete = async (blog) => {
+    try {
+      await deleteAdminBlogRecord(blog.id);
+      setDeleteBlogId(null);
+      await loadBlogs();
+    } catch (deleteError) {
+      window.alert(deleteError.message || "Failed to delete blog.");
+    }
   };
 
 
@@ -303,55 +305,34 @@ const AdminBlogs = () => {
 
 
 
-  const handleSaveBlog = (payload) => {
-
+  const handleSaveBlog = async (payload) => {
     const savePayload = {
-
       ...payload,
-
       defaultAuthorEmail: adminEmail,
-
       author:
-
         String(payload.author || "").trim() || getDefaultAuthorName(adminEmail),
-
     };
 
-
-
-    if (formMode === "edit" && selectedBlogId) {
-
-      const updated = updateAdminBlogRecord(selectedBlogId, savePayload);
-
-      if (updated) {
-
-        handleBlogUpdated(updated);
-
-        loadBlogs();
-
+    try {
+      if (formMode === "edit" && selectedBlogId) {
+        const updated = await updateAdminBlogRecord(selectedBlogId, savePayload);
+        if (updated) {
+          handleBlogUpdated(updated);
+          await loadBlogs();
+        }
+      } else {
+        const created = await createAdminBlogRecord(savePayload);
+        if (created) {
+          await loadBlogs();
+        }
       }
-
-    } else {
-
-      const created = createAdminBlogRecord(savePayload);
-
-      if (created) {
-
-        loadBlogs();
-
-      }
-
+      handleCloseForm();
+    } catch (saveError) {
+      window.alert(saveError.message || "Failed to save blog.");
     }
-
-
-
-    handleCloseForm();
-
   };
 
-
-
-  const handleStatusChange = (blog, recordStatus) => {
+  const handleStatusChange = async (blog, recordStatus) => {
     if (
       blog.recordStatus === "Published" &&
       recordStatus === "Draft"
@@ -372,28 +353,22 @@ const AdminBlogs = () => {
       });
     }
 
-    const updated = updateAdminBlogRecord(blog.id, updates);
-
-    if (updated) {
-
-      handleBlogUpdated(updated);
-
+    try {
+      const updated = await updateAdminBlogRecord(blog.id, updates);
+      if (updated) {
+        handleBlogUpdated(updated);
+        await loadBlogs();
+      }
+    } catch (statusError) {
+      window.alert(statusError.message || "Failed to update blog status.");
     }
-
   };
 
-
-
   const handleClearFilters = () => {
-
     setSearchQuery("");
-
-    setStatusFilter("all");
-
+    setStatusFilter(BLOG_ADMIN_DEFAULT_STATUS_FILTER);
     setCategoryFilter("all");
-
     setTrackFilter("all");
-
   };
 
 
@@ -626,11 +601,8 @@ const AdminBlogs = () => {
 
 
       <p className="admin_request_demos__empty-note">
-
-        Blog data is loaded from site content. View public page at{" "}
-
-        <Link to="/blogs">/blogs</Link>.
-
+        Published blogs appear on <Link to="/blogs">/blogs</Link>. Archive hides
+        a blog from the public site and removes it from this active list.
       </p>
 
 
