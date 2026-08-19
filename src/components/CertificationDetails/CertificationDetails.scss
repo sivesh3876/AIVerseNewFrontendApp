@@ -297,6 +297,116 @@
     }
   }
 
+  &__marquee-section {
+    margin-bottom: 36px;
+    padding: 28px 0 8px;
+    border-top: 1px solid var(--cd-border);
+    border-bottom: 1px solid var(--cd-border);
+    overflow: hidden;
+
+    h3 {
+      margin: 0 0 28px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--cd-navy);
+    }
+  }
+
+  &__marquee {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 6%,
+      #000 94%,
+      transparent
+    );
+
+    &:hover .certification_details__marquee-track {
+      animation-play-state: paused;
+    }
+  }
+
+  &__marquee-track {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+    width: max-content;
+    animation: certification-professionals-scroll 60s linear infinite;
+    will-change: transform;
+  }
+
+  &__marquee-card {
+    flex-shrink: 0;
+    width: 200px;
+    text-align: center;
+  }
+
+  &__marquee-info {
+    h4 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--cd-navy);
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--cd-muted);
+    }
+  }
+
+  &__avatar {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e5e7eb;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    &--placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e2f0f3, #f8fafc);
+
+      span {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--cd-teal-deep);
+      }
+    }
+
+    &--marquee {
+      width: 120px;
+      height: 120px;
+    }
+
+    &--card {
+      width: 88px;
+      height: 88px;
+      margin: 0 0 16px;
+
+      span {
+        font-size: 22px;
+      }
+    }
+  }
+
   &__empty {
     display: flex;
     flex-direction: column;
@@ -350,6 +460,10 @@
       border-color: rgba(24, 224, 204, 0.45);
       box-shadow: 0 8px 24px rgba(13, 30, 50, 0.08);
       transform: translateY(-2px);
+    }
+
+    .certification_details__avatar--card {
+      align-self: flex-start;
     }
 
     h2 {
@@ -437,6 +551,24 @@
   }
 }
 
+@keyframes certification-professionals-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .certification_details {
+    &__marquee-track {
+      animation: none;
+    }
+  }
+}
+
 @media (max-width: 1100px) {
   .certification_details {
     &__meta {
@@ -493,6 +625,19 @@
 
     &__section-header h2 {
       font-size: 24px;
+    }
+
+    &__marquee-section h3 {
+      font-size: 20px;
+    }
+
+    &__marquee-card {
+      width: 180px;
+    }
+
+    &__avatar--marquee {
+      width: 110px;
+      height: 110px;
     }
 
     &__card-facts li {

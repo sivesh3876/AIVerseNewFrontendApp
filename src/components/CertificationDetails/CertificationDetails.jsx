@@ -35,6 +35,91 @@ const getCategoryIcon = (category) => {
 
 const formatTotal = (value) => Number(value || 0).toLocaleString("en-IN");
 
+const getInitials = (name = "") =>
+  String(name)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+const getProfessionalKey = (holder = {}) =>
+  String(holder.email || holder.employeeId || holder.name || holder.id || "")
+    .trim()
+    .toLowerCase();
+
+const getUniqueProfessionalsWithPhotos = (holders = []) => {
+  const seen = new Set();
+
+  return holders.filter((holder) => {
+    if (!holder.profilePhoto) return false;
+
+    const key = getProfessionalKey(holder);
+    if (!key || seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+};
+
+const ProfessionalAvatar = ({ holder, className = "" }) => {
+  const name = holder.name || "Professional";
+
+  if (holder.profilePhoto) {
+    return (
+      <div className={`certification_details__avatar ${className}`.trim()}>
+        <img src={holder.profilePhoto} alt={name} loading="lazy" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`certification_details__avatar certification_details__avatar--placeholder ${className}`.trim()}
+      aria-hidden="true"
+    >
+      <span>{getInitials(name)}</span>
+    </div>
+  );
+};
+
+const CertifiedProfessionalsMarquee = ({ professionals, title }) => {
+  if (!professionals.length) return null;
+
+  const marqueeItems = [...professionals, ...professionals];
+
+  return (
+    <section
+      className="certification_details__marquee-section"
+      aria-label={title}
+    >
+      <h3>{title}</h3>
+
+      <div className="certification_details__marquee">
+        <div className="certification_details__marquee-track">
+          {marqueeItems.map((professional, index) => (
+            <article
+              className="certification_details__marquee-card"
+              key={`${professional.id}-${index}`}
+              aria-hidden={index >= professionals.length}
+            >
+              <ProfessionalAvatar
+                holder={professional}
+                className="certification_details__avatar--marquee"
+              />
+              <div className="certification_details__marquee-info">
+                <h4>{professional.name || "Unnamed professional"}</h4>
+                <p>{professional.designation || professional.category || "Certified professional"}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const MetaItem = ({ label, value }) => (
   <div className="certification_details__meta-item">
     <dt>{label}</dt>
@@ -222,6 +307,11 @@ const CertificationDetails = ({ certificationId = null }) => {
     );
   }, [holders, activeCategory]);
 
+  const marqueeProfessionals = useMemo(
+    () => getUniqueProfessionalsWithPhotos(filteredHolders),
+    [filteredHolders],
+  );
+
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
 
@@ -263,6 +353,10 @@ const CertificationDetails = ({ certificationId = null }) => {
     activeCategory === ALL_CATEGORY
       ? "Certified Professionals"
       : activeCategory;
+  const marqueeTitle =
+    activeCategory === ALL_CATEGORY
+      ? "Meet Our Certified Professionals"
+      : `Meet Our ${activeCategory} Professionals`;
 
   return (
     <div className="certification_details">
@@ -335,6 +429,11 @@ const CertificationDetails = ({ certificationId = null }) => {
                 {filteredHolders.length === 1 ? "" : "s"}
               </p>
             </header>
+
+            <CertifiedProfessionalsMarquee
+              professionals={marqueeProfessionals}
+              title={marqueeTitle}
+            />
 
             {filteredHolders.length === 0 ? (
               <div className="certification_details__empty">
