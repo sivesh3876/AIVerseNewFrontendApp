@@ -350,8 +350,6 @@ const truncateText = (value, maxLength = 110) => {
   return `${text.slice(0, maxLength).trim()}…`;
 };
 
-import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
-
 export const getSolutionOrderNumber = (solution = {}) => {
   const raw =
     solution.OrderNumber ??

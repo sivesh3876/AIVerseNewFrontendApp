@@ -81,15 +81,6 @@ export const EvangelistLabelIcon = () => (
   </svg>
 );
 
-export const AiFoundationLabelIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 3 3 8.5v7L12 21l9-5.5v-7L12 3Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
-    <path d="M12 12 21 7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    <path d="M12 12v9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    <path d="M12 12 3 7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-  </svg>
-);
-
 export const VideoCameraIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="m16 13 5-3v8l-5-3v-2Z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
