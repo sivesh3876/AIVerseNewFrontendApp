@@ -19,6 +19,7 @@ import {
   enterpriseServicesData,
   getEnterpriseServiceIndexById,
 } from "./enterpriseServicesData";
+import { getIndustryByDomainCode } from "../IndustryExplore/industrySolutionsData";
 import {
   buildDetailFromCapability,
   mapApiSolutionToDetail,
