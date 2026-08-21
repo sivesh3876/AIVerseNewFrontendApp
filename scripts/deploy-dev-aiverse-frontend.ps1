@@ -52,17 +52,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 Pop-Location
 
-Write-Host "Ensuring Azure startup command is npm start..."
+Write-Host "Ensuring Azure startup command serves static build..."
+$startupCommand = 'npx -y serve@14.2.6 . -s -l ${PORT:-8080}'
 az webapp config set `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --startup-file "npm start" `
+    --startup-file $startupCommand `
     --output none
 
 az webapp config appsettings set `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true `
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false `
     --output none
 
 Write-Host "Deploying to DEV $WebAppName..."

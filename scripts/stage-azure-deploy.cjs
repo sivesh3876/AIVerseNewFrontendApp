@@ -27,53 +27,11 @@ if (!fs.existsSync(path.join(distPath, "index.html"))) {
 }
 
 if (fs.existsSync(targetPath)) {
-  fs.rmSync(targetPath, { recursive: true, force: true });
+  fs.rmSync(targetPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
 
 fs.mkdirSync(targetPath, { recursive: true });
 copyRecursive(distPath, targetPath);
-
-fs.writeFileSync(
-  path.join(targetPath, "package.json"),
-  `${JSON.stringify(
-    {
-      name: "aiverse-frontend",
-      private: true,
-      version: "1.0.0",
-      scripts: {
-        start: "node azure-start.cjs",
-      },
-      dependencies: {
-        serve: "^14.2.6",
-      },
-    },
-    null,
-    2,
-  )}\n`,
-);
-
-fs.writeFileSync(
-  path.join(targetPath, "azure-start.cjs"),
-  `const { spawn } = require("node:child_process");
-
-const port = process.env.PORT || process.env.WEBSITE_PORT || 8080;
-
-const child = spawn(
-  "npx",
-  ["serve", ".", "-s", "-l", String(port)],
-  { stdio: "inherit", shell: true, env: process.env },
-);
-
-child.on("exit", (code, signal) => {
-  if (signal) {
-    process.kill(process.pid, signal);
-    return;
-  }
-
-  process.exit(code ?? 0);
-});
-`,
-);
 
 fs.writeFileSync(
   path.join(targetPath, ".deployment"),
