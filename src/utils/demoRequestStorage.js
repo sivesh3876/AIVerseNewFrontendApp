@@ -1,3 +1,5 @@
+import { updateDemoRequestApi } from "../services/demoRequestApiService";
+
 const DEMO_REQUESTS_STORAGE_KEY = "aiVerseDemoRequests";
 const DEMO_REQUEST_VIEWS_KEY = "aiVerseDemoRequestViews";
 const LEGACY_DEMO_REQUESTS_SESSION_KEY = "aiVerseDemoRequestsSession";
@@ -281,6 +283,26 @@ export const updateDemoRequestRecord = (id, updates = {}) => {
   }
 
   writeStoredDemoRequests(next);
+
+  const numericId = Number(String(id).replace(/^api-/, ""));
+  if (Number.isFinite(numericId) && numericId > 0) {
+    const apiUpdates = {
+      Status: updates.status ?? updates.Status,
+      RecordStatus: updates.recordStatus ?? updates.RecordStatus,
+      DemoScheduledBy: updates.demoScheduledBy ?? updates.DemoScheduledBy,
+      DemoScheduledAt: updates.demoScheduledAt ?? updates.DemoScheduledAt,
+      DemoGivenBy: updates.demoGivenBy ?? updates.DemoGivenBy,
+      DemoGivenAt: updates.demoGivenAt ?? updates.DemoGivenAt,
+      FeedbackRating: updates.feedbackRating ?? updates.FeedbackRating,
+      FeedbackMessage: updates.feedbackMessage ?? updates.FeedbackMessage,
+      FeedbackSentiment: updates.feedbackSentiment ?? updates.FeedbackSentiment,
+    };
+
+    updateDemoRequestApi(numericId, apiUpdates).catch(() => {
+      // Keep local optimistic update when API is unavailable.
+    });
+  }
+
   return updatedRecord;
 };
 

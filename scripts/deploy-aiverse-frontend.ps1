@@ -42,7 +42,11 @@ if (Test-Path $zipPath) {
 }
 
 Push-Location $stagingPath
-Compress-Archive -Path * -DestinationPath $zipPath -Force
+tar.exe -a -cf $zipPath *
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    Write-Error "Failed to create deployment zip with tar."
+}
 Pop-Location
 
 if (-not $ResourceGroup) {
@@ -63,7 +67,7 @@ az webapp config set `
 az webapp config appsettings set `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false `
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true `
     --output none
 
 Write-Host "Deploying to $WebAppName (resource group: $ResourceGroup)..."
@@ -74,7 +78,6 @@ az webapp deploy `
     --name $WebAppName `
     --src-path $zipPath `
     --type zip `
-    --clean true `
     --restart true
 
 Write-Host "Deployment complete."

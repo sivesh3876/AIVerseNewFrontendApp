@@ -1,6 +1,9 @@
 const PRODUCTION_API_BASE =
   "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
 
+const DEVELOPMENT_API_BASE =
+  "https://dev-func-aiverse-backend-gwgbg2chdqcgdmhw.centralindia-01.azurewebsites.net/api";
+
 export const getApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim();
   const useDirectInDev = import.meta.env.VITE_API_USE_DIRECT_URL === "true";

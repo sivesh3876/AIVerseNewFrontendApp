@@ -57,10 +57,9 @@ fs.writeFileSync(
   `const { spawn } = require("node:child_process");
 
 const port = process.env.PORT || process.env.WEBSITE_PORT || 8080;
-const serveExecutable = process.platform === "win32" ? "npx.cmd" : "npx";
 
 const child = spawn(
-  serveExecutable,
+  "npx",
   ["serve", ".", "-s", "-l", String(port)],
   { stdio: "inherit", shell: true, env: process.env },
 );
