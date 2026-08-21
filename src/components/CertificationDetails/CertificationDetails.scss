@@ -329,6 +329,18 @@
     &:hover .certification_details__marquee-track {
       animation-play-state: paused;
     }
+
+    &--static {
+      mask-image: none;
+      overflow-x: auto;
+
+      .certification_details__marquee-track {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: none;
+      }
+    }
   }
 
   &__marquee-track {

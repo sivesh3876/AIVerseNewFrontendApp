@@ -44,10 +44,25 @@ const getInitials = (name = "") =>
     .slice(0, 2)
     .toUpperCase();
 
-const getProfessionalKey = (holder = {}) =>
-  String(holder.email || holder.employeeId || holder.name || holder.id || "")
+const getProfessionalKey = (holder = {}) => {
+  const email = String(holder.email || "")
     .trim()
     .toLowerCase();
+  if (email) return `email:${email}`;
+
+  const employeeId = String(holder.employeeId || "")
+    .trim()
+    .toLowerCase();
+  if (employeeId) return `employee:${employeeId}`;
+
+  const name = String(holder.name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  if (name) return `name:${name}`;
+
+  return null;
+};
 
 const getUniqueProfessionalsWithPhotos = (holders = []) => {
   const seen = new Set();
@@ -84,10 +99,17 @@ const ProfessionalAvatar = ({ holder, className = "" }) => {
   );
 };
 
+const MIN_MARQUEE_LOOP_COUNT = 4;
+
 const CertifiedProfessionalsMarquee = ({ professionals, title }) => {
   if (!professionals.length) return null;
 
-  const marqueeItems = [...professionals, ...professionals];
+  // Only duplicate items for seamless scroll when there are enough unique people.
+  // With 1–3 people, duplication looks like the same profile showing twice.
+  const shouldLoop = professionals.length >= MIN_MARQUEE_LOOP_COUNT;
+  const marqueeItems = shouldLoop
+    ? [...professionals, ...professionals]
+    : professionals;
 
   return (
     <section
@@ -96,13 +118,15 @@ const CertifiedProfessionalsMarquee = ({ professionals, title }) => {
     >
       <h3>{title}</h3>
 
-      <div className="certification_details__marquee">
+      <div
+        className={`certification_details__marquee${shouldLoop ? "" : " certification_details__marquee--static"}`}
+      >
         <div className="certification_details__marquee-track">
           {marqueeItems.map((professional, index) => (
             <article
               className="certification_details__marquee-card"
-              key={`${professional.id}-${index}`}
-              aria-hidden={index >= professionals.length}
+              key={`${getProfessionalKey(professional) || professional.id}-${index}`}
+              aria-hidden={shouldLoop && index >= professionals.length}
             >
               <ProfessionalAvatar
                 holder={professional}
@@ -110,7 +134,11 @@ const CertifiedProfessionalsMarquee = ({ professionals, title }) => {
               />
               <div className="certification_details__marquee-info">
                 <h4>{professional.name || "Unnamed professional"}</h4>
-                <p>{professional.designation || professional.category || "Certified professional"}</p>
+                <p>
+                  {professional.designation ||
+                    professional.category ||
+                    "Certified professional"}
+                </p>
               </div>
             </article>
           ))}
