@@ -5,6 +5,7 @@ import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapability
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
+import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
@@ -176,10 +177,13 @@ const SolutionDetailPanel = ({
             COE
           </span>
           <div className="ccm_dashboard__person">
-            <PersonAvatar name={capability.coe.name} color={capability.coe.color} />
+            <PersonAvatar
+              name={capability.coe?.name || "Not assigned"}
+              color={capability.coe?.color || "teal"}
+            />
             <div>
-              <strong>{capability.coe.name}</strong>
-              <span>{capability.coe.title}</span>
+              <strong>{capability.coe?.name || "Not assigned"}</strong>
+              <span>{capability.coe?.title || "Center of Excellence"}</span>
             </div>
           </div>
         </div>
@@ -190,7 +194,7 @@ const SolutionDetailPanel = ({
             AI Evangelists
           </span>
           <div className="ccm_dashboard__evangelists">
-            {capability.evangelists.map((person) => (
+            {(capability.evangelists || []).map((person) => (
               <div className="ccm_dashboard__person" key={person.name}>
                 <PersonAvatar name={person.name} color={person.color} />
                 <div>
@@ -203,11 +207,11 @@ const SolutionDetailPanel = ({
         </div>
       </div>
 
-      {capability.techStack.length > 0 && (
+      {(capability.techStack || []).length > 0 && (
         <div className="ccm_dashboard__highlights">
           <h3>Technology Stack</h3>
           <div className="ccm_dashboard__highlights-grid">
-            {capability.techStack.map((tech) => (
+            {(capability.techStack || []).map((tech) => (
               <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
                 <h4>{tech.name}</h4>
                 <p>{tech.label}</p>
@@ -628,7 +632,7 @@ const CustomerCommunicationManagement = () => {
     activeService.subtitle;
   const bannerFeatures =
     isDetailView && detailPrimaryCapability
-      ? detailPrimaryCapability.techStack.map((tech) => tech.name)
+      ? (detailPrimaryCapability.techStack || []).map((tech) => tech.name)
       : activeIndustryDomain
         ? []
         : activeService.features;
