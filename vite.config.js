@@ -3,13 +3,10 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, '.', '')
   const proxyTarget =
-    env.VITE_API_PROXY_TARGET ||
-    (env.VITE_API_BASE_URL || '')
-      .replace(/\/api\/?$/, '')
-      .trim() ||
-    'https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net'
+  env.VITE_API_PROXY_TARGET ||
+  'http://localhost:7071'
 
   return {
     plugins: [react()],
