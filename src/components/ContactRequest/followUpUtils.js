@@ -9,12 +9,44 @@ export const FOLLOW_UP_TYPES = [
   "Custom",
 ];
 
-export const TEAM_MEMBERS = [
-  "Priya Nair",
-  "Rohan Mehta",
-  "Isha Verma",
-  "Aarav Sharma",
-];
+const TEAM_MEMBERS_STORAGE_KEY = "aiverse.followUpTeamMembers";
+
+/** Built-in list kept empty — no demo names. Users add members in the modal. */
+export const TEAM_MEMBERS = [];
+
+export const loadTeamMembers = () => {
+  try {
+    const raw = window.localStorage.getItem(TEAM_MEMBERS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return [
+      ...new Set(
+        parsed
+          .map((name) => String(name || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+  } catch {
+    return [];
+  }
+};
+
+export const saveTeamMember = (name) => {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) {
+    return loadTeamMembers();
+  }
+
+  const next = [...new Set([...loadTeamMembers(), trimmed])];
+  try {
+    window.localStorage.setItem(TEAM_MEMBERS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage failures; still return in-memory list for this session.
+  }
+  return next;
+};
 
 /** Suggested follow-up based on pipeline stage. User can override before save. */
 export const STAGE_FOLLOW_UP_SUGGESTIONS = {

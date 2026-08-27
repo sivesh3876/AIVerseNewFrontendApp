@@ -12,8 +12,11 @@ const normalizeSolutionId = (value) => {
     ? normalized.slice(4).trim()
     : normalized;
 
+  // Card ids are `api-26`; admin table uses numeric `26` — same storage key.
   return /^\d+$/.test(withoutPrefix) ? withoutPrefix : normalized;
 };
+
+export { normalizeSolutionId };
 
 const createId = (prefix) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -370,6 +373,39 @@ export const addSolutionComment = (solutionId, comment = {}) =>
       ],
     };
   });
+
+/**
+ * Merge comments into storage by id (API hydrate / mirror). Newest first.
+ */
+export const upsertSolutionComments = (solutionId, comments = []) => {
+  const incoming = (Array.isArray(comments) ? comments : [])
+    .map((comment) => normalizeComment({ ...comment, source: comment.source || "public" }))
+    .filter((comment) => comment.id);
+
+  if (!incoming.length) {
+    return getSolutionEngagement(solutionId);
+  }
+
+  return updateSolutionEngagement(solutionId, (current) => {
+    const byId = new Map();
+    [...current.comments, ...incoming].forEach((comment) => {
+      if (comment?.id) {
+        byId.set(String(comment.id), comment);
+      }
+    });
+
+    const merged = [...byId.values()].sort(
+      (left, right) =>
+        new Date(right.createdAt || 0).getTime() -
+        new Date(left.createdAt || 0).getTime(),
+    );
+
+    return {
+      ...current,
+      comments: merged,
+    };
+  });
+};
 
 export const mergeEngagementIntoDemoRequest = (request = {}) => {
   if (!request.solutionId) return request;

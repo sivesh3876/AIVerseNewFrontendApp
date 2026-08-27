@@ -6,7 +6,9 @@ import ContactRequestSummary from "../../components/ContactRequest/ContactReques
 import ContactRequestToolbar from "../../components/ContactRequest/ContactRequestToolbar";
 import ContactRequestKanban from "../../components/ContactRequest/ContactRequestKanban";
 import ContactRequestTable from "../../components/ContactRequest/ContactRequestTable";
-import ContactRequestFilterPanel from "../../components/ContactRequest/ContactRequestFilterPanel";
+import ContactRequestFilterPanel, {
+  EMPTY_LEAD_FILTERS,
+} from "../../components/ContactRequest/ContactRequestFilterPanel";
 import ContactRequestDrawer from "../../components/ContactRequest/ContactRequestDrawer";
 import ContactRequestToast from "../../components/ContactRequest/ContactRequestToast";
 import LeadDeleteModal from "../../components/ContactRequest/LeadDeleteModal";
@@ -89,12 +91,85 @@ const appendActivity = (request, label) => ({
   ],
 });
 
+/** YYYY-MM-DD in local timezone for date-input comparison. */
+const toLocalDateKey = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    const raw = String(value).slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeFilterText = (value) => {
+  const text = String(value || "").trim().toLowerCase();
+  if (!text || text === "—" || text === "-") return "";
+  return text;
+};
+
+const matchesLeadFilters = (lead, filters) => {
+  if (!filters) return true;
+
+  if (filters.stage && filters.stage !== "all") {
+    if (String(lead.stage || "") !== filters.stage) return false;
+  }
+
+  if (filters.assignedTo && filters.assignedTo !== "all") {
+    if (
+      normalizeFilterText(lead.assignedTo) !==
+      normalizeFilterText(filters.assignedTo)
+    ) {
+      return false;
+    }
+  }
+
+  if (filters.industry && filters.industry !== "all") {
+    if (
+      normalizeFilterText(lead.industry) !==
+      normalizeFilterText(filters.industry)
+    ) {
+      return false;
+    }
+  }
+
+  if (filters.country && filters.country !== "all") {
+    if (
+      normalizeFilterText(lead.country) !==
+      normalizeFilterText(filters.country)
+    ) {
+      return false;
+    }
+  }
+
+  if (filters.submissionDate) {
+    if (toLocalDateKey(lead.submittedAt) !== filters.submissionDate) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const areLeadFiltersActive = (filters = EMPTY_LEAD_FILTERS) =>
+  (filters.stage && filters.stage !== "all") ||
+  (filters.assignedTo && filters.assignedTo !== "all") ||
+  (filters.industry && filters.industry !== "all") ||
+  (filters.country && filters.country !== "all") ||
+  Boolean(filters.submissionDate);
+
 const ContactRequests = () => {
   const { adminEmail } = useAdminAuth();
   const authorName = adminEmail || "Admin";
 
   const [viewMode, setViewMode] = useState("kanban");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(EMPTY_LEAD_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_LEAD_FILTERS);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followUpsByLead, setFollowUpsByLead] = useState({});
@@ -121,20 +196,37 @@ const ContactRequests = () => {
     ? notesByLead[selectedRequestKey] || []
     : [];
 
-  const stats = useMemo(() => buildStats(requests), [requests]);
+  const filteredRequests = useMemo(
+    () => requests.filter((lead) => matchesLeadFilters(lead, appliedFilters)),
+    [requests, appliedFilters],
+  );
 
-  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
+  const stats = useMemo(
+    () => buildStats(filteredRequests),
+    [filteredRequests],
+  );
+
+  const filtersActive = areLeadFiltersActive(appliedFilters);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRequests.length / PAGE_SIZE),
+  );
 
   const paginatedRequests = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return requests.slice(start, start + PAGE_SIZE);
-  }, [requests, currentPage]);
+    return filteredRequests.slice(start, start + PAGE_SIZE);
+  }, [filteredRequests, currentPage]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedFilters]);
 
   const loadRequests = useCallback(async ({ showToast = false } = {}) => {
     setLoading(true);
@@ -410,15 +502,21 @@ const ContactRequests = () => {
       <ContactRequestToolbar
         viewMode={viewMode}
         onViewChange={setViewMode}
-        onFilterOpen={() => setFilterOpen(true)}
-        filterActive={filterOpen}
+        onFilterOpen={() => {
+          setDraftFilters(appliedFilters);
+          setFilterOpen(true);
+        }}
+        filterActive={filtersActive || filterOpen}
         onRefresh={handleRefresh}
       />
 
       {loading ? (
         <p style={{ margin: "16px 0", color: "#6b7280" }}>Loading leads...</p>
       ) : viewMode === "kanban" ? (
-        <ContactRequestKanban requests={requests} onCardClick={openDrawer} />
+        <ContactRequestKanban
+          requests={filteredRequests}
+          onCardClick={openDrawer}
+        />
       ) : (
         <>
           <ContactRequestTable
@@ -428,7 +526,7 @@ const ContactRequests = () => {
           <AdminBlogPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={requests.length}
+            totalItems={filteredRequests.length}
             pageSize={PAGE_SIZE}
             onPageChange={setCurrentPage}
             itemLabel="leads"
@@ -438,6 +536,13 @@ const ContactRequests = () => {
 
       <ContactRequestFilterPanel
         open={filterOpen}
+        values={draftFilters}
+        onChange={setDraftFilters}
+        onApply={() => setAppliedFilters(draftFilters)}
+        onReset={() => {
+          setDraftFilters(EMPTY_LEAD_FILTERS);
+          setAppliedFilters(EMPTY_LEAD_FILTERS);
+        }}
         onClose={() => setFilterOpen(false)}
       />
 

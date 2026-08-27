@@ -30,6 +30,23 @@ const INITIAL_SIGNUP = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const resolveSafeReturnUrl = (value) => {
+  if (!value || typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return null;
+  }
+
+  if (trimmed.includes("://")) {
+    return null;
+  }
+
+  return trimmed;
+};
+
 const AdminLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +59,10 @@ const AdminLogin = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const redirectPath = location.state?.from || "/admin";
+  const returnUrl = resolveSafeReturnUrl(
+    new URLSearchParams(location.search).get("returnUrl"),
+  );
+  const redirectPath = returnUrl || location.state?.from || "/admin";
   const isSignIn = authMode === "signin";
 
   useEffect(() => {

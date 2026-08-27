@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
 import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
 import {
+  EMAIL_VALIDATION_MESSAGE,
+  isValidEmail,
+  isValidPhone,
+  PHONE_VALIDATION_MESSAGE,
+} from "../../utils/formValidation";
+import {
   isRequestDemoEmailConfigured,
   sendContactEmail,
 } from "../../services/requestDemoEmailService";
@@ -67,10 +73,14 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     if (!form.lastName.trim()) next.lastName = "Last name is required";
     if (!form.email.trim()) {
       next.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      next.email = "Enter a valid email";
+    } else if (!isValidEmail(form.email)) {
+      next.email = EMAIL_VALIDATION_MESSAGE;
     }
-    if (!form.phone.trim()) next.phone = "Contact number is required";
+    if (!form.phone.trim()) {
+      next.phone = "Contact number is required";
+    } else if (!isValidPhone(form.phone)) {
+      next.phone = PHONE_VALIDATION_MESSAGE;
+    }
     if (!form.preferDate.trim()) next.preferDate = "Preferred date is required";
     if (!form.preferTime.trim()) next.preferTime = "Preferred time is required";
     setErrors(next);

@@ -30,7 +30,7 @@ export const COMPANY_SIZE_OPTIONS = [
 ];
 
 export const PRIORITY_OPTIONS = ["High", "Medium", "Low"];
-export const ASSIGNEE_OPTIONS = ["Unassigned", "Priya Nair", "Rohan Mehta", "Isha Verma", "Aarav Sharma"];
+export const ASSIGNEE_OPTIONS = ["Unassigned"];
 export const INDUSTRY_OPTIONS = ["Technology", "Finance", "Healthcare", "Retail", "Manufacturing", "Education"];
 export const COUNTRY_OPTIONS = ["India", "United States", "United Kingdom", "UAE", "Singapore"];
 

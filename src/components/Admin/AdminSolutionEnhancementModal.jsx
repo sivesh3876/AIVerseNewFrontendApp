@@ -1,3 +1,9 @@
+import { useEffect, useState } from "react";
+import {
+  loadSolutionEngagement,
+  mapApiCommentsToStorage,
+  persistApiCommentsToAdminStore,
+} from "../../utils/solutionEngagement";
 import { getSolutionEngagement } from "../../utils/solutionEngagementStorage";
 import { getSolutionStatusLabel } from "../../utils/adminSolutionTableUtils";
 
@@ -127,16 +133,108 @@ const PeopleList = ({ people, dateKey, emptyTitle, emptyDescription, emptyIcon }
   );
 };
 
+const mergeCommentsById = (apiComments, localComments) => {
+  const byId = new Map();
+
+  [...(localComments || []), ...(apiComments || [])].forEach((comment) => {
+    if (!comment?.id) return;
+    byId.set(String(comment.id), comment);
+  });
+
+  return [...byId.values()].sort(
+    (left, right) =>
+      new Date(right.createdAt || 0).getTime() -
+      new Date(left.createdAt || 0).getTime(),
+  );
+};
+
+const resolveEngagementSolutionKey = (solution) => {
+  if (!solution) return "";
+  const id = solution.ID ?? solution.id;
+  if (id == null || id === "") return "";
+  const raw = String(id).trim();
+  if (/^api-/i.test(raw)) return raw;
+  if (/^\d+$/.test(raw)) return `api-${raw}`;
+  return raw;
+};
+
 const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
+  const localEngagement = solution
+    ? getSolutionEngagement(solution.ID)
+    : null;
+
+  const [comments, setComments] = useState(localEngagement?.comments || []);
+  const [apiCounts, setApiCounts] = useState(null);
+  const [isLoadingComments, setIsLoadingComments] = useState(Boolean(solution));
+
+  useEffect(() => {
+    if (!solution) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    const local = getSolutionEngagement(solution.ID);
+    setComments(local.comments || []);
+    setApiCounts(null);
+    setIsLoadingComments(true);
+
+    const hydrateFromApi = async () => {
+      try {
+        const solutionKey = resolveEngagementSolutionKey(solution);
+        const apiState = await loadSolutionEngagement(solutionKey);
+        if (!isMounted) return;
+
+        const apiComments = mapApiCommentsToStorage(apiState.comments);
+        const merged = mergeCommentsById(apiComments, local.comments || []);
+        setComments(merged);
+        setApiCounts({
+          views: Number(apiState.viewCount) || 0,
+          likes: Number(apiState.likeCount) || 0,
+          comments: Math.max(
+            Number(apiState.commentCount) || 0,
+            merged.length,
+          ),
+        });
+
+        if (apiComments.length) {
+          persistApiCommentsToAdminStore(solution.ID, apiState.comments);
+        }
+      } catch {
+        // Keep local engagement when API is unavailable.
+      } finally {
+        if (isMounted) {
+          setIsLoadingComments(false);
+        }
+      }
+    };
+
+    hydrateFromApi();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [solution]);
+
   if (!solution) return null;
 
   const engagement = getSolutionEngagement(solution.ID);
-  const comments = engagement.comments || [];
   const likedBy = engagement.likedBy || [];
   const dislikedBy = engagement.dislikedBy || [];
   const viewers = engagement.viewers || [];
+  const viewCount = apiCounts?.views ?? engagement.views;
+  const likeCount = apiCounts?.likes ?? engagement.likes;
+  const dislikeCount = engagement.dislikes;
+  const commentCount = apiCounts?.comments ?? comments.length;
   const statusLabel = getSolutionStatusLabel(solution);
   const isActive = statusLabel === "Active";
+  const knownLikersLabel =
+    likeCount > likedBy.length
+      ? `${likedBy.length} known signed-in user${likedBy.length === 1 ? "" : "s"}`
+      : `${likedBy.length} user${likedBy.length === 1 ? "" : "s"}`;
+  const knownViewersLabel =
+    viewCount > viewers.length
+      ? `${viewers.length} known viewer${viewers.length === 1 ? "" : "s"} on record`
+      : `${viewers.length} unique viewer${viewers.length === 1 ? "" : "s"}`;
 
   return (
     <div
@@ -203,7 +301,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                 </span>
                 <div>
                   <span>Views</span>
-                  <strong>{engagement.views}</strong>
+                  <strong>{viewCount}</strong>
                   <em>Unique viewers</em>
                 </div>
               </article>
@@ -214,7 +312,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                 </span>
                 <div>
                   <span>Likes</span>
-                  <strong>{engagement.likes}</strong>
+                  <strong>{likeCount}</strong>
                   <em>Total likes</em>
                 </div>
               </article>
@@ -225,7 +323,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                 </span>
                 <div>
                   <span>Dislikes</span>
-                  <strong>{engagement.dislikes}</strong>
+                  <strong>{dislikeCount}</strong>
                   <em>Total dislikes</em>
                 </div>
               </article>
@@ -236,7 +334,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
                 </span>
                 <div>
                   <span>Comments</span>
-                  <strong>{comments.length}</strong>
+                  <strong>{commentCount}</strong>
                   <em>Total comments</em>
                 </div>
               </article>
@@ -250,9 +348,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
               </span>
               <div>
                 <h4>Who liked</h4>
-                <p>
-                  {likedBy.length} user{likedBy.length === 1 ? "" : "s"}
-                </p>
+                <p>{knownLikersLabel}</p>
               </div>
             </div>
             <PeopleList
@@ -292,9 +388,7 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
               </span>
               <div>
                 <h4>Who viewed</h4>
-                <p>
-                  {viewers.length} unique viewer{viewers.length === 1 ? "" : "s"}
-                </p>
+                <p>{knownViewersLabel}</p>
               </div>
             </div>
             <PeopleList
@@ -314,13 +408,20 @@ const AdminSolutionEnhancementModal = ({ solution, onClose }) => {
               <div>
                 <h4>Comments</h4>
                 <p>
-                  {comments.length} comment
-                  {comments.length === 1 ? "" : "s"} shared on this solution
+                  {isLoadingComments
+                    ? "Loading comments..."
+                    : `${commentCount} comment${
+                        commentCount === 1 ? "" : "s"
+                      } shared on this solution`}
                 </p>
               </div>
             </div>
 
-            {comments.length === 0 ? (
+            {isLoadingComments ? (
+              <p className="admin_solution_enhancement_modal__person-email">
+                Loading comments from the solution card...
+              </p>
+            ) : comments.length === 0 ? (
               <EmptyState
                 title="No comments yet"
                 description="When users comment on this card, their feedback will appear here."
