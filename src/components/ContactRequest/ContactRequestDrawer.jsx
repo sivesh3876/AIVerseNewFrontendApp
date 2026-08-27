@@ -5,8 +5,10 @@ import PipelineStage from "./PipelineStage";
 import FollowUpList from "./FollowUpList";
 import FollowUpModal from "./FollowUpModal";
 import InternalNotes from "./InternalNotes";
+import { loadTeamMembers, saveTeamMember } from "./followUpUtils";
 
 const SCHEDULE_CLICK_GUARD_MS = 450;
+const ADD_MEMBER_VALUE = "__add_member__";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -51,12 +53,32 @@ const ContactRequestDrawer = ({
 }) => {
   const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
   const [scheduleUnlocked, setScheduleUnlocked] = useState(false);
+  const [assignedTo, setAssignedTo] = useState("Unassigned");
+  const [members, setMembers] = useState([]);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [assignError, setAssignError] = useState("");
   const scheduleIntentRef = useRef(false);
 
   useEffect(() => {
     setFollowUpModalOpen(false);
     setScheduleUnlocked(false);
     scheduleIntentRef.current = false;
+    setIsAddingMember(false);
+    setNewMemberName("");
+    setAssignError("");
+
+    const currentAssignee = request?.assignedTo || "Unassigned";
+    const storedMembers = loadTeamMembers();
+    const withCurrent =
+      currentAssignee &&
+      currentAssignee !== "Unassigned" &&
+      !storedMembers.includes(currentAssignee)
+        ? [currentAssignee, ...storedMembers]
+        : storedMembers;
+
+    setMembers(withCurrent);
+    setAssignedTo(currentAssignee);
 
     const timer = window.setTimeout(
       () => setScheduleUnlocked(true),
@@ -64,7 +86,7 @@ const ContactRequestDrawer = ({
     );
 
     return () => window.clearTimeout(timer);
-  }, [open, request?.requestKey, request?.stage]);
+  }, [open, request?.requestKey, request?.stage, request?.assignedTo]);
 
   const handleStageChange = useCallback(
     (newStage) => {
@@ -91,6 +113,35 @@ const ContactRequestDrawer = ({
 
     scheduleIntentRef.current = false;
     setFollowUpModalOpen(true);
+  };
+
+  const handleAssigneeSelect = (value) => {
+    if (value === ADD_MEMBER_VALUE) {
+      setIsAddingMember(true);
+      setNewMemberName("");
+      setAssignError("");
+      return;
+    }
+
+    setIsAddingMember(false);
+    setNewMemberName("");
+    setAssignError("");
+    setAssignedTo(value);
+  };
+
+  const handleAddMember = () => {
+    const trimmed = newMemberName.trim();
+    if (!trimmed) {
+      setAssignError("Please enter a team member name.");
+      return;
+    }
+
+    const nextMembers = saveTeamMember(trimmed);
+    setMembers(nextMembers);
+    setAssignedTo(trimmed);
+    setIsAddingMember(false);
+    setNewMemberName("");
+    setAssignError("");
   };
 
   if (!open || !request) return null;
@@ -179,16 +230,60 @@ const ContactRequestDrawer = ({
 
           <section className="admin_contact_drawer__section">
             <h3>Assign To</h3>
-            <label className="admin_blog_form__field admin_blog_form__field--full">
+            <div className="admin_blog_form__field admin_blog_form__field--full">
               <span>Team member</span>
-              <select defaultValue={request.assignedTo}>
+              <select
+                value={isAddingMember ? ADD_MEMBER_VALUE : assignedTo}
+                onChange={(event) => handleAssigneeSelect(event.target.value)}
+              >
                 <option value="Unassigned">Unassigned</option>
-                <option value="Priya Nair">Priya Nair</option>
-                <option value="Rohan Mehta">Rohan Mehta</option>
-                <option value="Isha Verma">Isha Verma</option>
-                <option value="Aarav Sharma">Aarav Sharma</option>
+                {members.map((member) => (
+                  <option key={member} value={member}>
+                    {member}
+                  </option>
+                ))}
+                <option value={ADD_MEMBER_VALUE}>+ Add team member</option>
               </select>
-            </label>
+
+              {isAddingMember && (
+                <div className="admin_contact_followup_modal__add-member">
+                  <input
+                    type="text"
+                    value={newMemberName}
+                    onChange={(event) => setNewMemberName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAddMember();
+                      }
+                    }}
+                    placeholder="Enter member name"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="admin_request_demos__btn admin_request_demos__btn--primary"
+                    onClick={handleAddMember}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    className="admin_request_demos__btn admin_request_demos__btn--secondary"
+                    onClick={() => {
+                      setIsAddingMember(false);
+                      setNewMemberName("");
+                      setAssignError("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {assignError ? (
+                <p className="admin_request_demos__error">{assignError}</p>
+              ) : null}
+            </div>
           </section>
 
           <section className="admin_contact_drawer__section">
@@ -247,7 +342,7 @@ const ContactRequestDrawer = ({
             open
             onClose={() => setFollowUpModalOpen(false)}
             pipelineStage={request.stage}
-            defaultAssignee={request.assignedTo}
+            defaultAssignee={assignedTo}
             saving={savingFollowUp}
             onSave={handleFollowUpSave}
           />,

@@ -1,18 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FOLLOW_UP_TYPES,
-  TEAM_MEMBERS,
   getSuggestedFollowUp,
+  loadTeamMembers,
+  saveTeamMember,
 } from "./followUpUtils";
+
+const ADD_MEMBER_VALUE = "__add_member__";
 
 const EMPTY_FORM = {
   type: "Call",
   customLabel: "",
   date: "",
   time: "",
-  assignedTo: TEAM_MEMBERS[0],
+  assignedTo: "",
   notes: "",
   reminder: false,
+};
+
+const resolveDefaultAssignee = (defaultAssignee, members) => {
+  if (defaultAssignee && defaultAssignee !== "Unassigned") {
+    return defaultAssignee;
+  }
+  return members[0] || "";
 };
 
 const FollowUpModal = ({
@@ -30,23 +40,38 @@ const FollowUpModal = ({
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
+  const [members, setMembers] = useState([]);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [newMemberName, setNewMemberName] = useState("");
 
   useEffect(() => {
     if (!open) return;
+
+    const storedMembers = loadTeamMembers();
+    const withDefault =
+      defaultAssignee &&
+      defaultAssignee !== "Unassigned" &&
+      !storedMembers.includes(defaultAssignee)
+        ? [defaultAssignee, ...storedMembers]
+        : storedMembers;
+
+    setMembers(withDefault);
+    setIsAddingMember(withDefault.length === 0);
+    setNewMemberName("");
+
+    const assignedTo = resolveDefaultAssignee(defaultAssignee, withDefault);
 
     if (suggestion) {
       setForm({
         ...EMPTY_FORM,
         type: suggestion.type,
         customLabel: suggestion.label,
-        assignedTo:
-          defaultAssignee !== "Unassigned" ? defaultAssignee : TEAM_MEMBERS[0],
+        assignedTo,
       });
     } else {
       setForm({
         ...EMPTY_FORM,
-        assignedTo:
-          defaultAssignee !== "Unassigned" ? defaultAssignee : TEAM_MEMBERS[0],
+        assignedTo,
       });
     }
     setError("");
@@ -58,6 +83,40 @@ const FollowUpModal = ({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAssigneeSelect = (value) => {
+    if (value === ADD_MEMBER_VALUE) {
+      setIsAddingMember(true);
+      setNewMemberName("");
+      return;
+    }
+
+    setIsAddingMember(false);
+    setNewMemberName("");
+    handleChange("assignedTo", value);
+  };
+
+  const handleAddMember = () => {
+    const trimmed = newMemberName.trim();
+    if (!trimmed) {
+      setError("Please enter a team member name.");
+      return;
+    }
+
+    const nextMembers = saveTeamMember(trimmed);
+    const withDefault =
+      defaultAssignee &&
+      defaultAssignee !== "Unassigned" &&
+      !nextMembers.includes(defaultAssignee)
+        ? [defaultAssignee, ...nextMembers]
+        : nextMembers;
+
+    setMembers(withDefault);
+    setForm((prev) => ({ ...prev, assignedTo: trimmed }));
+    setIsAddingMember(false);
+    setNewMemberName("");
+    setError("");
+  };
+
   const handleSubmit = () => {
     if (!form.date) {
       setError("Date is required.");
@@ -65,6 +124,10 @@ const FollowUpModal = ({
     }
     if (!form.time) {
       setError("Time is required.");
+      return;
+    }
+    if (isAddingMember) {
+      setError("Please add or select a team member.");
       return;
     }
     if (!form.assignedTo) {
@@ -104,7 +167,9 @@ const FollowUpModal = ({
             <p className="admin_demo_modal__eyebrow">Schedule Follow-up</p>
             <h3 id="follow-up-modal-title">New follow-up</h3>
             {suggestion && (
-              <p>Suggested for <strong>{pipelineStage}</strong>: {suggestion.label}</p>
+              <p>
+                Suggested for <strong>{pipelineStage}</strong>: {suggestion.label}
+              </p>
             )}
           </div>
           <button
@@ -168,21 +233,65 @@ const FollowUpModal = ({
               />
             </label>
 
-            <label className="admin_blog_form__field admin_blog_form__field--full">
+            <div className="admin_blog_form__field admin_blog_form__field--full">
               <span>Assigned Team Member *</span>
               <select
-                value={form.assignedTo}
-                onChange={(event) =>
-                  handleChange("assignedTo", event.target.value)
-                }
+                value={isAddingMember ? ADD_MEMBER_VALUE : form.assignedTo}
+                onChange={(event) => handleAssigneeSelect(event.target.value)}
               >
-                {TEAM_MEMBERS.map((member) => (
+                {members.length === 0 && !isAddingMember && (
+                  <option value="" disabled>
+                    Select team member
+                  </option>
+                )}
+                {members.map((member) => (
                   <option key={member} value={member}>
                     {member}
                   </option>
                 ))}
+                <option value={ADD_MEMBER_VALUE}>+ Add team member</option>
               </select>
-            </label>
+
+              {isAddingMember && (
+                <div className="admin_contact_followup_modal__add-member">
+                  <input
+                    type="text"
+                    value={newMemberName}
+                    onChange={(event) => setNewMemberName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAddMember();
+                      }
+                    }}
+                    placeholder="Enter member name"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="admin_request_demos__btn admin_request_demos__btn--primary"
+                    onClick={handleAddMember}
+                    disabled={saving}
+                  >
+                    Add
+                  </button>
+                  {members.length > 0 && (
+                    <button
+                      type="button"
+                      className="admin_request_demos__btn admin_request_demos__btn--secondary"
+                      onClick={() => {
+                        setIsAddingMember(false);
+                        setNewMemberName("");
+                        setError("");
+                      }}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             <label className="admin_blog_form__field admin_blog_form__field--full">
               <span>Notes</span>
