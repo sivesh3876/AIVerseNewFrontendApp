@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   buildSearchNavigationTarget,
+  loadSolutionSearchEntries,
   navigateToSearchPath,
   searchSite,
 } from "../../utils/siteSearch";
@@ -15,10 +16,32 @@ const GlobalSearch = ({
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [solutionEntries, setSolutionEntries] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadSolutionSearchEntries()
+      .then((entries) => {
+        if (isMounted) {
+          setSolutionEntries(entries);
+        }
+      })
+      .catch(() => {
+        // Static catalog still works if solutions fail to load.
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const searchResults = useMemo(
-    () => (isFocused || searchQuery ? searchSite(searchQuery) : []),
-    [isFocused, searchQuery],
+    () =>
+      isFocused || searchQuery
+        ? searchSite(searchQuery, 10, solutionEntries)
+        : [],
+    [isFocused, searchQuery, solutionEntries],
   );
 
   const goToSearchResult = (path) => {
@@ -32,7 +55,7 @@ const GlobalSearch = ({
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
 
-    goToSearchResult(buildSearchNavigationTarget(trimmed));
+    goToSearchResult(buildSearchNavigationTarget(trimmed, solutionEntries));
   };
 
   const showResults = searchQuery.trim().length > 0;
