@@ -27,6 +27,7 @@ import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
 import SuccessStoriesPage from "./pages/SuccessStoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import AIReadinessAssessmentPage from "./pages/AIReadinessAssessmentPage";
 import AdminDashboardPage, {
   AdminBlogs,
   AdminCertifications,
@@ -121,6 +122,12 @@ const AppShell = () => {
           element={<CertificationDetailsPage />}
         />
         <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
+
+        <Route
+          path="/ai-readiness-assessment"
+          element={<AIReadinessAssessmentPage />}
+        />
+
         <Route
           path="/get-started"
           element={
