@@ -16,6 +16,8 @@ import {
   getContactRequests,
   updateStoredContactRequestStage,
   deleteContactRequest,
+  getDeletedLeadKeys,
+  markLeadDeleted,
 } from "../../utils/contactRequestStorage";
 import {
   getContactRequestsFromApi,
@@ -64,6 +66,12 @@ const mergeApiAndStoredLeads = (apiLeads, storedLeads) => {
     (lead) => !covered.has(leadDedupeKey(lead)),
   );
   return [...apiLeads.map(normalizeLead), ...uniqueStored.map(normalizeLead)];
+};
+
+const filterDeletedLeads = (leads) => {
+  const deletedKeys = new Set(getDeletedLeadKeys());
+  if (deletedKeys.size === 0) return leads;
+  return leads.filter((lead) => !deletedKeys.has(lead.requestKey));
 };
 
 const appendStageActivity = (request, stage) => ({
@@ -234,7 +242,7 @@ const ContactRequests = () => {
 
     try {
       if (!isContactRequestsApiConfigured()) {
-        setRequests(storedLeads);
+        setRequests(filterDeletedLeads(storedLeads));
         if (showToast || storedLeads.length === 0) {
           setToast({
             type: storedLeads.length ? "success" : "error",
@@ -248,7 +256,9 @@ const ContactRequests = () => {
 
       try {
         const apiLeads = await getContactRequestsFromApi();
-        setRequests(mergeApiAndStoredLeads(apiLeads, storedLeads));
+        setRequests(
+          filterDeletedLeads(mergeApiAndStoredLeads(apiLeads, storedLeads)),
+        );
 
         if (showToast) {
           setToast({
@@ -262,7 +272,7 @@ const ContactRequests = () => {
         }
       } catch (apiError) {
         // Keep Schedule/Register/Contact local cards visible when API is down.
-        setRequests(storedLeads);
+        setRequests(filterDeletedLeads(storedLeads));
         setToast({
           type: "error",
           message:
@@ -271,7 +281,7 @@ const ContactRequests = () => {
         });
       }
     } catch (error) {
-      setRequests(storedLeads);
+      setRequests(filterDeletedLeads(storedLeads));
       setToast({
         type: "error",
         message: error?.message || "Could not load leads.",
@@ -331,6 +341,8 @@ const ContactRequests = () => {
     try {
       if (leadToDelete.isStored) {
         deleteContactRequest(leadToDelete.id);
+      } else if (leadToDelete.isApi) {
+        markLeadDeleted(leadToDelete.requestKey);
       }
 
       setRequests((prev) =>
@@ -357,7 +369,7 @@ const ContactRequests = () => {
       setToast({
         type: "success",
         message: leadToDelete.isApi
-          ? "Lead hidden from this view. Server delete is not enabled yet."
+          ? "Lead removed. It will stay hidden until server delete is available."
           : "Lead deleted successfully.",
       });
     } finally {
