@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
 import { DocumentIcon } from "../CustomerCommunicationManagement/CapabilityIcons";
-import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
+import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import { fetchTopOrderedSolutions } from "../../services/usecasesService";
-import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
 import { mapApiSolutionToHomeCard } from "../../utils/solutionMapper";
 import {
   AI_FOUNDATION_HIGHLIGHT_EVENT,
@@ -67,9 +66,6 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
   const hasSalesDesk = Boolean(salesDeskUrl);
 
   const handleNavigate = () => {
-    if (solution.id) {
-      incrementSolutionView(solution.id);
-    }
     navigate(solution.detailUrl);
   };
 
@@ -81,7 +77,7 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
       }`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      <div className="ai_capabilities__card-body" role="button" tabIndex={0} onClick={handleNavigate} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handleNavigate(); } }}>
+      <div className="ai_capabilities__card-body">
         <div className="ai_capabilities__card-head">
           <div className="ai_capabilities__icon">
             <Icon />
@@ -121,7 +117,13 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
           )}
         </div>
 
-        <SolutionEngagementBar solutionId={solution.id} compact />
+        <SolutionEngagement
+          solutionId={solution.id}
+          title={solution.title}
+          serviceLine={solution.serviceId}
+          detailUrl={solution.detailUrl}
+          variant="home"
+        />
       </div>
 
       <div className="ai_capabilities__actions">

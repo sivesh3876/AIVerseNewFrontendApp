@@ -10,6 +10,12 @@ import {
 } from "../../utils/adminSolutionTableUtils";
 import { getSolutionEngagement } from "../../utils/solutionEngagementStorage";
 import {
+  getAdminEngagementCounts,
+  loadEngagementSummaryMap,
+  lookupEngagementCounts,
+  toEngagementLookupKey,
+} from "../../utils/solutionEngagement";
+import {
   removePersistedSubmittedCapabilitiesByTitle,
   removePersistedSubmittedCapability,
 } from "../../utils/solutionMapper";
@@ -75,6 +81,7 @@ const AdminSolutionNewAI = () => {
   const [domainFilter, setDomainFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [engagementTick, setEngagementTick] = useState(0);
+  const [engagementSummary, setEngagementSummary] = useState(() => new Map());
 
   const domainOptions = useMemo(
     () => getUniqueSolutionValues(solutions, "BusinessDomain"),
@@ -129,6 +136,79 @@ const AdminSolutionNewAI = () => {
       );
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSummary = async () => {
+      const map = await loadEngagementSummaryMap();
+      if (isMounted) {
+        setEngagementSummary(map);
+        setEngagementTick((prev) => prev + 1);
+      }
+    };
+
+    loadSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const pageSolutionIds = paginatedSolutions
+    .map((solution) => String(solution.ID))
+    .join(",");
+
+  // Sync visible rows from the same per-solution API as the explore card.
+  useEffect(() => {
+    if (!pageSolutionIds) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    const solutionsForPage = pageSolutionIds
+      .split(",")
+      .filter(Boolean)
+      .map((id) => ({ ID: id }));
+
+    const syncVisiblePage = async () => {
+      const entries = await Promise.all(
+        solutionsForPage.map(async (solution) => {
+          try {
+            const counts = await getAdminEngagementCounts(solution.ID);
+            return [solution.ID, counts];
+          } catch {
+            return [solution.ID, null];
+          }
+        }),
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      setEngagementSummary((prev) => {
+        const next = new Map(prev);
+        entries.forEach(([id, counts]) => {
+          if (!counts) return;
+          const key = toEngagementLookupKey(id);
+          if (!key) return;
+          next.set(key, counts);
+          if (/^\d+$/.test(key)) {
+            next.set(`api-${key}`, counts);
+          }
+        });
+        return next;
+      });
+      setEngagementTick((prev) => prev + 1);
+    };
+
+    syncVisiblePage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pageSolutionIds]);
+
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
     statusFilter !== "Active" ||
@@ -173,7 +253,13 @@ const AdminSolutionNewAI = () => {
 
   const handleRefresh = async () => {
     setEngagementTick((prev) => prev + 1);
-    await Promise.all([loadSolutions(), loadDemoRequests()]);
+    const [, , summaryMap] = await Promise.all([
+      loadSolutions(),
+      loadDemoRequests(),
+      loadEngagementSummaryMap(),
+    ]);
+    setEngagementSummary(summaryMap);
+    setEngagementTick((prev) => prev + 1);
   };
 
   const handleBackToList = () => {
@@ -386,7 +472,16 @@ const AdminSolutionNewAI = () => {
             ) : (
               paginatedSolutions.map((solution) => {
                 const statusLabel = getSolutionStatusLabel(solution);
-                const engagement = getSolutionEngagement(solution.ID);
+                const localEngagement = getSolutionEngagement(solution.ID);
+                const apiCounts = lookupEngagementCounts(
+                  engagementSummary,
+                  solution.ID,
+                );
+                const viewCount = apiCounts?.views ?? localEngagement.views;
+                const likeCount = apiCounts?.likes ?? localEngagement.likes;
+                const commentCount =
+                  apiCounts?.comments ?? localEngagement.comments.length;
+                const dislikeCount = localEngagement.dislikes;
                 const requestCount = demoRequests.filter((request) =>
                   matchesSolutionRequest(request, solution),
                 ).length;
@@ -426,7 +521,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Views {engagement.views}</span>
+                          <span>Views {viewCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -437,7 +532,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Likes {engagement.likes}</span>
+                          <span>Likes {likeCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -455,7 +550,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Dislikes {engagement.dislikes}</span>
+                          <span>Dislikes {dislikeCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -467,7 +562,7 @@ const AdminSolutionNewAI = () => {
                               strokeLinejoin="round"
                             />
                           </svg>
-                          <span>Comments {engagement.comments.length}</span>
+                          <span>Comments {commentCount}</span>
                         </span>
                       </button>
                     </td>

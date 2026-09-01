@@ -6,7 +6,6 @@ import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
-import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -30,8 +29,10 @@ import {
   enrichCapabilityContacts,
   extractSolutionIdFromCapabilityId,
   filterOutDeletedSolutions,
+  buildExploreSolutionPath,
   getServiceIdForDomain,
   hydrateCapability,
+  isIndustryBusinessDomain,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   markSolutionAsDeleted,
@@ -99,6 +100,25 @@ const CheckIcon = () => (
   </svg>
 );
 
+const SolutionCardSkeleton = ({ index }) => (
+  <article
+    className="ccm_dashboard__capability ccm_dashboard__capability--skeleton"
+    style={{ animationDelay: `${index * 0.08}s` }}
+    aria-hidden="true"
+  >
+    <div className="ccm_dashboard__skeleton-head">
+      <div className="ccm_dashboard__skeleton-icon" />
+      <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--title" />
+    </div>
+    <div className="ccm_dashboard__skeleton-line" />
+    <div className="ccm_dashboard__skeleton-line" />
+    <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--short" />
+    <div className="ccm_dashboard__skeleton-block" />
+    <div className="ccm_dashboard__skeleton-block" />
+    <div className="ccm_dashboard__skeleton-actions" />
+  </article>
+);
+
 const SolutionDetailPanel = ({
   capability,
   detailSolution,
@@ -115,6 +135,13 @@ const SolutionDetailPanel = ({
   const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
   const attachmentDocuments = excludeSalesDeskDocuments(documents);
+  const businessDomain =
+    capability.businessDomain || detailSolution?.businessDomain;
+  const isIndustrySolution = isIndustryBusinessDomain(businessDomain);
+  const placementLabel = isIndustrySolution ? "Industry" : "Service line";
+  const placementValue = isIndustrySolution
+    ? detailSolution?.industry
+    : detailSolution?.serviceLineLabel || detailSolution?.industry;
 
   return (
     <section className="ccm_dashboard__content">
@@ -162,10 +189,10 @@ const SolutionDetailPanel = ({
         <p>{detailSolution.detailedDescription || capability.description}</p>
       </div>
 
-      {detailSolution.industry && (
+      {placementValue && (
         <div className="ccm_dashboard__detail-meta">
           <span>
-            <strong>Industry:</strong> {detailSolution.industry}
+            <strong>{placementLabel}:</strong> {placementValue}
           </span>
         </div>
       )}
@@ -273,11 +300,6 @@ const SolutionDetailPanel = ({
           </button>
         )}
       </div>
-
-      <SolutionEngagementBar
-        solutionId={capability.id}
-        className="ccm_dashboard__detail-engagement"
-      />
 
       {attachmentDocuments.length > 0 && (
         <SolutionDocuments
@@ -758,22 +780,61 @@ const CustomerCommunicationManagement = () => {
   ]);
 
   useEffect(() => {
+    const businessDomain =
+      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
+
+    if (isIndustryBusinessDomain(businessDomain)) {
+      return;
+    }
+
     if (detailSolution?.serviceLine) {
       setActiveServiceIndex(getEnterpriseServiceIndexById(detailSolution.serviceLine));
     }
-  }, [detailSolution?.serviceLine]);
+  }, [
+    detailPrimaryCapability?.businessDomain,
+    detailSolution?.businessDomain,
+    detailSolution?.serviceLine,
+  ]);
 
   useEffect(() => {
-    if (!detailSolution?.serviceLine || !solutionQueryId) return;
+    if (!solutionQueryId) return;
+
+    const businessDomain =
+      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
+    if (!businessDomain) return;
+
+    if (isIndustryBusinessDomain(businessDomain)) {
+      const domainMatches =
+        activeDomainCode &&
+        String(activeDomainCode).toLowerCase() ===
+          String(businessDomain).toLowerCase();
+      if (serviceId || !domainMatches) {
+        navigate(
+          buildExploreSolutionPath({
+            businessDomain,
+            solutionId: solutionQueryId,
+          }),
+          { replace: true },
+        );
+      }
+      return;
+    }
+
     if (activeDomainCode) return;
+    if (!detailSolution?.serviceLine) return;
     if (serviceId === detailSolution.serviceLine) return;
 
     navigate(
-      `/explore-solutions?service=${detailSolution.serviceLine}&solution=${encodeURIComponent(solutionQueryId)}`,
+      buildExploreSolutionPath({
+        businessDomain,
+        solutionId: solutionQueryId,
+      }),
       { replace: true },
     );
   }, [
     activeDomainCode,
+    detailPrimaryCapability?.businessDomain,
+    detailSolution?.businessDomain,
     detailSolution?.serviceLine,
     navigate,
     serviceId,
@@ -788,22 +849,11 @@ const CustomerCommunicationManagement = () => {
   const handleCapabilityNavigate = (capability) => {
     if (!capability.id) return;
 
-    if (activeDomainCode) {
-      const industrySuffix = resolvedIndustryId
-        ? `&industry=${resolvedIndustryId}`
-        : "";
-
-      navigate(
-        `/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}${industrySuffix}&solution=${encodeURIComponent(capability.id)}`,
-      );
-      return;
-    }
-
-    const serviceForCapability =
-      getServiceIdForDomain(capability.businessDomain) || activeService.id;
-
     navigate(
-      `/explore-solutions?service=${serviceForCapability}&solution=${encodeURIComponent(capability.id)}`,
+      buildExploreSolutionPath({
+        businessDomain: capability.businessDomain,
+        solutionId: capability.id,
+      }),
     );
   };
 
@@ -890,12 +940,12 @@ const CustomerCommunicationManagement = () => {
             </div>
             <div className="ccm_dashboard__banner-copy">
               <h1>{bannerTitle}</h1>
-              <p>{bannerSubtitle}</p>
+              {!isDetailView && bannerSubtitle ? <p>{bannerSubtitle}</p> : null}
             </div>
           </div>
 
-          <div className="ccm_dashboard__banner-body">
-            {bannerFeatures.length > 0 && (
+          {!isDetailView && bannerFeatures.length > 0 ? (
+            <div className="ccm_dashboard__banner-body">
               <ul className="ccm_dashboard__features">
                 {bannerFeatures.map((feature) => (
                   <li key={feature}>
@@ -904,8 +954,8 @@ const CustomerCommunicationManagement = () => {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          ) : null}
         </section>
 
         {isDetailView ? (
@@ -960,8 +1010,20 @@ const CustomerCommunicationManagement = () => {
             </span>
           </div>
 
+          {loadingApiSolutions && submittedCapabilities.length === 0 && (
+            <div
+              className="ccm_dashboard__grid ccm_dashboard__grid--submitted"
+              aria-busy="true"
+              aria-label="Loading submitted solutions"
+            >
+              {[0, 1, 2, 3].map((index) => (
+                <SolutionCardSkeleton index={index} key={`solution-skeleton-${index}`} />
+              ))}
+            </div>
+          )}
+
           {submittedCapabilities.length > 0 && (
-            <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted">
+            <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted is-loaded">
               {submittedCapabilities.map((capability) => (
                 <SolutionCapabilityCard
                   capability={capability}
@@ -994,10 +1056,6 @@ const CustomerCommunicationManagement = () => {
             <p className="ccm_dashboard__loading-note">
               No submitted solutions for this service yet.
             </p>
-          )}
-
-          {loadingApiSolutions && submittedCapabilities.length === 0 && (
-            <p className="ccm_dashboard__loading-note">Loading submitted solutions...</p>
           )}
         </section>
         )}

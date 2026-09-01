@@ -646,14 +646,19 @@
         min-height    : 46px;
         padding       : 0 18px;
         border-radius : 999px;
-        background    : #f1f5f9;
-        border        : 1px solid transparent;
-        transition    : border-color 0.2s ease, box-shadow 0.2s ease;
+        background    : #fff;
+        border        : 1.5px solid #3A8D9D;
+        box-shadow    : 0 0 0 3px rgba(58, 141, 157, 0.12);
+        transition    : border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+        .admin_demo_toolbar__icon {
+            color: #3A8D9D;
+        }
 
         &:focus-within {
-            border-color: #cbd5e1;
+            border-color: #2f7583;
             background  : #fff;
-            box-shadow  : 0 0 0 3px rgba(58, 141, 157, 0.1);
+            box-shadow  : 0 0 0 4px rgba(58, 141, 157, 0.22);
         }
 
         input {
@@ -666,7 +671,7 @@
             font-family: inherit;
 
             &::placeholder {
-                color: #94a3b8;
+                color: #64748b;
             }
 
             &:focus {
@@ -5282,6 +5287,25 @@
             width       : 16px;
             height      : 16px;
             accent-color: #3A8D9D;
+        }
+    }
+
+    &__add-member {
+        display    : flex;
+        flex-wrap  : wrap;
+        gap        : 8px;
+        margin-top : 10px;
+        align-items: center;
+
+        input {
+            flex     : 1 1 160px;
+            min-width: 140px;
+            width    : auto;
+        }
+
+        .admin_request_demos__btn {
+            min-height : 40px;
+            white-space: nowrap;
         }
     }
 }
