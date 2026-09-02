@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
@@ -59,22 +59,115 @@ const SolutionCardSkeleton = ({ index }) => (
 
 const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }) => {
   const navigate = useNavigate();
+  const internalCardRef = useRef(null);
+  const panelHostRef = useRef(null);
+  const descriptionRef = useRef(null);
+  const [panelHostEl, setPanelHostEl] = useState(null);
+  const [activePanel, setActivePanel] = useState(null);
+  const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
+  const descriptionText = String(solution?.description ?? "").trim();
   const Icon =
-    HOME_SOLUTION_ICONS[solution.themeIndex % HOME_SOLUTION_ICONS.length];
+    HOME_SOLUTION_ICONS[
+      Math.abs(Number(solution?.themeIndex) || 0) % HOME_SOLUTION_ICONS.length
+    ] ?? HOME_SOLUTION_ICONS[0];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
   const salesDeskUrl = solution.salesDeskDoc;
   const hasSalesDesk = Boolean(salesDeskUrl);
+
+  const assignCardRef = useCallback(
+    (node) => {
+      internalCardRef.current = node;
+      if (typeof cardRef === "function") {
+        cardRef(node);
+      } else if (cardRef) {
+        cardRef.current = node;
+      }
+    },
+    [cardRef],
+  );
+
+  const measureDescriptionClamp = useCallback(() => {
+    const element = descriptionRef.current;
+    if (!element) {
+      return;
+    }
+
+    setIsDescriptionClamped((previous) => {
+      const clamped = element.scrollHeight > element.clientHeight + 1;
+      return previous === clamped ? previous : clamped;
+    });
+  }, []);
+
+  const assignDescriptionRef = useCallback(
+    (node) => {
+      descriptionRef.current = node;
+      if (node) {
+        requestAnimationFrame(measureDescriptionClamp);
+      }
+    },
+    [measureDescriptionClamp],
+  );
+
+  useLayoutEffect(() => {
+    if (activePanel === "description") {
+      return undefined;
+    }
+
+    measureDescriptionClamp();
+
+    const element = descriptionRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(measureDescriptionClamp);
+    observer.observe(element);
+    window.addEventListener("resize", measureDescriptionClamp);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measureDescriptionClamp);
+    };
+  }, [activePanel, measureDescriptionClamp, descriptionText]);
 
   const handleNavigate = () => {
     navigate(solution.detailUrl);
   };
 
+  const handleReadMore = (event) => {
+    event.stopPropagation();
+    setIsDescriptionClamped(true);
+    setActivePanel("description");
+  };
+
+  const handleReadLess = (event) => {
+    event.stopPropagation();
+    setActivePanel(null);
+  };
+
+  const handleCommentOpenChange = (open) => {
+    setActivePanel(open ? "comments" : null);
+  };
+
+  const handleClosePanel = (event) => {
+    event?.stopPropagation();
+    setActivePanel(null);
+  };
+
+  const showReadMore =
+    descriptionText.length > 110 || isDescriptionClamped;
+
+  const assignPanelHostRef = useCallback((node) => {
+    panelHostRef.current = node;
+    setPanelHostEl((previous) => (previous === node ? previous : node));
+  }, []);
+
   return (
     <article
-      ref={cardRef}
+      ref={assignCardRef}
       className={`ai_capabilities__card${
         isHighlighted ? " is-foundation-highlight" : ""
-      }`}
+      }${activePanel ? " is-panel-open" : ""}`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div className="ai_capabilities__card-body">
@@ -97,33 +190,99 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
 
         <div className="ai_capabilities__title-row">
           <h3>{solution.title}</h3>
-          <span className="ai_capabilities__bookmark" aria-hidden="true">
-            <BookmarkIcon />
-          </span>
-        </div>
-
-        <p>{solution.description}</p>
-
-        <div className="ai_capabilities__meta">
-          {solution.techHighlight && (
-            <span className="ai_capabilities__chip">
-              {solution.techHighlight}
-            </span>
-          )}
-          {solution.client && (
-            <span className="ai_capabilities__client">
-              AI Foundation: {solution.client}
+          {activePanel ? (
+            <button
+              type="button"
+              className="ai_capabilities__card-overlay-close"
+              onClick={handleClosePanel}
+              aria-label="Close panel"
+            >
+              &times;
+            </button>
+          ) : (
+            <span className="ai_capabilities__bookmark" aria-hidden="true">
+              <BookmarkIcon />
             </span>
           )}
         </div>
 
-        <SolutionEngagement
-          solutionId={solution.id}
-          title={solution.title}
-          serviceLine={solution.serviceId}
-          detailUrl={solution.detailUrl}
-          variant="home"
-        />
+        <div
+          ref={assignPanelHostRef}
+          className={`ai_capabilities__panel-host${
+            activePanel ? " is-panel-active" : ""
+          }${activePanel === "description" ? " is-description-open" : ""}`}
+        >
+          <div className="ai_capabilities__panel-main">
+            {activePanel === "description" ? (
+              <div className="ai_capabilities__description-expanded">
+                <p>{descriptionText}</p>
+                <button
+                  type="button"
+                  className="ai_capabilities__read-less"
+                  onClick={handleReadLess}
+                >
+                  Read less
+                </button>
+              </div>
+            ) : (
+              <div
+                className={`ai_capabilities__panel-content${
+                  activePanel === "comments" ? " is-hidden" : ""
+                }`}
+              >
+                <div
+                  className={`ai_capabilities__desc-wrap${
+                    showReadMore ? " is-clamped" : ""
+                  }`}
+                >
+                  <p ref={assignDescriptionRef}>{descriptionText}</p>
+                  {showReadMore && (
+                    <button
+                      type="button"
+                      className="ai_capabilities__read-more"
+                      onClick={handleReadMore}
+                    >
+                      Read more
+                    </button>
+                  )}
+                </div>
+
+                <div className="ai_capabilities__meta">
+                  {solution.techHighlight && (
+                    <span className="ai_capabilities__chip">
+                      {solution.techHighlight}
+                    </span>
+                  )}
+                  {solution.client && (
+                    <span className="ai_capabilities__client">
+                      AI Foundation: {solution.client}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div
+            className={`ai_capabilities__engagement-wrap${
+              activePanel === "comments" ? " is-hidden" : ""
+            }`}
+          >
+            <SolutionEngagement
+              solutionId={solution.id}
+              title={solution.title}
+              serviceLine={solution.serviceId}
+              detailUrl={solution.detailUrl}
+              variant="home"
+              commentUi="card-overlay"
+              overlayRoot={panelHostEl}
+              overlayRootRef={panelHostRef}
+              commentOpen={activePanel === "comments"}
+              onCommentOpenChange={handleCommentOpenChange}
+              onActionClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="ai_capabilities__actions">
@@ -192,6 +351,7 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
           </button>
         )}
       </div>
+
     </article>
   );
 };

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { FiEye, FiHeart, FiMessageCircle, FiShare2 } from "react-icons/fi";
 import SolutionCommentModal from "./SolutionCommentModal";
 import SolutionCommentsInline from "./SolutionCommentsInline";
@@ -21,9 +29,14 @@ const SolutionEngagement = ({
   className = "",
   onActionClick,
   trackView = false,
+  overlayRootRef = null,
+  overlayRoot = null,
+  commentOpen: controlledCommentOpen,
+  onCommentOpenChange,
 }) => {
   const isHomeVariant = variant === "home";
   const isInlineComments = commentUi === "inline";
+  const isCardOverlayComments = commentUi === "card-overlay";
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
@@ -31,10 +44,36 @@ const SolutionEngagement = ({
   const [viewCount, setViewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLikePending, setIsLikePending] = useState(false);
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [internalCommentOpen, setInternalCommentOpen] = useState(false);
+  const isCommentControlled = controlledCommentOpen !== undefined;
+  const isCommentOpen = isCommentControlled
+    ? controlledCommentOpen
+    : internalCommentOpen;
+
+  const setCommentOpen = useCallback(
+    (next) => {
+      if (isCommentControlled) {
+        onCommentOpenChange?.(next);
+      } else {
+        setInternalCommentOpen(next);
+      }
+    },
+    [isCommentControlled, onCommentOpenChange],
+  );
   const [shareMessage, setShareMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [portalRoot, setPortalRoot] = useState(null);
   const hasTrackedViewRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!isCardOverlayComments) {
+      setPortalRoot(null);
+      return;
+    }
+
+    const root = overlayRoot ?? overlayRootRef?.current ?? null;
+    setPortalRoot((previous) => (previous === root ? previous : root));
+  }, [isCardOverlayComments, isCommentOpen, overlayRoot, overlayRootRef]);
 
   const shareUrl = useMemo(
     () => buildSolutionShareUrl({ solutionId, detailUrl, serviceLine }),
@@ -150,11 +189,11 @@ const SolutionEngagement = ({
 
   const handleCommentOpen = (event) => {
     stopCardNavigation(event);
-    if (isInlineComments) {
-      setIsCommentOpen((open) => !open);
+    if (isInlineComments || isCardOverlayComments) {
+      setCommentOpen(!isCommentOpen);
       return;
     }
-    setIsCommentOpen(true);
+    setCommentOpen(true);
   };
 
   const handleShare = async (event) => {
@@ -214,11 +253,15 @@ const SolutionEngagement = ({
         <button
           type="button"
           className={`solution_engagement__btn${
-            isInlineComments && isCommentOpen ? " is-active" : ""
+            (isInlineComments || isCardOverlayComments) && isCommentOpen
+              ? " is-active"
+              : ""
           }`}
           onClick={handleCommentOpen}
           aria-label="Comment"
-          aria-expanded={isInlineComments ? isCommentOpen : undefined}
+          aria-expanded={
+            isInlineComments || isCardOverlayComments ? isCommentOpen : undefined
+          }
           title="Comment"
           disabled={isLoading}
         >
@@ -257,16 +300,32 @@ const SolutionEngagement = ({
         <SolutionCommentsInline
           solutionId={solutionId}
           title={title}
-          onClose={() => setIsCommentOpen(false)}
+          onClose={() => setCommentOpen(false)}
           onUpdated={applyEngagementState}
         />
       )}
 
-      {isCommentOpen && !isInlineComments && (
+      {isCommentOpen &&
+        isCardOverlayComments &&
+        portalRoot &&
+        createPortal(
+          <div className="ai_capabilities__card-overlay ai_capabilities__card-overlay--comments">
+            <SolutionCommentsInline
+              solutionId={solutionId}
+              title={title}
+              variant="overlay"
+              onClose={() => setCommentOpen(false)}
+              onUpdated={applyEngagementState}
+            />
+          </div>,
+          portalRoot,
+        )}
+
+      {isCommentOpen && !isInlineComments && !isCardOverlayComments && (
         <SolutionCommentModal
           solutionId={solutionId}
           title={title}
-          onClose={() => setIsCommentOpen(false)}
+          onClose={() => setCommentOpen(false)}
           onUpdated={applyEngagementState}
         />
       )}
