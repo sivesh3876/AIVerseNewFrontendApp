@@ -190,7 +190,7 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
 
         <div className="ai_capabilities__title-row">
           <h3>{solution.title}</h3>
-          {activePanel ? (
+          {activePanel === "description" ? (
             <button
               type="button"
               className="ai_capabilities__card-overlay-close"
@@ -199,11 +199,11 @@ const SolutionCard = ({ solution, index, onRequestDemo, cardRef, isHighlighted }
             >
               &times;
             </button>
-          ) : (
+          ) : activePanel !== "comments" ? (
             <span className="ai_capabilities__bookmark" aria-hidden="true">
               <BookmarkIcon />
             </span>
-          )}
+          ) : null}
         </div>
 
         <div
