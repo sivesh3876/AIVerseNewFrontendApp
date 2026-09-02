@@ -79,8 +79,7 @@
             font-weight : 600;
 
             .ccm_dashboard__nav-icon {
-                background: #d3e8e9;
-                color     : #0d8f82;
+                box-shadow: 0 0 0 2px rgba(24, 224, 204, 0.45);
             }
         }
     }
@@ -93,8 +92,12 @@
         height         : 36px;
         border-radius  : 10px;
         flex-shrink    : 0;
-        color          : #9ca3af;
-        transition     : background 0.3s, color 0.3s;
+        transition     : box-shadow 0.3s, transform 0.3s;
+
+        svg {
+            width : 18px;
+            height: 18px;
+        }
     }
 
     &__nav-label {
@@ -139,7 +142,6 @@
         border-radius  : 14px;
         background     : rgba(58, 141, 157, 0.35);
         box-shadow     : 0 0 24px rgba(58, 141, 157, 0.35);
-        color          : #a8d4e6;
         flex-shrink    : 0;
 
         svg {
@@ -1055,18 +1057,11 @@
             background   : #fff;
 
             h4 {
-                margin     : 0 0 4px;
+                margin     : 0;
                 font-size  : 13px;
                 font-weight: 600;
                 color      : #0d1e32;
                 line-height: 1.35;
-            }
-
-            p {
-                margin     : 0;
-                font-size  : 11px;
-                line-height: 1.4;
-                color      : #9ca3af;
             }
         }
 

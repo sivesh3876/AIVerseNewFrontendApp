@@ -118,24 +118,26 @@ const InlineCommentItem = ({
       <div className="solution_comments_inline__item-body">
         <div className="solution_comments_inline__item-meta">
           <strong>{comment.author}</strong>
-          <time dateTime={comment.createdAt}>
-            {formatRelativeTime(comment.createdAt)}
-          </time>
         </div>
         <p>{comment.text}</p>
 
-        {user && (
-          <button
-            type="button"
-            className="solution_comments_inline__reply"
-            onClick={(event) => {
-              event.stopPropagation();
-              onReplyClick(comment.id);
-            }}
-          >
-            Reply
-          </button>
-        )}
+        <div className="solution_comments_inline__item-actions">
+          <time dateTime={comment.createdAt}>
+            {formatRelativeTime(comment.createdAt)}
+          </time>
+          {user && (
+            <button
+              type="button"
+              className="solution_comments_inline__reply"
+              onClick={(event) => {
+                event.stopPropagation();
+                onReplyClick(comment.id);
+              }}
+            >
+              Reply
+            </button>
+          )}
+        </div>
 
         {isReplyOpen && user && (
           <div className="solution_comments_inline__reply-box">
@@ -186,6 +188,7 @@ const SolutionCommentsInline = ({
   title,
   onClose,
   onUpdated,
+  variant = "default",
 }) => {
   const [comments, setComments] = useState([]);
   const [user, setUser] = useState(null);
@@ -257,23 +260,52 @@ const SolutionCommentsInline = ({
     return total + 1 + (comment.replies?.length || 0);
   }, 0);
 
+  const isOverlay = variant === "overlay";
+
   return (
     <div
-      className="solution_comments_inline"
+      className={`solution_comments_inline${
+        isOverlay ? " solution_comments_inline--overlay" : ""
+      }`}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
       <div className="solution_comments_inline__header">
         <h4>Comments ({commentCount})</h4>
-        <button
-          type="button"
-          className="solution_comments_inline__collapse"
-          onClick={onClose}
-          aria-label="Collapse comments"
-        >
-          <FiChevronUp aria-hidden="true" />
-        </button>
+        {!isOverlay && (
+          <button
+            type="button"
+            className="solution_comments_inline__collapse"
+            onClick={onClose}
+            aria-label="Collapse comments"
+          >
+            <FiChevronUp aria-hidden="true" />
+          </button>
+        )}
       </div>
+
+      {isOverlay && (
+        <div className="solution_comments_inline__composer-top">
+          {!user ? (
+            <div className="solution_comments_inline__signin">
+              <p>Sign in to comment</p>
+              <a
+                className="solution_comments_inline__signin-btn"
+                href={getLoginUrl()}
+                onClick={(event) => event.stopPropagation()}
+              >
+                Sign in
+              </a>
+            </div>
+          ) : (
+            <InlineComposer
+              placeholder="Write a comment..."
+              onSubmit={(text) => handleSubmitComment(text)}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </div>
+      )}
 
       <div className="solution_comments_inline__list">
         {isLoading ? (
@@ -302,26 +334,28 @@ const SolutionCommentsInline = ({
 
       {error && <p className="solution_comments_inline__error">{error}</p>}
 
-      <div className="solution_comments_inline__footer">
-        {!user ? (
-          <div className="solution_comments_inline__signin">
-            <p>Sign in to comment</p>
-            <a
-              className="solution_comments_inline__signin-btn"
-              href={getLoginUrl()}
-              onClick={(event) => event.stopPropagation()}
-            >
-              Sign in
-            </a>
-          </div>
-        ) : (
-          <InlineComposer
-            placeholder="Write a comment..."
-            onSubmit={(text) => handleSubmitComment(text)}
-            isSubmitting={isSubmitting}
-          />
-        )}
-      </div>
+      {!isOverlay && (
+        <div className="solution_comments_inline__footer">
+          {!user ? (
+            <div className="solution_comments_inline__signin">
+              <p>Sign in to comment</p>
+              <a
+                className="solution_comments_inline__signin-btn"
+                href={getLoginUrl()}
+                onClick={(event) => event.stopPropagation()}
+              >
+                Sign in
+              </a>
+            </div>
+          ) : (
+            <InlineComposer
+              placeholder="Write a comment..."
+              onSubmit={(text) => handleSubmitComment(text)}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };

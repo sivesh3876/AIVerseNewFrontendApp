@@ -241,7 +241,6 @@ const SolutionDetailPanel = ({
             {(capability.techStack || []).map((tech) => (
               <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
                 <h4>{tech.name}</h4>
-                <p>{tech.label}</p>
               </article>
             ))}
           </div>
@@ -639,13 +638,20 @@ const CustomerCommunicationManagement = () => {
   const industryDomains = businessDomains.filter(
     (domain) => domain.ParentDomainCode === "Industries",
   );
+  const activeIndustryMeta = activeDomainCode
+    ? getIndustryByDomainCode(activeDomainCode)
+    : null;
   const detailPrimaryCapability = detailSolution
     ? solutionToCapabilityCard(detailSolution)
     : null;
   const BannerIconComponent =
     isDetailView && detailPrimaryCapability
       ? resolveCapabilityIcon(detailPrimaryCapability)
-      : activeService.navIcon;
+      : activeIndustryMeta?.icon || activeService.navIcon;
+  const bannerIconBg =
+    !isDetailView && (activeIndustryMeta?.iconBg || activeService.navIconBg)
+      ? activeIndustryMeta?.iconBg || activeService.navIconBg
+      : undefined;
   const bannerTitle =
     detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
   const bannerSubtitle =
@@ -879,7 +885,11 @@ const CustomerCommunicationManagement = () => {
                     onClick={() => handleServiceChange(index)}
                     aria-current={isActive ? "page" : undefined}
                   >
-                    <span className="ccm_dashboard__nav-icon" aria-hidden="true">
+                    <span
+                      className="ccm_dashboard__nav-icon"
+                      style={{ background: service.navIconBg }}
+                      aria-hidden="true"
+                    >
                       <NavIcon />
                     </span>
                     <span className="ccm_dashboard__nav-label">{service.label}</span>
@@ -901,6 +911,8 @@ const CustomerCommunicationManagement = () => {
             <ul>
               {industryDomains.map((domain) => {
                 const isActive = activeDomainCode === domain.DomainCode;
+                const industryMeta = getIndustryByDomainCode(domain.DomainCode);
+                const IndustryIcon = industryMeta?.icon;
 
                 return (
                   <li key={domain.DomainCode}>
@@ -910,6 +922,15 @@ const CustomerCommunicationManagement = () => {
                       onClick={() => handleIndustryChange(domain.DomainCode)}
                       aria-current={isActive ? "page" : undefined}
                     >
+                      {IndustryIcon && (
+                        <span
+                          className="ccm_dashboard__nav-icon"
+                          style={{ background: industryMeta.iconBg }}
+                          aria-hidden="true"
+                        >
+                          <IndustryIcon />
+                        </span>
+                      )}
                       <span className="ccm_dashboard__nav-label">{domain.DomainName}</span>
                       {isActive && (
                         <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
@@ -935,7 +956,11 @@ const CustomerCommunicationManagement = () => {
       >
         <section className="ccm_dashboard__banner">
           <div className="ccm_dashboard__banner-header">
-            <div className="ccm_dashboard__banner-icon" aria-hidden="true">
+            <div
+              className="ccm_dashboard__banner-icon"
+              style={bannerIconBg ? { background: bannerIconBg } : undefined}
+              aria-hidden="true"
+            >
               <BannerIconComponent />
             </div>
             <div className="ccm_dashboard__banner-copy">
