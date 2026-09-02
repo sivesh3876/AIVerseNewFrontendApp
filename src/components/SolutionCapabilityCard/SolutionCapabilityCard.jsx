@@ -186,7 +186,6 @@ const SolutionCapabilityCard = ({
                     key={`${tech.name}-${index}`}
                   >
                     <h4>{tech.name}</h4>
-                    <p>{tech.label || "Technology"}</p>
                   </article>
                 ))
               ) : (

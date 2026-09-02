@@ -503,7 +503,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
     id: solutionApiId,
     title: solution.Title || "Untitled Solution",
     description:
-      truncateText(solution.SolutionContext) ||
+      toText(solution.SolutionContext).trim() ||
       "Explore this enterprise AI solution.",
     domainLabel:
       service?.label || industry?.title || solution.BusinessDomain || "Enterprise AI",
