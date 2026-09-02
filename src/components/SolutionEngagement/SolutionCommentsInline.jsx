@@ -272,7 +272,16 @@ const SolutionCommentsInline = ({
     >
       <div className="solution_comments_inline__header">
         <h4>Comments ({commentCount})</h4>
-        {!isOverlay && (
+        {isOverlay ? (
+          <button
+            type="button"
+            className="solution_comments_inline__close"
+            onClick={onClose}
+            aria-label="Close comments"
+          >
+            &times;
+          </button>
+        ) : (
           <button
             type="button"
             className="solution_comments_inline__collapse"
