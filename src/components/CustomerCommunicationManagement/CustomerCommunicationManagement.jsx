@@ -6,6 +6,7 @@ import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
+import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -29,10 +30,8 @@ import {
   enrichCapabilityContacts,
   extractSolutionIdFromCapabilityId,
   filterOutDeletedSolutions,
-  buildExploreSolutionPath,
   getServiceIdForDomain,
   hydrateCapability,
-  isIndustryBusinessDomain,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   markSolutionAsDeleted,
@@ -100,25 +99,6 @@ const CheckIcon = () => (
   </svg>
 );
 
-const SolutionCardSkeleton = ({ index }) => (
-  <article
-    className="ccm_dashboard__capability ccm_dashboard__capability--skeleton"
-    style={{ animationDelay: `${index * 0.08}s` }}
-    aria-hidden="true"
-  >
-    <div className="ccm_dashboard__skeleton-head">
-      <div className="ccm_dashboard__skeleton-icon" />
-      <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--title" />
-    </div>
-    <div className="ccm_dashboard__skeleton-line" />
-    <div className="ccm_dashboard__skeleton-line" />
-    <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--short" />
-    <div className="ccm_dashboard__skeleton-block" />
-    <div className="ccm_dashboard__skeleton-block" />
-    <div className="ccm_dashboard__skeleton-actions" />
-  </article>
-);
-
 const SolutionDetailPanel = ({
   capability,
   detailSolution,
@@ -135,13 +115,6 @@ const SolutionDetailPanel = ({
   const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
   const attachmentDocuments = excludeSalesDeskDocuments(documents);
-  const businessDomain =
-    capability.businessDomain || detailSolution?.businessDomain;
-  const isIndustrySolution = isIndustryBusinessDomain(businessDomain);
-  const placementLabel = isIndustrySolution ? "Industry" : "Service line";
-  const placementValue = isIndustrySolution
-    ? detailSolution?.industry
-    : detailSolution?.serviceLineLabel || detailSolution?.industry;
 
   return (
     <section className="ccm_dashboard__content">
@@ -189,10 +162,10 @@ const SolutionDetailPanel = ({
         <p>{detailSolution.detailedDescription || capability.description}</p>
       </div>
 
-      {placementValue && (
+      {detailSolution.industry && (
         <div className="ccm_dashboard__detail-meta">
           <span>
-            <strong>{placementLabel}:</strong> {placementValue}
+            <strong>Industry:</strong> {detailSolution.industry}
           </span>
         </div>
       )}
@@ -241,6 +214,7 @@ const SolutionDetailPanel = ({
             {(capability.techStack || []).map((tech) => (
               <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
                 <h4>{tech.name}</h4>
+                <p>{tech.label}</p>
               </article>
             ))}
           </div>
@@ -299,6 +273,11 @@ const SolutionDetailPanel = ({
           </button>
         )}
       </div>
+
+      <SolutionEngagementBar
+        solutionId={capability.id}
+        className="ccm_dashboard__detail-engagement"
+      />
 
       {attachmentDocuments.length > 0 && (
         <SolutionDocuments
@@ -638,20 +617,13 @@ const CustomerCommunicationManagement = () => {
   const industryDomains = businessDomains.filter(
     (domain) => domain.ParentDomainCode === "Industries",
   );
-  const activeIndustryMeta = activeDomainCode
-    ? getIndustryByDomainCode(activeDomainCode)
-    : null;
   const detailPrimaryCapability = detailSolution
     ? solutionToCapabilityCard(detailSolution)
     : null;
   const BannerIconComponent =
     isDetailView && detailPrimaryCapability
       ? resolveCapabilityIcon(detailPrimaryCapability)
-      : activeIndustryMeta?.icon || activeService.navIcon;
-  const bannerIconBg =
-    !isDetailView && (activeIndustryMeta?.iconBg || activeService.navIconBg)
-      ? activeIndustryMeta?.iconBg || activeService.navIconBg
-      : undefined;
+      : activeService.navIcon;
   const bannerTitle =
     detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
   const bannerSubtitle =
@@ -786,61 +758,22 @@ const CustomerCommunicationManagement = () => {
   ]);
 
   useEffect(() => {
-    const businessDomain =
-      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
-
-    if (isIndustryBusinessDomain(businessDomain)) {
-      return;
-    }
-
     if (detailSolution?.serviceLine) {
       setActiveServiceIndex(getEnterpriseServiceIndexById(detailSolution.serviceLine));
     }
-  }, [
-    detailPrimaryCapability?.businessDomain,
-    detailSolution?.businessDomain,
-    detailSolution?.serviceLine,
-  ]);
+  }, [detailSolution?.serviceLine]);
 
   useEffect(() => {
-    if (!solutionQueryId) return;
-
-    const businessDomain =
-      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
-    if (!businessDomain) return;
-
-    if (isIndustryBusinessDomain(businessDomain)) {
-      const domainMatches =
-        activeDomainCode &&
-        String(activeDomainCode).toLowerCase() ===
-          String(businessDomain).toLowerCase();
-      if (serviceId || !domainMatches) {
-        navigate(
-          buildExploreSolutionPath({
-            businessDomain,
-            solutionId: solutionQueryId,
-          }),
-          { replace: true },
-        );
-      }
-      return;
-    }
-
+    if (!detailSolution?.serviceLine || !solutionQueryId) return;
     if (activeDomainCode) return;
-    if (!detailSolution?.serviceLine) return;
     if (serviceId === detailSolution.serviceLine) return;
 
     navigate(
-      buildExploreSolutionPath({
-        businessDomain,
-        solutionId: solutionQueryId,
-      }),
+      `/explore-solutions?service=${detailSolution.serviceLine}&solution=${encodeURIComponent(solutionQueryId)}`,
       { replace: true },
     );
   }, [
     activeDomainCode,
-    detailPrimaryCapability?.businessDomain,
-    detailSolution?.businessDomain,
     detailSolution?.serviceLine,
     navigate,
     serviceId,
@@ -855,11 +788,22 @@ const CustomerCommunicationManagement = () => {
   const handleCapabilityNavigate = (capability) => {
     if (!capability.id) return;
 
+    if (activeDomainCode) {
+      const industrySuffix = resolvedIndustryId
+        ? `&industry=${resolvedIndustryId}`
+        : "";
+
+      navigate(
+        `/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}${industrySuffix}&solution=${encodeURIComponent(capability.id)}`,
+      );
+      return;
+    }
+
+    const serviceForCapability =
+      getServiceIdForDomain(capability.businessDomain) || activeService.id;
+
     navigate(
-      buildExploreSolutionPath({
-        businessDomain: capability.businessDomain,
-        solutionId: capability.id,
-      }),
+      `/explore-solutions?service=${serviceForCapability}&solution=${encodeURIComponent(capability.id)}`,
     );
   };
 
@@ -885,11 +829,7 @@ const CustomerCommunicationManagement = () => {
                     onClick={() => handleServiceChange(index)}
                     aria-current={isActive ? "page" : undefined}
                   >
-                    <span
-                      className="ccm_dashboard__nav-icon"
-                      style={{ background: service.navIconBg }}
-                      aria-hidden="true"
-                    >
+                    <span className="ccm_dashboard__nav-icon" aria-hidden="true">
                       <NavIcon />
                     </span>
                     <span className="ccm_dashboard__nav-label">{service.label}</span>
@@ -911,8 +851,6 @@ const CustomerCommunicationManagement = () => {
             <ul>
               {industryDomains.map((domain) => {
                 const isActive = activeDomainCode === domain.DomainCode;
-                const industryMeta = getIndustryByDomainCode(domain.DomainCode);
-                const IndustryIcon = industryMeta?.icon;
 
                 return (
                   <li key={domain.DomainCode}>
@@ -922,15 +860,6 @@ const CustomerCommunicationManagement = () => {
                       onClick={() => handleIndustryChange(domain.DomainCode)}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      {IndustryIcon && (
-                        <span
-                          className="ccm_dashboard__nav-icon"
-                          style={{ background: industryMeta.iconBg }}
-                          aria-hidden="true"
-                        >
-                          <IndustryIcon />
-                        </span>
-                      )}
                       <span className="ccm_dashboard__nav-label">{domain.DomainName}</span>
                       {isActive && (
                         <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
@@ -956,21 +885,17 @@ const CustomerCommunicationManagement = () => {
       >
         <section className="ccm_dashboard__banner">
           <div className="ccm_dashboard__banner-header">
-            <div
-              className="ccm_dashboard__banner-icon"
-              style={bannerIconBg ? { background: bannerIconBg } : undefined}
-              aria-hidden="true"
-            >
+            <div className="ccm_dashboard__banner-icon" aria-hidden="true">
               <BannerIconComponent />
             </div>
             <div className="ccm_dashboard__banner-copy">
               <h1>{bannerTitle}</h1>
-              {!isDetailView && bannerSubtitle ? <p>{bannerSubtitle}</p> : null}
+              <p>{bannerSubtitle}</p>
             </div>
           </div>
 
-          {!isDetailView && bannerFeatures.length > 0 ? (
-            <div className="ccm_dashboard__banner-body">
+          <div className="ccm_dashboard__banner-body">
+            {bannerFeatures.length > 0 && (
               <ul className="ccm_dashboard__features">
                 {bannerFeatures.map((feature) => (
                   <li key={feature}>
@@ -979,8 +904,8 @@ const CustomerCommunicationManagement = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : null}
+            )}
+          </div>
         </section>
 
         {isDetailView ? (
@@ -1035,20 +960,8 @@ const CustomerCommunicationManagement = () => {
             </span>
           </div>
 
-          {loadingApiSolutions && submittedCapabilities.length === 0 && (
-            <div
-              className="ccm_dashboard__grid ccm_dashboard__grid--submitted"
-              aria-busy="true"
-              aria-label="Loading submitted solutions"
-            >
-              {[0, 1, 2, 3].map((index) => (
-                <SolutionCardSkeleton index={index} key={`solution-skeleton-${index}`} />
-              ))}
-            </div>
-          )}
-
           {submittedCapabilities.length > 0 && (
-            <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted is-loaded">
+            <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted">
               {submittedCapabilities.map((capability) => (
                 <SolutionCapabilityCard
                   capability={capability}
@@ -1081,6 +994,10 @@ const CustomerCommunicationManagement = () => {
             <p className="ccm_dashboard__loading-note">
               No submitted solutions for this service yet.
             </p>
+          )}
+
+          {loadingApiSolutions && submittedCapabilities.length === 0 && (
+            <p className="ccm_dashboard__loading-note">Loading submitted solutions...</p>
           )}
         </section>
         )}

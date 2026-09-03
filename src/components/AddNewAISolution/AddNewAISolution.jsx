@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
-import { mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation, buildExploreSolutionPath } from "../../utils/solutionMapper";
-import {
-  claimFeaturedCardPosition,
-  getFeaturedPositionOccupancy,
-} from "../../services/usecasesService";
+import { getServiceIdForDomain, mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation } from "../../utils/solutionMapper";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -67,15 +63,6 @@ const sanitizeEvangelists = (evangelists = []) =>
     (name) => name && name.trim() && name !== "Undefined",
   );
 
-const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
-
-const normalizeCardPosition = (value) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return "";
-  if (parsed < 1 || parsed > 8) return "";
-  return String(parsed);
-};
-
 const initialFormState = {
   Title: "",
   BusinessDomain: "",
@@ -86,7 +73,6 @@ const initialFormState = {
   RepositoryUrl: "",
   AiFoundation: [],
   DemoLink: "",
-  OrderNumber: "",
   Publish: "Yes",
 };
 
@@ -286,7 +272,6 @@ const AddNewAISolution = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
-  const [positionOccupancy, setPositionOccupancy] = useState({});
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -351,21 +336,10 @@ const AddNewAISolution = () => {
     }
   };
 
-  const fetchPositionOccupancy = async () => {
-    try {
-      const occupancy = await getFeaturedPositionOccupancy();
-      setPositionOccupancy(occupancy || {});
-    } catch (error) {
-      console.error("Error fetching featured positions:", error);
-      setPositionOccupancy({});
-    }
-  };
-
   useEffect(() => {
     fetchBusinessDomains();
     fetchSolutionOwners();
     fetchAIEvangelists();
-    fetchPositionOccupancy();
   }, []);
 
   useEffect(() => {
@@ -397,12 +371,6 @@ const AddNewAISolution = () => {
               solution.AiFoundation || solution.Client,
             ),
             DemoLink: solution.DemoLink || "",
-            OrderNumber: normalizeCardPosition(
-              solution.OrderNumber ??
-                solution.DisplayOrder ??
-                solution.OrderNo ??
-                solution.orderNumber,
-            ),
             Publish:
               solution.Publish ||
               solution.publish ||
@@ -613,14 +581,6 @@ const AddNewAISolution = () => {
     setSubmitStatus(null);
 
     try {
-      const claimedPosition = normalizeCardPosition(form.OrderNumber);
-      if (claimedPosition) {
-        await claimFeaturedCardPosition({
-          orderNumber: claimedPosition,
-          excludeSolutionId: isEditMode ? editId : null,
-        });
-      }
-
       const formDataToSend = new FormData();
 
       if (isEditMode) {
@@ -628,17 +588,6 @@ const AddNewAISolution = () => {
       }
 
       Object.keys(form).forEach((key) => {
-        if (key === "OrderNumber") {
-          const orderValue = normalizeCardPosition(form.OrderNumber);
-          // Backend ignores empty OrderNumber; send 0 to clear featured slot.
-          if (orderValue || isEditMode) {
-            const persisted = orderValue || "0";
-            formDataToSend.append("OrderNumber", persisted);
-            formDataToSend.append("DisplayOrder", persisted);
-          }
-          return;
-        }
-
         if (!form[key]) return;
 
         if (key === "Publish") {
@@ -741,15 +690,18 @@ const AddNewAISolution = () => {
           return;
         }
 
-        const listPath = buildExploreSolutionPath({
-          businessDomain: savedBusinessDomain,
-          extraParams: {
-            submitted: "1",
-            ...(solutionId ? { highlight: String(solutionId) } : {}),
-          },
+        const serviceId =
+          getServiceIdForDomain(savedBusinessDomain) || "agentic-automation";
+        const params = new URLSearchParams({
+          service: serviceId,
+          submitted: "1",
         });
 
-        navigate(listPath, {
+        if (solutionId) {
+          params.set("highlight", String(solutionId));
+        }
+
+        navigate(`/explore-solutions?${params.toString()}`, {
           state: {
             submittedSolution: serializedSolution,
           },
@@ -908,39 +860,6 @@ const AddNewAISolution = () => {
           <p className="add_ai_solution__field-hint">
             Published solutions stay Active and appear as cards under their
             selected enterprise service.
-          </p>
-        </div>
-
-        <div className="add_ai_solution__field">
-          <label htmlFor="OrderNumber">Card Position</label>
-          <select
-            id="OrderNumber"
-            value={form.OrderNumber}
-            onChange={(event) => updateField("OrderNumber", event.target.value)}
-          >
-            <option value="">No position</option>
-            {CARD_POSITION_OPTIONS.map((position) => {
-              const occupant = positionOccupancy[position];
-              const isOwnSlot =
-                isEditMode &&
-                occupant &&
-                String(occupant.id) === String(editId);
-              let label = `Position ${position}`;
-              if (occupant && !isOwnSlot) {
-                label = `Position ${position} — ${occupant.title} (will replace)`;
-              } else if (occupant && isOwnSlot) {
-                label = `Position ${position} — current`;
-              }
-
-              return (
-                <option key={position} value={String(position)}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-          <p className="add_ai_solution__field-hint">
-            {`Sets the slot (1–8) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
           </p>
         </div>
 

@@ -1,48 +1,12 @@
-import { useMemo } from "react";
 import {
   ASSIGNEE_OPTIONS,
   COUNTRY_OPTIONS,
   INDUSTRY_OPTIONS,
   PIPELINE_STAGES,
 } from "./placeholders";
-import { loadTeamMembers } from "./followUpUtils";
 
-export const EMPTY_LEAD_FILTERS = {
-  stage: "all",
-  assignedTo: "all",
-  industry: "all",
-  country: "all",
-  submissionDate: "",
-};
-
-const ContactRequestFilterPanel = ({
-  open,
-  values = EMPTY_LEAD_FILTERS,
-  onChange,
-  onApply,
-  onReset,
-  onClose,
-}) => {
-  const assigneeOptions = useMemo(() => {
-    const stored = loadTeamMembers();
-    return [...new Set([...ASSIGNEE_OPTIONS, ...stored])];
-  }, [open]);
-
+const ContactRequestFilterPanel = ({ open, onClose }) => {
   if (!open) return null;
-
-  const updateField = (field, value) => {
-    onChange?.({ ...values, [field]: value });
-  };
-
-  const handleApply = () => {
-    onApply?.();
-    onClose?.();
-  };
-
-  const handleReset = () => {
-    onReset?.();
-    onClose?.();
-  };
 
   return (
     <>
@@ -71,10 +35,7 @@ const ContactRequestFilterPanel = ({
         <div className="admin_contact_filter__body">
           <label className="admin_demo_toolbar__field">
             <span>Stage</span>
-            <select
-              value={values.stage}
-              onChange={(event) => updateField("stage", event.target.value)}
-            >
+            <select defaultValue="all">
               <option value="all">All stages</option>
               {PIPELINE_STAGES.map((stage) => (
                 <option key={stage} value={stage}>
@@ -86,12 +47,9 @@ const ContactRequestFilterPanel = ({
 
           <label className="admin_demo_toolbar__field">
             <span>Assigned To</span>
-            <select
-              value={values.assignedTo}
-              onChange={(event) => updateField("assignedTo", event.target.value)}
-            >
+            <select defaultValue="all">
               <option value="all">Anyone</option>
-              {assigneeOptions.map((assignee) => (
+              {ASSIGNEE_OPTIONS.map((assignee) => (
                 <option key={assignee} value={assignee}>
                   {assignee}
                 </option>
@@ -101,10 +59,7 @@ const ContactRequestFilterPanel = ({
 
           <label className="admin_demo_toolbar__field">
             <span>Industry</span>
-            <select
-              value={values.industry}
-              onChange={(event) => updateField("industry", event.target.value)}
-            >
+            <select defaultValue="all">
               <option value="all">All industries</option>
               {INDUSTRY_OPTIONS.map((industry) => (
                 <option key={industry} value={industry}>
@@ -116,10 +71,7 @@ const ContactRequestFilterPanel = ({
 
           <label className="admin_demo_toolbar__field">
             <span>Country</span>
-            <select
-              value={values.country}
-              onChange={(event) => updateField("country", event.target.value)}
-            >
+            <select defaultValue="all">
               <option value="all">All countries</option>
               {COUNTRY_OPTIONS.map((country) => (
                 <option key={country} value={country}>
@@ -131,13 +83,7 @@ const ContactRequestFilterPanel = ({
 
           <label className="admin_demo_toolbar__field">
             <span>Submission Date</span>
-            <input
-              type="date"
-              value={values.submissionDate || ""}
-              onChange={(event) =>
-                updateField("submissionDate", event.target.value)
-              }
-            />
+            <input type="date" />
           </label>
         </div>
 
@@ -145,14 +91,14 @@ const ContactRequestFilterPanel = ({
           <button
             type="button"
             className="admin_request_demos__btn admin_request_demos__btn--secondary"
-            onClick={handleReset}
+            onClick={onClose}
           >
             Reset
           </button>
           <button
             type="button"
             className="admin_request_demos__btn admin_request_demos__btn--primary"
-            onClick={handleApply}
+            onClick={onClose}
           >
             Apply Filters
           </button>

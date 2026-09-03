@@ -8,9 +8,6 @@ import {
 } from "../components/CustomerCommunicationManagement/CapabilityIcons";
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
 import {
-  getIndustryByDomainCode,
-} from "../components/IndustryExplore/industrySolutionsData";
-import {
   buildDocumentsFromApiSolution,
 } from "./solutionDocuments";
 import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
@@ -143,56 +140,6 @@ export const getServiceIdForDomain = (domainCode) => {
   return null;
 };
 
-export const isIndustryBusinessDomain = (domainCode) =>
-  Boolean(getIndustryByDomainCode(domainCode));
-
-export const normalizeSolutionCapabilityId = (solutionId) => {
-  if (solutionId == null || solutionId === "") return "";
-
-  const raw = String(solutionId).trim();
-  if (/^api-/i.test(raw)) return raw;
-  if (/^\d+$/.test(raw)) return `api-${raw}`;
-  return raw;
-};
-
-export const buildExploreSolutionPath = ({
-  businessDomain,
-  solutionId,
-  extraParams = {},
-} = {}) => {
-  const capabilityId = normalizeSolutionCapabilityId(solutionId);
-  const params = new URLSearchParams(
-    Object.entries(extraParams).reduce((acc, [key, value]) => {
-      if (value != null && value !== "") {
-        acc[key] = String(value);
-      }
-      return acc;
-    }, {}),
-  );
-
-  const serviceId = getServiceIdForDomain(businessDomain);
-  const isIndustry = isIndustryBusinessDomain(businessDomain);
-
-  if (serviceId && !isIndustry) {
-    params.set("service", serviceId);
-  } else if (businessDomain) {
-    params.set("domain", businessDomain);
-    const industry = getIndustryByDomainCode(businessDomain);
-    if (industry?.id) {
-      params.set("industry", industry.id);
-    }
-  } else {
-    params.set("service", "agentic-automation");
-  }
-
-  if (capabilityId) {
-    params.set("solution", capabilityId);
-  }
-
-  const query = params.toString();
-  return `/explore-solutions${query ? `?${query}` : ""}`;
-};
-
 export const solutionMatchesExploreFilter = ({
   businessDomain,
   activeServiceId,
@@ -202,10 +149,6 @@ export const solutionMatchesExploreFilter = ({
 
   if (activeDomainCode) {
     return normalizeKey(businessDomain) === normalizeKey(activeDomainCode);
-  }
-
-  if (isIndustryBusinessDomain(businessDomain)) {
-    return false;
   }
 
   return getServiceIdForDomain(businessDomain) === activeServiceId;
@@ -470,14 +413,16 @@ export const isPublicSolutionVisible = (solution = {}) =>
 export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
   [...solutions]
     .filter(isPublicSolutionVisible)
-    .filter((solution) => {
-      const order = getSolutionOrderNumber(solution);
-      return Number.isFinite(order) && order >= 1 && order <= 8;
-    })
     .sort((left, right) => {
       const leftOrder = getSolutionOrderNumber(left);
       const rightOrder = getSolutionOrderNumber(right);
 
+      if (leftOrder == null && rightOrder == null) {
+        return Number(left?.ID || 0) - Number(right?.ID || 0);
+      }
+
+      if (leftOrder == null) return 1;
+      if (rightOrder == null) return -1;
       if (leftOrder !== rightOrder) return leftOrder - rightOrder;
 
       return Number(left?.ID || 0) - Number(right?.ID || 0);
@@ -488,35 +433,30 @@ export const mapApiSolutionToHomeCard = (solution) => {
   if (!solution) return null;
 
   const orderNumber = getSolutionOrderNumber(solution);
-  const serviceId = getServiceIdForDomain(solution.BusinessDomain);
+  const serviceId =
+    getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation";
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
-  const industry = getIndustryByDomainCode(solution.BusinessDomain);
   const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
   const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
-  const detailUrl = buildExploreSolutionPath({
-    businessDomain: solution.BusinessDomain,
-    solutionId: solution.ID,
-  });
 
   return {
     id: solutionApiId,
     title: solution.Title || "Untitled Solution",
     description:
-      toText(solution.SolutionContext).trim() ||
+      truncateText(solution.SolutionContext) ||
       "Explore this enterprise AI solution.",
-    domainLabel:
-      service?.label || industry?.title || solution.BusinessDomain || "Enterprise AI",
+    domainLabel: service?.label || solution.BusinessDomain || "Enterprise AI",
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),
     techHighlight: techStack[0]?.name || null,
     techText: techStack.map((entry) => entry.name).join(" "),
-    serviceId: serviceId || null,
+    serviceId,
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
-    detailUrl,
+    detailUrl: `/explore-solutions?service=${serviceId}&solution=${encodeURIComponent(solutionApiId)}`,
     capabilityForDemo: {
       id: solutionApiId,
       title: solution.Title || "Untitled Solution",

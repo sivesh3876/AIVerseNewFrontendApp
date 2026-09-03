@@ -6,12 +6,6 @@ import {
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";
 import { addContactRequest } from "../../utils/contactRequestStorage";
-import {
-  EMAIL_VALIDATION_MESSAGE,
-  isValidEmail,
-  isValidPhone,
-  PHONE_VALIDATION_MESSAGE,
-} from "../../utils/formValidation";
 import "./RequestDemoModal.scss";
 
 const INITIAL_FORM = {
@@ -53,14 +47,8 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
 
     if (!form.email.trim()) {
       nextErrors.email = "Email is required";
-    } else if (!isValidEmail(form.email)) {
-      nextErrors.email = EMAIL_VALIDATION_MESSAGE;
-    }
-
-    if (!form.phone.trim()) {
-      nextErrors.phone = "Phone number is required";
-    } else if (!isValidPhone(form.phone)) {
-      nextErrors.phone = PHONE_VALIDATION_MESSAGE;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      nextErrors.email = "Enter a valid email address";
     }
 
     setErrors(nextErrors);
@@ -287,12 +275,8 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="Enter your phone number"
-                className={errors.phone ? "has-error" : ""}
                 disabled={isSending}
               />
-              {errors.phone && (
-                <small className="request_demo_modal__error">{errors.phone}</small>
-              )}
             </label>
 
             <label className="request_demo_modal__field">

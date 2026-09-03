@@ -127,13 +127,6 @@ const HeroBannerSlider = () => {
             >
               {slides[activeSlide].secondaryBtn}
             </button>
-
-            <Link
-              to="/ai-readiness-assessment"
-              className="secondary_btn assessment_btn"
-            >
-              AI Readiness Assessment
-            </Link>
           </div>
         </div>
       </div>

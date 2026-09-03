@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   fetchAuthenticatedUser,
   getLoginUrl,
@@ -238,7 +237,7 @@ const SolutionCommentModal = ({ solutionId, title, onClose, onUpdated }) => {
     await handleSubmitComment(text, parentCommentId);
   };
 
-  return createPortal(
+  return (
     <div
       className="solution_comment_modal__overlay"
       role="dialog"
@@ -249,7 +248,6 @@ const SolutionCommentModal = ({ solutionId, title, onClose, onUpdated }) => {
       <div
         className="solution_comment_modal"
         onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
       >
         <div className="solution_comment_modal__header">
           <div>
@@ -327,8 +325,7 @@ const SolutionCommentModal = ({ solutionId, title, onClose, onUpdated }) => {
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 };
 

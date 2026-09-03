@@ -1,7 +1,4 @@
-import {
-  buildExploreSolutionPath,
-  getServiceIdForDomain,
-} from "./solutionMapper";
+import { getServiceIdForDomain } from "./solutionMapper";
 
 export const getJourneySolutionCapabilityId = (solutionId) =>
   `api-${solutionId}`;
@@ -29,12 +26,8 @@ export const buildSolutionTitleMap = (solutions = []) => {
 
     map.set(Number(solution.ID), {
       title: solution.Title || "",
-      serviceId: getServiceIdForDomain(solution.BusinessDomain),
-      businessDomain: solution.BusinessDomain || "",
-      path: buildExploreSolutionPath({
-        businessDomain: solution.BusinessDomain,
-        solutionId: solution.ID,
-      }),
+      serviceId:
+        getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation",
     });
   });
 
@@ -63,21 +56,6 @@ export const resolveJourneyCardSolutionLink = (card, solutionMap = new Map()) =>
   }
 
   const fromApi = solutionMap.get(Number(solutionId));
-  const path =
-    fromApi?.path ||
-    buildExploreSolutionPath({
-      businessDomain: fromApi?.businessDomain,
-      solutionId,
-    });
-
-  if (path && path !== "/explore-solutions") {
-    return {
-      solutionId,
-      label: fromApi?.title || "",
-      path,
-    };
-  }
-
   const serviceId =
     fromApi?.serviceId ||
     extractServiceIdFromJourneyLink(card.linkPath) ||

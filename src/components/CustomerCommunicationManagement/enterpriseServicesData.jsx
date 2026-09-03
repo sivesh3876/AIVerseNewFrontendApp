@@ -7,18 +7,12 @@ import {
   ChartIcon,
 } from "./CapabilityIcons";
 import {
-  AgenticAutomationIcon,
-  CustomerCommunicationIcon,
-  CxCrmIcon,
-  DataManagementIcon,
-  DigitalEngineeringIcon,
-  DigitalExperienceIcon,
-} from "../EnterpriseTransformationServices/ServiceIcons";
-import {
-  BotIcon,
+  MessageSquareIcon,
+  SmileIcon,
+  SparklesIcon,
   CpuIcon,
   DatabaseIcon,
-  SparklesIcon,
+  BotIcon,
 } from "./ServiceNavIcons";
 
 const coe = {
@@ -38,8 +32,7 @@ export const enterpriseServicesSource = [
   {
     id: "customer-communication-management",
     label: "Customer Communication Management",
-    navIcon: CustomerCommunicationIcon,
-    navIconBg: "#4D90E3",
+    navIcon: MessageSquareIcon,
     subtitle:
       "Intelligent, omnichannel communication delivered at enterprise scale.",
     features: [
@@ -132,8 +125,7 @@ export const enterpriseServicesSource = [
   {
     id: "enterprise-application",
     label: "Enterprise Application",
-    navIcon: CxCrmIcon,
-    navIconBg: "#3A8D9D",
+    navIcon: SmileIcon,
     subtitle:
       "Deliver hyper-personalized customer journeys powered by AI across every CRM touchpoint.",
     features: [
@@ -226,8 +218,7 @@ export const enterpriseServicesSource = [
   {
     id: "digital-experience",
     label: "Digital Experience",
-    navIcon: DigitalExperienceIcon,
-    navIconBg: "linear-gradient(135deg, #EF8E29 0%, #18E0CC 100%)",
+    navIcon: SparklesIcon,
     subtitle:
       "Create immersive, AI-enhanced digital experiences that convert and delight users.",
     features: [
@@ -320,8 +311,7 @@ export const enterpriseServicesSource = [
   {
     id: "digital-engineering",
     label: "Digital Engineering",
-    navIcon: DigitalEngineeringIcon,
-    navIconBg: "#EF8E29",
+    navIcon: CpuIcon,
     subtitle:
       "Build resilient, cloud-native platforms with AI-accelerated software engineering practices.",
     features: [
@@ -414,8 +404,7 @@ export const enterpriseServicesSource = [
   {
     id: "data-management",
     label: "Data Management",
-    navIcon: DataManagementIcon,
-    navIconBg: "#18E0CC",
+    navIcon: DatabaseIcon,
     subtitle:
       "Unlock enterprise data value with AI-powered governance, integration, and analytics platforms.",
     features: [
@@ -508,8 +497,7 @@ export const enterpriseServicesSource = [
   {
     id: "agentic-automation",
     label: "Agentic Automation",
-    navIcon: AgenticAutomationIcon,
-    navIconBg: "#EF8E29",
+    navIcon: BotIcon,
     subtitle:
       "Deploy autonomous AI agents that orchestrate complex workflows across your enterprise.",
     features: [

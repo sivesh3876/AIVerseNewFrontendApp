@@ -181,11 +181,7 @@ const CategoryNavItem = ({ label, categoryKey, isActive, onClick }) => {
 };
 
 const ProfessionalCard = ({ holder }) => {
-  const certificateUrl = String(holder.certificateUrl || "").trim();
-  const hasCertificate =
-    Boolean(certificateUrl) &&
-    certificateUrl !== "—" &&
-    certificateUrl !== "-";
+  const hasCertificate = Boolean(holder.certificateUrl);
   const summaryLine = [
     holder.designation,
     [
@@ -246,14 +242,16 @@ const ProfessionalCard = ({ holder }) => {
 
       {hasCertificate ? (
         <a
-          href={certificateUrl}
+          href={holder.certificateUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="certification_details__card-link"
         >
-          View Details &gt;
+          View Certificate &gt;
         </a>
-      ) : null}
+      ) : (
+        <span className="certification_details__card-link">View Details &gt;</span>
+      )}
     </article>
   );
 };
@@ -424,10 +422,10 @@ const CertificationDetails = ({ certificationId = null }) => {
               className="certification_details__nav"
               aria-label="Certification categories"
             >
-              <h2>ALL CERTIFICATION</h2>
+              <h2>ALL CATEGORIES</h2>
               <ul>
                 <CategoryNavItem
-                  label="All Certification"
+                  label="All Categories"
                   categoryKey={ALL_CATEGORY}
                   isActive={activeCategory === ALL_CATEGORY}
                   onClick={() => handleCategoryChange(ALL_CATEGORY)}

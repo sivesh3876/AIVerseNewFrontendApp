@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer/Footer";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
@@ -27,7 +27,6 @@ import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
 import SuccessStoriesPage from "./pages/SuccessStoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
-import AIReadinessAssessmentPage from "./pages/AIReadinessAssessmentPage";
 import AdminDashboardPage, {
   AdminBlogs,
   AdminCertifications,
@@ -42,60 +41,23 @@ import UserDetails from "./pages/UserManagement/UserDetails";
 import RoleManagement from "./pages/RoleManagement/RoleManagement";
 import RoleDetails from "./pages/RoleManagement/RoleDetails";
 import ContactRequests from "./pages/ContactRequests/ContactRequests";
-import {
-  getHomeScrollBehavior,
-  scrollToHomeSectionWhenReady,
-  updateHomeHash,
-} from "./utils/homeSections";
+import { scrollToHomeSection } from "./utils/homeSections";
 
 const RouteScrollManager = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { pathname, hash, search, state } = location;
-  const skipNextTopScrollRef = useRef(false);
-  const scrollToSection =
-    typeof state?.scrollToSection === "string" ? state.scrollToSection : "";
+  const { pathname, hash } = useLocation();
 
   useEffect(() => {
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
-  }, []);
+    if (hash) {
+      const sectionId = hash.slice(1);
+      const timer = window.setTimeout(() => {
+        scrollToHomeSection(sectionId);
+      }, 100);
 
-  useEffect(() => {
-    const sectionFromHash = hash ? hash.slice(1) : "";
-    const sectionId = scrollToSection || sectionFromHash;
-
-    if (pathname === "/" && sectionId) {
-      return scrollToHomeSectionWhenReady(sectionId, {
-        timeout: 2000,
-        onScrolled: () => {
-          updateHomeHash(sectionId);
-
-          if (scrollToSection) {
-            skipNextTopScrollRef.current = true;
-            navigate(
-              { pathname: "/", search },
-              { replace: true, state: {} },
-            );
-            updateHomeHash(sectionId);
-          }
-        },
-      });
+      return () => window.clearTimeout(timer);
     }
 
-    if (skipNextTopScrollRef.current) {
-      skipNextTopScrollRef.current = false;
-      return undefined;
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: getHomeScrollBehavior(),
-    });
-
-    return undefined;
-  }, [pathname, hash, search, scrollToSection, navigate]);
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
 
   return null;
 };
@@ -122,12 +84,6 @@ const AppShell = () => {
           element={<CertificationDetailsPage />}
         />
         <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
-
-        <Route
-          path="/ai-readiness-assessment"
-          element={<AIReadinessAssessmentPage />}
-        />
-
         <Route
           path="/get-started"
           element={

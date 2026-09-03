@@ -1,10 +1,8 @@
 import {
   getEnterpriseServiceById,
 } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
-import { getIndustryByDomainCode } from "../components/IndustryExplore/industrySolutionsData";
 import {
   getServiceIdForDomain,
-  isIndustryBusinessDomain,
   mapApiSolutionToCapability,
   resolveSolutionClient,
 } from "../utils/solutionMapper";
@@ -15,27 +13,6 @@ const mapPerson = (person) => ({
   email: person?.email || "",
   color: person?.color || "teal",
 });
-
-const resolveDetailPlacement = (businessDomain, businessDomains = []) => {
-  const domain = businessDomains.find(
-    (entry) => entry.DomainCode === businessDomain,
-  );
-  const industryMeta = getIndustryByDomainCode(businessDomain);
-  const isIndustry = isIndustryBusinessDomain(businessDomain);
-  const serviceLine = isIndustry
-    ? null
-    : getServiceIdForDomain(businessDomain) || "agentic-automation";
-  const service = serviceLine ? getEnterpriseServiceById(serviceLine) : null;
-
-  return {
-    businessDomain: businessDomain || null,
-    serviceLine,
-    serviceLineLabel:
-      service?.label || industryMeta?.title || domain?.DomainName || businessDomain || "",
-    industry: domain?.DomainName || industryMeta?.title || businessDomain || null,
-    keyBenefits: service?.features || industryMeta?.features || [],
-  };
-};
 
 export const solutionToCapabilityCard = (solution) => {
   if (!solution) return null;
@@ -93,23 +70,24 @@ export const solutionToCapabilityCard = (solution) => {
 export const buildDetailFromCapability = (capability, { businessDomains = [] } = {}) => {
   if (!capability) return null;
 
-  const placement = resolveDetailPlacement(
-    capability.businessDomain,
-    businessDomains,
+  const serviceLine =
+    getServiceIdForDomain(capability.businessDomain) || "agentic-automation";
+  const service = getEnterpriseServiceById(serviceLine);
+  const domain = businessDomains.find(
+    (entry) => entry.DomainCode === capability.businessDomain,
   );
 
   return {
     id: capability.id,
     title: capability.title,
-    serviceLine: placement.serviceLine,
-    serviceLineLabel: placement.serviceLineLabel,
-    industry: placement.industry,
-    businessDomain: placement.businessDomain,
+    serviceLine,
+    serviceLineLabel: service.label,
+    industry: domain?.DomainName || capability.businessDomain || null,
     client: capability.client || "",
     aiFoundation: capability.aiFoundation || [],
     shortDescription: capability.description || "",
     detailedDescription: capability.description || "",
-    keyBenefits: placement.keyBenefits,
+    keyBenefits: service.features,
     techStack: capability.techStack || [],
     coe: [mapPerson(capability.coe)],
     aiEvangelists: (capability.evangelists || []).map(mapPerson),
@@ -131,23 +109,24 @@ export const mapApiSolutionToDetail = (
     solutionOwners,
   });
 
-  const placement = resolveDetailPlacement(
-    apiSolution.BusinessDomain,
-    businessDomains,
+  const serviceLine =
+    getServiceIdForDomain(apiSolution.BusinessDomain) || "agentic-automation";
+  const service = getEnterpriseServiceById(serviceLine);
+  const domain = businessDomains.find(
+    (entry) => entry.DomainCode === apiSolution.BusinessDomain,
   );
 
   return {
     id: `api-${apiSolution.ID}`,
     title: apiSolution.Title || "Untitled Solution",
-    serviceLine: placement.serviceLine,
-    serviceLineLabel: placement.serviceLineLabel,
-    industry: placement.industry,
-    businessDomain: placement.businessDomain,
+    serviceLine,
+    serviceLineLabel: service.label,
+    industry: domain?.DomainName || apiSolution.BusinessDomain || null,
     client: resolveSolutionClient(apiSolution),
     aiFoundation: capability.aiFoundation || [],
     shortDescription: apiSolution.SolutionContext || "",
     detailedDescription: apiSolution.SolutionContext || "",
-    keyBenefits: placement.keyBenefits,
+    keyBenefits: service.features,
     capabilities: [capability],
     techStack: capability.techStack,
     coe: [

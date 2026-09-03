@@ -2,11 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import "./Navigation.scss";
 import logo from "../../assets/images/logo.svg";
-import {
-  HOME_NAV_LINKS,
-  scrollToHomeSection,
-  updateHomeHash,
-} from "../../utils/homeSections";
+import { HOME_NAV_LINKS, scrollToHomeSection } from "../../utils/homeSections";
 import CallbackScheduleModal from "../CallbackSchedule/CallbackScheduleModal";
 
 const Navigation = () => {
@@ -20,13 +16,15 @@ const Navigation = () => {
 
     if (location.pathname === "/") {
       scrollToHomeSection(sectionId);
-      updateHomeHash(sectionId);
+
+      if (location.hash !== `#${sectionId}`) {
+        navigate(`/#${sectionId}`, { replace: true });
+      }
+
       return;
     }
 
-    navigate("/", {
-      state: { scrollToSection: sectionId },
-    });
+    navigate(`/#${sectionId}`);
   };
 
   return (

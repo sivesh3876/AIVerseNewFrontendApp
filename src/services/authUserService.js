@@ -1,5 +1,3 @@
-import { getAdminSession } from "../utils/adminAuth";
-
 const AUTH_ME_URL = "/.auth/me";
 
 const CLAIM_TYPES = {
@@ -56,65 +54,8 @@ const normalizeAuthProfile = (profile) => {
   };
 };
 
-const userFromAdminSession = () => {
-  const session = getAdminSession();
-  if (!session?.email) {
-    return null;
-  }
-
-  return {
-    name: session.name || session.email.split("@")[0] || "User",
-    email: session.email,
-    userId: session.email,
-  };
-};
-
-const isLocalDevHost = () => {
-  if (typeof window === "undefined") {
-    return Boolean(import.meta.env.DEV);
-  }
-
-  const host = window.location.hostname;
-  return (
-    import.meta.env.DEV ||
-    host === "localhost" ||
-    host === "127.0.0.1"
-  );
-};
-
-const toRelativeReturnUrl = (redirectUri) => {
-  if (!redirectUri) {
-    return "/";
-  }
-
-  try {
-    if (redirectUri.startsWith("http://") || redirectUri.startsWith("https://")) {
-      const url = new URL(redirectUri);
-      return `${url.pathname}${url.search}${url.hash}` || "/";
-    }
-  } catch {
-    return "/";
-  }
-
-  if (redirectUri.startsWith("/")) {
-    return redirectUri;
-  }
-
-  return "/";
-};
-
-export const getLoginUrl = (redirectUri = window.location.href) => {
-  if (typeof window === "undefined") {
-    return "/admin/login";
-  }
-
-  if (isLocalDevHost()) {
-    const returnUrl = toRelativeReturnUrl(redirectUri);
-    return `/admin/login?returnUrl=${encodeURIComponent(returnUrl)}`;
-  }
-
-  return `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(redirectUri)}`;
-};
+export const getLoginUrl = (redirectUri = window.location.href) =>
+  `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(redirectUri)}`;
 
 export const fetchAuthenticatedUser = async ({ forceRefresh = false } = {}) => {
   if (typeof window === "undefined") {
@@ -136,24 +77,22 @@ export const fetchAuthenticatedUser = async ({ forceRefresh = false } = {}) => {
         headers: { Accept: "application/json" },
       });
 
-      if (response.ok) {
-        const payload = await response.json();
-        const profile = Array.isArray(payload) ? payload[0] : payload;
-        const authUser = normalizeAuthProfile(profile);
-        if (authUser) {
-          cachedUser = authUser;
-          return cachedUser;
-        }
+      if (!response.ok) {
+        cachedUser = null;
+        return null;
       }
-    } catch {
-      // Fall through to admin session.
-    }
 
-    cachedUser = userFromAdminSession();
-    return cachedUser;
-  })().finally(() => {
-    cachedUserPromise = null;
-  });
+      const payload = await response.json();
+      const profile = Array.isArray(payload) ? payload[0] : payload;
+      cachedUser = normalizeAuthProfile(profile);
+      return cachedUser;
+    } catch {
+      cachedUser = null;
+      return null;
+    } finally {
+      cachedUserPromise = null;
+    }
+  })();
 
   return cachedUserPromise;
 };

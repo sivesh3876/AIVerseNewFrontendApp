@@ -6,9 +6,7 @@ import ContactRequestSummary from "../../components/ContactRequest/ContactReques
 import ContactRequestToolbar from "../../components/ContactRequest/ContactRequestToolbar";
 import ContactRequestKanban from "../../components/ContactRequest/ContactRequestKanban";
 import ContactRequestTable from "../../components/ContactRequest/ContactRequestTable";
-import ContactRequestFilterPanel, {
-  EMPTY_LEAD_FILTERS,
-} from "../../components/ContactRequest/ContactRequestFilterPanel";
+import ContactRequestFilterPanel from "../../components/ContactRequest/ContactRequestFilterPanel";
 import ContactRequestDrawer from "../../components/ContactRequest/ContactRequestDrawer";
 import ContactRequestToast from "../../components/ContactRequest/ContactRequestToast";
 import LeadDeleteModal from "../../components/ContactRequest/LeadDeleteModal";
@@ -16,8 +14,6 @@ import {
   getContactRequests,
   updateStoredContactRequestStage,
   deleteContactRequest,
-  getDeletedLeadKeys,
-  markLeadDeleted,
 } from "../../utils/contactRequestStorage";
 import {
   getContactRequestsFromApi,
@@ -68,12 +64,6 @@ const mergeApiAndStoredLeads = (apiLeads, storedLeads) => {
   return [...apiLeads.map(normalizeLead), ...uniqueStored.map(normalizeLead)];
 };
 
-const filterDeletedLeads = (leads) => {
-  const deletedKeys = new Set(getDeletedLeadKeys());
-  if (deletedKeys.size === 0) return leads;
-  return leads.filter((lead) => !deletedKeys.has(lead.requestKey));
-};
-
 const appendStageActivity = (request, stage) => ({
   ...request,
   stage,
@@ -99,85 +89,12 @@ const appendActivity = (request, label) => ({
   ],
 });
 
-/** YYYY-MM-DD in local timezone for date-input comparison. */
-const toLocalDateKey = (value) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    const raw = String(value).slice(0, 10);
-    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
-  }
-
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const normalizeFilterText = (value) => {
-  const text = String(value || "").trim().toLowerCase();
-  if (!text || text === "—" || text === "-") return "";
-  return text;
-};
-
-const matchesLeadFilters = (lead, filters) => {
-  if (!filters) return true;
-
-  if (filters.stage && filters.stage !== "all") {
-    if (String(lead.stage || "") !== filters.stage) return false;
-  }
-
-  if (filters.assignedTo && filters.assignedTo !== "all") {
-    if (
-      normalizeFilterText(lead.assignedTo) !==
-      normalizeFilterText(filters.assignedTo)
-    ) {
-      return false;
-    }
-  }
-
-  if (filters.industry && filters.industry !== "all") {
-    if (
-      normalizeFilterText(lead.industry) !==
-      normalizeFilterText(filters.industry)
-    ) {
-      return false;
-    }
-  }
-
-  if (filters.country && filters.country !== "all") {
-    if (
-      normalizeFilterText(lead.country) !==
-      normalizeFilterText(filters.country)
-    ) {
-      return false;
-    }
-  }
-
-  if (filters.submissionDate) {
-    if (toLocalDateKey(lead.submittedAt) !== filters.submissionDate) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const areLeadFiltersActive = (filters = EMPTY_LEAD_FILTERS) =>
-  (filters.stage && filters.stage !== "all") ||
-  (filters.assignedTo && filters.assignedTo !== "all") ||
-  (filters.industry && filters.industry !== "all") ||
-  (filters.country && filters.country !== "all") ||
-  Boolean(filters.submissionDate);
-
 const ContactRequests = () => {
   const { adminEmail } = useAdminAuth();
   const authorName = adminEmail || "Admin";
 
   const [viewMode, setViewMode] = useState("kanban");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [draftFilters, setDraftFilters] = useState(EMPTY_LEAD_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState(EMPTY_LEAD_FILTERS);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followUpsByLead, setFollowUpsByLead] = useState({});
@@ -204,27 +121,14 @@ const ContactRequests = () => {
     ? notesByLead[selectedRequestKey] || []
     : [];
 
-  const filteredRequests = useMemo(
-    () => requests.filter((lead) => matchesLeadFilters(lead, appliedFilters)),
-    [requests, appliedFilters],
-  );
+  const stats = useMemo(() => buildStats(requests), [requests]);
 
-  const stats = useMemo(
-    () => buildStats(filteredRequests),
-    [filteredRequests],
-  );
-
-  const filtersActive = areLeadFiltersActive(appliedFilters);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredRequests.length / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
 
   const paginatedRequests = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredRequests.slice(start, start + PAGE_SIZE);
-  }, [filteredRequests, currentPage]);
+    return requests.slice(start, start + PAGE_SIZE);
+  }, [requests, currentPage]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -232,17 +136,13 @@ const ContactRequests = () => {
     }
   }, [currentPage, totalPages]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [appliedFilters]);
-
   const loadRequests = useCallback(async ({ showToast = false } = {}) => {
     setLoading(true);
     const storedLeads = buildStoredLocalLeads();
 
     try {
       if (!isContactRequestsApiConfigured()) {
-        setRequests(filterDeletedLeads(storedLeads));
+        setRequests(storedLeads);
         if (showToast || storedLeads.length === 0) {
           setToast({
             type: storedLeads.length ? "success" : "error",
@@ -256,9 +156,7 @@ const ContactRequests = () => {
 
       try {
         const apiLeads = await getContactRequestsFromApi();
-        setRequests(
-          filterDeletedLeads(mergeApiAndStoredLeads(apiLeads, storedLeads)),
-        );
+        setRequests(mergeApiAndStoredLeads(apiLeads, storedLeads));
 
         if (showToast) {
           setToast({
@@ -272,7 +170,7 @@ const ContactRequests = () => {
         }
       } catch (apiError) {
         // Keep Schedule/Register/Contact local cards visible when API is down.
-        setRequests(filterDeletedLeads(storedLeads));
+        setRequests(storedLeads);
         setToast({
           type: "error",
           message:
@@ -281,7 +179,7 @@ const ContactRequests = () => {
         });
       }
     } catch (error) {
-      setRequests(filterDeletedLeads(storedLeads));
+      setRequests(storedLeads);
       setToast({
         type: "error",
         message: error?.message || "Could not load leads.",
@@ -341,8 +239,6 @@ const ContactRequests = () => {
     try {
       if (leadToDelete.isStored) {
         deleteContactRequest(leadToDelete.id);
-      } else if (leadToDelete.isApi) {
-        markLeadDeleted(leadToDelete.requestKey);
       }
 
       setRequests((prev) =>
@@ -369,7 +265,7 @@ const ContactRequests = () => {
       setToast({
         type: "success",
         message: leadToDelete.isApi
-          ? "Lead removed. It will stay hidden until server delete is available."
+          ? "Lead hidden from this view. Server delete is not enabled yet."
           : "Lead deleted successfully.",
       });
     } finally {
@@ -514,21 +410,15 @@ const ContactRequests = () => {
       <ContactRequestToolbar
         viewMode={viewMode}
         onViewChange={setViewMode}
-        onFilterOpen={() => {
-          setDraftFilters(appliedFilters);
-          setFilterOpen(true);
-        }}
-        filterActive={filtersActive || filterOpen}
+        onFilterOpen={() => setFilterOpen(true)}
+        filterActive={filterOpen}
         onRefresh={handleRefresh}
       />
 
       {loading ? (
         <p style={{ margin: "16px 0", color: "#6b7280" }}>Loading leads...</p>
       ) : viewMode === "kanban" ? (
-        <ContactRequestKanban
-          requests={filteredRequests}
-          onCardClick={openDrawer}
-        />
+        <ContactRequestKanban requests={requests} onCardClick={openDrawer} />
       ) : (
         <>
           <ContactRequestTable
@@ -538,7 +428,7 @@ const ContactRequests = () => {
           <AdminBlogPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredRequests.length}
+            totalItems={requests.length}
             pageSize={PAGE_SIZE}
             onPageChange={setCurrentPage}
             itemLabel="leads"
@@ -548,13 +438,6 @@ const ContactRequests = () => {
 
       <ContactRequestFilterPanel
         open={filterOpen}
-        values={draftFilters}
-        onChange={setDraftFilters}
-        onApply={() => setAppliedFilters(draftFilters)}
-        onReset={() => {
-          setDraftFilters(EMPTY_LEAD_FILTERS);
-          setAppliedFilters(EMPTY_LEAD_FILTERS);
-        }}
         onClose={() => setFilterOpen(false)}
       />
 

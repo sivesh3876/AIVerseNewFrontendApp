@@ -20,6 +20,19 @@ export const learnExploreTracks = [
 
 export const learnExploreResources = [
   {
+  id: "education-ai-case-study",
+  trackId: "multimodal-ai",
+  badge: "MARKETING",
+  badgeColor: "#EF8E29",
+  title:
+    "AI and Cloud Data Sovereignty: Why the Future of Enterprise AI Depends on Where Your Data Lives",
+  description:
+    "Explore how AI and cloud data sovereignty are reshaping enterprise AI across Europe. Learn about the EU AI Act, GDPR, sovereign cloud strategies, and how businesses can build secure, compliant, and AI-ready digital ecosystems.",
+  date: "July 07, 2027",
+
+  url: "https://www.espire.com/blog/posts/ai-and-cloud-data-sovereignty-why-the-future-of-enterprise-ai-depends-on-where-your-data-lives"
+},
+  {
     id: "ai-adoption-financial-services-2026",
     trackId: "generative-ai",
     badge: "INDUSTRY REPORT",

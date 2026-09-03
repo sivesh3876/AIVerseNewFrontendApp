@@ -61,7 +61,8 @@ const IndustrySpecificAISolutions = ({ industries = homeIndustries }) => {
             const { className, animationDelay } = getCardAnimation(index);
 
             return (
-              <article
+              <Link
+                to={`/industry-solutions?industry=${industry.id}`}
                 className={`industry_solutions__card ${className}`}
                 key={industry.id}
                 style={{
@@ -102,15 +103,12 @@ const IndustrySpecificAISolutions = ({ industries = homeIndustries }) => {
                       {industry.metric}
                     </p>
 
-                    <Link
-                      to={`/industry-solutions?industry=${industry.id}`}
-                      className="industry_solutions__link"
-                    >
+                    <span className="industry_solutions__link">
                       Explore &gt;
-                    </Link>
+                    </span>
                   </div>
                 </div>
-              </article>
+              </Link>
             );
           })}
         </div>

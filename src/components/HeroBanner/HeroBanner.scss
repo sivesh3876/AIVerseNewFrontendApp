@@ -23,7 +23,6 @@
     background   : rgba(13, 30, 50, 0.55);
     color        : #fff;
     cursor       : pointer;
-    -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
     transition   : background 0.2s, border-color 0.2s, transform 0.2s;
 
@@ -101,7 +100,7 @@
 
 .hero_search {
     position        : relative;
-    z-index         : 20;
+    z-index         : 5;
     width           : calc(100% + 30px);
     margin-left     : -15px;
     background-color: rgb(13, 30, 50);
@@ -184,16 +183,6 @@
 
     &:active {
         transform: translateY(0);
-    }
-}
-
-.assessment_btn {
-    white-space: nowrap;
-    font-weight: 600;
-
-    &:hover {
-        border-color: #18e0cc;
-        color: #18e0cc;
     }
 }
 
