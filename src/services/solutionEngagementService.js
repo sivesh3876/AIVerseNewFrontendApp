@@ -16,6 +16,14 @@ const assertSuccess = (response, result, fallbackMessage) => {
   }
 };
 
+const postJsonWithoutPreflight = async (endpoint, payload) => {
+  return fetch(`${API_BASE_URL}/${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
+    body: JSON.stringify(payload),
+  });
+};
+
 export const fetchSolutionEngagement = async (solutionKey, visitorToken) => {
   const params = new URLSearchParams({ solutionKey });
   if (visitorToken) {
@@ -29,44 +37,28 @@ export const fetchSolutionEngagement = async (solutionKey, visitorToken) => {
 };
 
 export const toggleSolutionLikeApi = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/solution-engagement-like`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await postJsonWithoutPreflight("solution-engagement-like", payload);
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to update like.");
   return result.data;
 };
 
 export const addSolutionCommentApi = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/solution-engagement-comment`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await postJsonWithoutPreflight("solution-engagement-comment", payload);
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to save comment.");
   return result.data;
 };
 
 export const recordSolutionShareApi = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/solution-engagement-share`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await postJsonWithoutPreflight("solution-engagement-share", payload);
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to record share.");
   return result.data;
 };
 
 export const recordSolutionViewApi = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/solution-engagement-view`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await postJsonWithoutPreflight("solution-engagement-view", payload);
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to record view.");
   return result.data;
