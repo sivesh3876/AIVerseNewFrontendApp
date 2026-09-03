@@ -5,10 +5,18 @@ import PipelineStage from "./PipelineStage";
 import FollowUpList from "./FollowUpList";
 import FollowUpModal from "./FollowUpModal";
 import InternalNotes from "./InternalNotes";
-import { loadTeamMembers, saveTeamMember } from "./followUpUtils";
+import {
+  loadTeamMembers,
+  saveTeamMember,
+  EMAIL_RE,
+  ensureMemberInList,
+  fetchSolutionOwnerMembers,
+  mergeTeamMembers,
+  parseAssignees,
+  formatAssigneesLabel,
+} from "./followUpUtils";
 
 const SCHEDULE_CLICK_GUARD_MS = 450;
-const ADD_MEMBER_VALUE = "__add_member__";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -45,18 +53,22 @@ const ContactRequestDrawer = ({
   onStageSuccess,
   onStageError,
   followUps = [],
+  loadingFollowUps = false,
   notes = [],
   onSaveFollowUp,
   savingFollowUp = false,
   onSaveNote,
   savingNote = false,
+  onAssigneesChange,
 }) => {
   const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
   const [scheduleUnlocked, setScheduleUnlocked] = useState(false);
-  const [assignedTo, setAssignedTo] = useState("Unassigned");
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [members, setMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
   const [assignError, setAssignError] = useState("");
   const scheduleIntentRef = useRef(false);
 
@@ -66,27 +78,56 @@ const ContactRequestDrawer = ({
     scheduleIntentRef.current = false;
     setIsAddingMember(false);
     setNewMemberName("");
+    setNewMemberEmail("");
     setAssignError("");
 
-    const currentAssignee = request?.assignedTo || "Unassigned";
-    const storedMembers = loadTeamMembers();
-    const withCurrent =
-      currentAssignee &&
-      currentAssignee !== "Unassigned" &&
-      !storedMembers.includes(currentAssignee)
-        ? [currentAssignee, ...storedMembers]
-        : storedMembers;
+    let isMounted = true;
 
-    setMembers(withCurrent);
-    setAssignedTo(currentAssignee);
+    const loadAssignableMembers = async () => {
+      setLoadingMembers(true);
+      try {
+        const [owners, stored] = await Promise.all([
+          fetchSolutionOwnerMembers(),
+          Promise.resolve(loadTeamMembers()),
+        ]);
+        if (!isMounted) return;
+
+        const directory = mergeTeamMembers(owners, stored);
+        const current = parseAssignees(request?.assignedTo, directory);
+        const withSelected = current.reduce(
+          (list, person) => ensureMemberInList(list, person.name, person.email),
+          directory,
+        );
+
+        setMembers(withSelected);
+        setSelectedAssignees(current);
+      } finally {
+        if (isMounted) {
+          setLoadingMembers(false);
+        }
+      }
+    };
+
+    loadAssignableMembers();
 
     const timer = window.setTimeout(
       () => setScheduleUnlocked(true),
       SCHEDULE_CLICK_GUARD_MS,
     );
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+    };
   }, [open, request?.requestKey, request?.stage, request?.assignedTo]);
+
+  const persistAssignees = useCallback(
+    (nextAssignees) => {
+      setSelectedAssignees(nextAssignees);
+      onAssigneesChange?.(request, formatAssigneesLabel(nextAssignees));
+    },
+    [onAssigneesChange, request],
+  );
 
   const handleStageChange = useCallback(
     (newStage) => {
@@ -115,32 +156,56 @@ const ContactRequestDrawer = ({
     setFollowUpModalOpen(true);
   };
 
-  const handleAssigneeSelect = (value) => {
-    if (value === ADD_MEMBER_VALUE) {
-      setIsAddingMember(true);
-      setNewMemberName("");
-      setAssignError("");
-      return;
-    }
+  const isAssigneeSelected = (name) =>
+    selectedAssignees.some(
+      (person) =>
+        person.name.trim().toLowerCase() === String(name || "").trim().toLowerCase(),
+    );
 
-    setIsAddingMember(false);
-    setNewMemberName("");
-    setAssignError("");
-    setAssignedTo(value);
+  const handleToggleAssignee = (member) => {
+    const selected = isAssigneeSelected(member.name);
+    const next = selected
+      ? selectedAssignees.filter(
+          (person) =>
+            person.name.trim().toLowerCase() !== member.name.trim().toLowerCase(),
+        )
+      : [...selectedAssignees, member];
+    persistAssignees(next);
+  };
+
+  const handleRemoveAssignee = (name) => {
+    persistAssignees(
+      selectedAssignees.filter(
+        (person) =>
+          person.name.trim().toLowerCase() !== String(name || "").trim().toLowerCase(),
+      ),
+    );
   };
 
   const handleAddMember = () => {
-    const trimmed = newMemberName.trim();
-    if (!trimmed) {
+    const trimmedName = newMemberName.trim();
+    const trimmedEmail = newMemberEmail.trim();
+    if (!trimmedName) {
       setAssignError("Please enter a team member name.");
       return;
     }
+    if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) {
+      setAssignError("Please enter a valid team member email.");
+      return;
+    }
 
-    const nextMembers = saveTeamMember(trimmed);
-    setMembers(nextMembers);
-    setAssignedTo(trimmed);
+    const nextMembers = saveTeamMember(trimmedName, trimmedEmail);
+    const merged = mergeTeamMembers(members, nextMembers);
+    const person = { name: trimmedName, email: trimmedEmail };
+    setMembers(merged);
+    persistAssignees(
+      isAssigneeSelected(trimmedName)
+        ? selectedAssignees
+        : [...selectedAssignees, person],
+    );
     setIsAddingMember(false);
     setNewMemberName("");
+    setNewMemberEmail("");
     setAssignError("");
   };
 
@@ -154,6 +219,9 @@ const ContactRequestDrawer = ({
       // Parent shows error toast; keep modal open.
     }
   };
+
+  const defaultFollowUpAssignee =
+    selectedAssignees[0]?.name || "Unassigned";
 
   return (
     <>
@@ -231,55 +299,137 @@ const ContactRequestDrawer = ({
           <section className="admin_contact_drawer__section">
             <h3>Assign To</h3>
             <div className="admin_blog_form__field admin_blog_form__field--full">
-              <span>Team member</span>
-              <select
-                value={isAddingMember ? ADD_MEMBER_VALUE : assignedTo}
-                onChange={(event) => handleAssigneeSelect(event.target.value)}
-              >
-                <option value="Unassigned">Unassigned</option>
-                {members.map((member) => (
-                  <option key={member} value={member}>
-                    {member}
-                  </option>
-                ))}
-                <option value={ADD_MEMBER_VALUE}>+ Add team member</option>
-              </select>
+              <span>Team members (multiple)</span>
 
-              {isAddingMember && (
-                <div className="admin_contact_followup_modal__add-member">
-                  <input
-                    type="text"
-                    value={newMemberName}
-                    onChange={(event) => setNewMemberName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleAddMember();
-                      }
-                    }}
-                    placeholder="Enter member name"
-                    autoFocus
-                  />
+              <div className="admin_contact_assignees">
+                {selectedAssignees.length === 0 ? (
+                  <p className="admin_contact_assignees__empty">Unassigned</p>
+                ) : (
+                  <div className="admin_contact_assignees__chips">
+                    {selectedAssignees.map((person) => (
+                      <button
+                        key={person.name}
+                        type="button"
+                        className="admin_contact_assignees__chip"
+                        onClick={() => handleRemoveAssignee(person.name)}
+                        title="Remove assignee"
+                      >
+                        <span>
+                          {person.email
+                            ? `${person.name} (${person.email})`
+                            : person.name}
+                        </span>
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div
+                  className="admin_contact_assignees__list"
+                  role="group"
+                  aria-label="Assignable team members"
+                >
+                  {loadingMembers ? (
+                    <p className="admin_contact_assignees__empty">
+                      Loading team members…
+                    </p>
+                  ) : members.length === 0 ? (
+                    <p className="admin_contact_assignees__empty">
+                      No team members found. Add one below.
+                    </p>
+                  ) : (
+                    members.map((member) => {
+                      const checked = isAssigneeSelected(member.name);
+                      return (
+                        <label
+                          key={member.name}
+                          className={`admin_contact_assignees__option${
+                            checked ? " is-selected" : ""
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleToggleAssignee(member)}
+                          />
+                          <span className="admin_contact_assignees__meta">
+                            <span className="admin_contact_assignees__name">
+                              {member.name}
+                            </span>
+                            {member.email ? (
+                              <span className="admin_contact_assignees__email">
+                                {member.email}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+
+                {!isAddingMember ? (
                   <button
                     type="button"
-                    className="admin_request_demos__btn admin_request_demos__btn--primary"
-                    onClick={handleAddMember}
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    className="admin_request_demos__btn admin_request_demos__btn--secondary"
+                    className="admin_contact_assignees__add-btn"
                     onClick={() => {
-                      setIsAddingMember(false);
-                      setNewMemberName("");
+                      setIsAddingMember(true);
                       setAssignError("");
                     }}
                   >
-                    Cancel
+                    + Add team member
                   </button>
-                </div>
-              )}
+                ) : (
+                  <div className="admin_contact_followup_modal__add-member">
+                    <input
+                      type="text"
+                      value={newMemberName}
+                      onChange={(event) => setNewMemberName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleAddMember();
+                        }
+                      }}
+                      placeholder="Enter member name"
+                      autoFocus
+                    />
+                    <input
+                      type="email"
+                      value={newMemberEmail}
+                      onChange={(event) => setNewMemberEmail(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleAddMember();
+                        }
+                      }}
+                      placeholder="Enter member email"
+                    />
+                    <button
+                      type="button"
+                      className="admin_request_demos__btn admin_request_demos__btn--primary"
+                      onClick={handleAddMember}
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      className="admin_request_demos__btn admin_request_demos__btn--secondary"
+                      onClick={() => {
+                        setIsAddingMember(false);
+                        setNewMemberName("");
+                        setNewMemberEmail("");
+                        setAssignError("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {assignError ? (
                 <p className="admin_request_demos__error">{assignError}</p>
               ) : null}
@@ -310,7 +460,7 @@ const ContactRequestDrawer = ({
                 Schedule Follow-up
               </button>
             </div>
-            <FollowUpList followUps={followUps} />
+            <FollowUpList followUps={followUps} loading={loadingFollowUps} />
           </section>
 
           <InternalNotes
@@ -342,7 +492,7 @@ const ContactRequestDrawer = ({
             open
             onClose={() => setFollowUpModalOpen(false)}
             pipelineStage={request.stage}
-            defaultAssignee={assignedTo}
+            defaultAssignee={defaultFollowUpAssignee}
             saving={savingFollowUp}
             onSave={handleFollowUpSave}
           />,
