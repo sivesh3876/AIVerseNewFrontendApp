@@ -79,8 +79,7 @@
             font-weight : 600;
 
             .ccm_dashboard__nav-icon {
-                background: #d3e8e9;
-                color     : #0d8f82;
+                box-shadow: 0 0 0 2px rgba(24, 224, 204, 0.45);
             }
         }
     }
@@ -93,8 +92,12 @@
         height         : 36px;
         border-radius  : 10px;
         flex-shrink    : 0;
-        color          : #9ca3af;
-        transition     : background 0.3s, color 0.3s;
+        transition     : box-shadow 0.3s, transform 0.3s;
+
+        svg {
+            width : 18px;
+            height: 18px;
+        }
     }
 
     &__nav-label {
@@ -139,7 +142,6 @@
         border-radius  : 14px;
         background     : rgba(58, 141, 157, 0.35);
         box-shadow     : 0 0 24px rgba(58, 141, 157, 0.35);
-        color          : #a8d4e6;
         flex-shrink    : 0;
 
         svg {
@@ -267,6 +269,27 @@
             box-shadow  : 0 0 0 3px rgba(24, 224, 204, 0.25);
         }
 
+        &--skeleton {
+            pointer-events: none;
+
+            &:hover {
+                border-color: #e5e7eb;
+                box-shadow  : 0 2px 8px rgba(13, 30, 50, 0.04);
+                transform   : none;
+            }
+
+            .ccm_dashboard__skeleton-icon,
+            .ccm_dashboard__skeleton-line,
+            .ccm_dashboard__skeleton-block,
+            .ccm_dashboard__skeleton-actions {
+                background     : linear-gradient(90deg, #eef2f4 25%, #f8fafb 50%, #eef2f4 75%);
+                background-size: 200% 100%;
+                animation      : ccm-skeleton-shimmer 1.4s ease infinite;
+                animation-delay: inherit;
+                border-radius  : 8px;
+            }
+        }
+
         >p,
         .ccm_dashboard__capability-scroll>p {
             margin            : 0 0 16px;
@@ -337,6 +360,10 @@
             min-height: 560px;
             max-height: 560px;
             height    : 100%;
+        }
+
+        &.is-loaded .ccm_dashboard__capability {
+            animation: ccm-card-fade-in 0.45s ease both;
         }
     }
 
@@ -700,23 +727,23 @@
         flex-shrink    : 0;
 
         &--teal {
-            background: rgba(24, 224, 204, 0.2);
-            color     : #0d8f82;
+            background: #5eead4;
+            color     : #0f5c55;
         }
 
         &--orange {
-            background: rgba(239, 142, 41, 0.18);
-            color     : #c46f12;
+            background: #fdba74;
+            color     : #9a3412;
         }
 
         &--navy {
-            background: rgba(13, 30, 50, 0.12);
-            color     : #0d1e32;
+            background: #7dd3fc;
+            color     : #0c4a6e;
         }
 
         &--sky {
-            background: rgba(58, 141, 157, 0.18);
-            color     : #3A8D9D;
+            background: #67e8f9;
+            color     : #155e75;
         }
     }
 
@@ -791,8 +818,10 @@
         padding-top: 12px;
         border-top : 1px solid #eef2f7;
 
-        &.solution_engagement {
+        &.solution_engagement,
+        &.solution_engagement--home {
             margin-top: 0;
+            padding   : 12px 0 0;
         }
     }
 
@@ -815,6 +844,49 @@
         &--error {
             color: #dc2626;
         }
+    }
+
+    &__skeleton-head {
+        display    : flex;
+        align-items: center;
+        gap        : 12px;
+        margin-bottom: 20px;
+    }
+
+    &__skeleton-icon {
+        flex-shrink: 0;
+        width      : 44px;
+        height     : 44px;
+        border-radius: 10px;
+    }
+
+    &__skeleton-line {
+        height    : 12px;
+        margin-top: 12px;
+
+        &--title {
+            flex      : 1;
+            height    : 18px;
+            margin-top: 0;
+            width     : 70%;
+        }
+
+        &--short {
+            width     : 48%;
+            margin-bottom: 16px;
+        }
+    }
+
+    &__skeleton-block {
+        flex      : 1;
+        min-height: 72px;
+        margin-top: 14px;
+    }
+
+    &__skeleton-actions {
+        height    : 88px;
+        margin-top: 18px;
+        flex-shrink: 0;
     }
 
     &__back-link {
@@ -916,10 +988,12 @@
         gap           : 16px;
 
         p {
-            margin     : 0;
-            font-size  : 15px;
-            line-height: 1.7;
-            color      : #4b5563;
+            margin       : 0;
+            font-size    : 15px;
+            line-height  : 1.7;
+            color        : #4b5563;
+            text-align   : justify;
+            text-justify : inter-word;
         }
     }
 
@@ -935,6 +1009,12 @@
         border       : 1px solid #e8ecf0;
         border-radius: 12px;
         background   : #f9fafb;
+    }
+
+    &__highlights {
+        + .solution_engagement {
+            margin-top: 28px;
+        }
     }
 
     &__highlights-grid {
@@ -977,18 +1057,11 @@
             background   : #fff;
 
             h4 {
-                margin     : 0 0 4px;
+                margin     : 0;
                 font-size  : 13px;
                 font-weight: 600;
                 color      : #0d1e32;
                 line-height: 1.35;
-            }
-
-            p {
-                margin     : 0;
-                font-size  : 11px;
-                line-height: 1.4;
-                color      : #9ca3af;
             }
         }
 
@@ -1027,10 +1100,6 @@
             flex: 1;
             min-width: 160px;
         }
-    }
-
-    &__detail-engagement {
-        margin-top: 20px;
     }
 
     &__detail-documents {
@@ -1131,6 +1200,40 @@
 
         &__banner-copy h1 {
             font-size: 24px;
+        }
+    }
+}
+
+@keyframes ccm-skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes ccm-card-fade-in {
+    from {
+        opacity  : 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity  : 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ccm_dashboard {
+        &__capability--skeleton .ccm_dashboard__skeleton-icon,
+        &__capability--skeleton .ccm_dashboard__skeleton-line,
+        &__capability--skeleton .ccm_dashboard__skeleton-block,
+        &__capability--skeleton .ccm_dashboard__skeleton-actions,
+        &__grid--submitted.is-loaded .ccm_dashboard__capability {
+            animation: none;
         }
     }
 }

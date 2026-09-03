@@ -237,25 +237,55 @@ export const deleteContactRequest = (id) => {
   return true;
 };
 
-const DELETED_DEMO_KEY = "aiverse_deleted_demo_leads";
+const DELETED_LEADS_KEY = "aiverse_deleted_leads";
+const LEGACY_DELETED_DEMO_KEY = "aiverse_deleted_demo_leads";
 
-export const getDeletedDemoLeadKeys = () => {
+export const getDeletedLeadKeys = () => {
   try {
-    const raw = localStorage.getItem(DELETED_DEMO_KEY);
+    const keys = new Set();
+
+    const raw = localStorage.getItem(DELETED_LEADS_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.map(String) : [];
+    if (Array.isArray(parsed)) {
+      parsed.map(String).filter(Boolean).forEach((key) => keys.add(key));
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_DELETED_DEMO_KEY);
+    const legacyParsed = legacyRaw ? JSON.parse(legacyRaw) : [];
+    if (Array.isArray(legacyParsed)) {
+      legacyParsed.map(String).filter(Boolean).forEach((key) => keys.add(key));
+    }
+
+    return [...keys];
   } catch {
     return [];
   }
 };
 
-export const markDemoLeadDeleted = (requestKey) => {
-  const key = String(requestKey || "");
-  if (!key.startsWith("demo-")) return;
-  const existing = getDeletedDemoLeadKeys();
-  if (existing.includes(key)) return;
-  localStorage.setItem(DELETED_DEMO_KEY, JSON.stringify([...existing, key]));
+export const isLeadDeleted = (requestKey) => {
+  const key = String(requestKey || "").trim();
+  if (!key) return false;
+  return getDeletedLeadKeys().includes(key);
 };
+
+export const markLeadDeleted = (requestKey) => {
+  const key = String(requestKey || "").trim();
+  if (!key) return;
+
+  const existing = getDeletedLeadKeys();
+  if (existing.includes(key)) return;
+
+  localStorage.setItem(
+    DELETED_LEADS_KEY,
+    JSON.stringify([...existing, key]),
+  );
+};
+
+/** @deprecated Use getDeletedLeadKeys */
+export const getDeletedDemoLeadKeys = getDeletedLeadKeys;
+
+/** @deprecated Use markLeadDeleted */
+export const markDemoLeadDeleted = (requestKey) => markLeadDeleted(requestKey);
 
 export const clearContactRequests = () => {
   localStorage.removeItem(STORAGE_KEY);

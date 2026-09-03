@@ -1,6 +1,6 @@
 import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionDocuments from "../SolutionDocuments";
-import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
+import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import {
   CoeLabelIcon,
   EvangelistLabelIcon,
@@ -9,7 +9,10 @@ import {
   VideoCameraIcon,
   DocumentIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
-import { resolveCapabilityIcon } from "../../utils/solutionMapper";
+import {
+  getServiceIdForDomain,
+  resolveCapabilityIcon,
+} from "../../utils/solutionMapper";
 import {
   buildDocumentsFromCapability,
   excludeSalesDeskDocuments,
@@ -81,6 +84,7 @@ const SolutionCapabilityCard = ({
       }}
       onKeyDown={(event) => {
         if (!onNavigate) return;
+        if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onNavigate(capability);
@@ -182,7 +186,6 @@ const SolutionCapabilityCard = ({
                     key={`${tech.name}-${index}`}
                   >
                     <h4>{tech.name}</h4>
-                    <p>{tech.label || "Technology"}</p>
                   </article>
                 ))
               ) : (
@@ -220,10 +223,13 @@ const SolutionCapabilityCard = ({
       </div>
 
       <div className="ccm_dashboard__capability-footer">
-        <SolutionEngagementBar
+        <SolutionEngagement
           solutionId={capability.id}
+          title={capability.title}
+          serviceLine={getServiceIdForDomain(capability.businessDomain)}
+          variant="home"
           className="ccm_dashboard__capability-engagement"
-          compact
+          onActionClick={(event) => event.stopPropagation()}
         />
 
         <div className="ccm_dashboard__capability-actions">
