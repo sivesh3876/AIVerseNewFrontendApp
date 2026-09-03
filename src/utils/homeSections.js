@@ -66,9 +66,11 @@ export const scrollToHomeSection = (sectionId) => {
     window.scrollY -
     getHomeSectionScrollOffset();
 
+  // Use instant jump (auto) for top-menu nav so intermediate sections
+  // do not flash past before landing on the target.
   window.scrollTo({
     top: Math.max(0, top),
-    behavior: getHomeScrollBehavior(),
+    behavior: "auto",
   });
 
   return true;
