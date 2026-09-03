@@ -25,8 +25,13 @@ import {
   updateContactRequestStageOnApi,
 } from "../../services/contactRequestApiService";
 import { updateContactRequestStageApi } from "../../services/contactRequestStageService";
-import { createFollowUpApi } from "../../services/contactRequestFollowUpService";
+import {
+  buildFollowUpScheduleToast,
+  createFollowUpApi,
+  fetchFollowUpsApi,
+} from "../../services/contactRequestFollowUpService";
 import { createNoteApi } from "../../services/contactRequestNoteService";
+import { leadMatchesAssigneeFilter } from "../../components/ContactRequest/followUpUtils";
 import "../../components/Admin/AdminLayout.scss";
 
 const PAGE_SIZE = 10;
@@ -128,10 +133,7 @@ const matchesLeadFilters = (lead, filters) => {
   }
 
   if (filters.assignedTo && filters.assignedTo !== "all") {
-    if (
-      normalizeFilterText(lead.assignedTo) !==
-      normalizeFilterText(filters.assignedTo)
-    ) {
+    if (!leadMatchesAssigneeFilter(lead.assignedTo, filters.assignedTo)) {
       return false;
     }
   }
@@ -186,6 +188,7 @@ const ContactRequests = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const [savingFollowUp, setSavingFollowUp] = useState(false);
+  const [loadingFollowUps, setLoadingFollowUps] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [leadToDelete, setLeadToDelete] = useState(null);
@@ -322,6 +325,50 @@ const ContactRequests = () => {
     setSelectedRequestKey(null);
   };
 
+  useEffect(() => {
+    if (!drawerOpen || !selectedRequestKey) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadFollowUps = async () => {
+      setLoadingFollowUps(true);
+      try {
+        const followUps = await fetchFollowUpsApi(selectedRequestKey);
+        if (isMounted) {
+          setFollowUpsByLead((prev) => ({
+            ...prev,
+            [selectedRequestKey]: followUps,
+          }));
+        }
+      } catch (error) {
+        if (isMounted) {
+          setFollowUpsByLead((prev) => ({
+            ...prev,
+            [selectedRequestKey]: prev[selectedRequestKey] || [],
+          }));
+          setToast({
+            type: "error",
+            message:
+              error?.message ||
+              "Unable to load follow-ups from the server.",
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingFollowUps(false);
+        }
+      }
+    };
+
+    loadFollowUps();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [drawerOpen, selectedRequestKey]);
+
   const handleTableAction = (request, action) => {
     if (action === "view" || action === "edit") {
       openDrawer(request);
@@ -418,16 +465,25 @@ const ContactRequests = () => {
     [selectedRequest],
   );
 
+  const handleAssigneesChange = useCallback((lead, assignedToLabel) => {
+    if (!lead?.requestKey) return;
+
+    setRequests((prev) =>
+      prev.map((request) =>
+        request.requestKey === lead.requestKey
+          ? { ...request, assignedTo: assignedToLabel || "Unassigned" }
+          : request,
+      ),
+    );
+  }, []);
+
   const handleSaveFollowUp = useCallback(
     async (payload) => {
       if (!selectedRequest) return;
 
       setSavingFollowUp(true);
       try {
-        const saved = await createFollowUpApi(
-          selectedRequest.requestKey,
-          payload,
-        );
+        const saved = await createFollowUpApi(selectedRequest, payload);
 
         setFollowUpsByLead((prev) => ({
           ...prev,
@@ -448,7 +504,7 @@ const ContactRequests = () => {
 
         setToast({
           type: "success",
-          message: "Follow-up scheduled successfully.",
+          message: buildFollowUpScheduleToast(saved),
         });
       } catch (error) {
         setToast({
@@ -566,11 +622,13 @@ const ContactRequests = () => {
         onStageSuccess={(message) => setToast({ type: "success", message })}
         onStageError={(message) => setToast({ type: "error", message })}
         followUps={currentFollowUps}
+        loadingFollowUps={loadingFollowUps}
         notes={currentNotes}
         onSaveFollowUp={handleSaveFollowUp}
         savingFollowUp={savingFollowUp}
         onSaveNote={handleSaveNote}
         savingNote={savingNote}
+        onAssigneesChange={handleAssigneesChange}
       />
 
       <LeadDeleteModal
