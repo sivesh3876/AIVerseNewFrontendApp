@@ -1,4 +1,5 @@
 import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
+import { formatAssigneesLabel } from "./followUpUtils";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -94,7 +95,7 @@ const ContactRequestCard = ({ request, onClick }) => {
 
     <div className="admin_contact_card__footer">
       <span className="admin_contact_card__assignee">
-        {request.assignedTo === "Unassigned" ? "Unassigned" : request.assignedTo}
+        {formatAssigneesLabel(request.assignedTo)}
       </span>
       <span className="admin_contact_card__date">{formatDate(request.submittedAt)}</span>
     </div>
