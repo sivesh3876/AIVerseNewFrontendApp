@@ -20,6 +20,8 @@ import AssessmentFlow from "../components/AIReadiness/AssessmentFlow";
 import AnswerSummary from "../components/AIReadiness/AnswerSummary";
 import ResultsPage from "../components/AIReadiness/ResultsPage";
 
+import { buildApiPath } from "../services/apiConfig";
+
 
 import {
   getDimensionForQuestion,
@@ -27,11 +29,6 @@ import {
   maturityLevels,
   scoringTips,
 } from "../utils/aiReadinessAssessmentUtils";
-
-// The assessment backend runs on Azure Functions locally at port 7071.
-// In production, set VITE_API_URL to your deployed API base URL.
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 const PROGRESS_STORAGE_KEY = "aiReadinessAssessmentProgress";
 
@@ -179,7 +176,7 @@ function AIReadinessAssessmentPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/assessment`, {
+      const response = await fetch(buildApiPath("assessment"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
