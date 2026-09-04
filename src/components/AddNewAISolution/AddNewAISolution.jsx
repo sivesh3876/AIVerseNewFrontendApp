@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
-import { mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation, buildExploreSolutionPath } from "../../utils/solutionMapper";
+import {
+  mapFormToCapability,
+  persistSubmittedCapability,
+  serializeCapabilityForNavigation,
+  buildExploreSolutionPath,
+} from "../../utils/solutionMapper";
 import {
   claimFeaturedCardPosition,
   getFeaturedPositionOccupancy,
@@ -63,11 +68,21 @@ const parseAiFoundation = (value = "") => {
 };
 
 const sanitizeEvangelists = (evangelists = []) =>
-  evangelists.filter(
-    (name) => name && name.trim() && name !== "Undefined",
-  );
+  evangelists.filter((name) => name && name.trim() && name !== "Undefined");
 
 const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
+  "AgenticAutomation",
+  "CustomerCommunicationManagement",
+  "CustomerExperienceCRM",
+  "DataAnalytics",
+  "DigitalEngineering",
+  "DigitalExperience",
+  "Education",
+  "Insurance",
+  "Logistics",
+]);
 
 const normalizeCardPosition = (value) => {
   const parsed = Number(value);
@@ -138,7 +153,9 @@ const FileDropzone = ({
       const incoming = Array.from(selectedFiles);
       const existing = fileList;
       const seen = new Set(
-        existing.map((file) => `${file.name}|${file.size}|${file.lastModified}`),
+        existing.map(
+          (file) => `${file.name}|${file.size}|${file.lastModified}`,
+        ),
       );
       const merged = [...existing];
 
@@ -231,7 +248,10 @@ const FileDropzone = ({
       {fileList.length > 0 && (
         <div className="add_ai_solution__file-list">
           {fileList.map((file, index) => (
-            <div className="add_ai_solution__file-item" key={`${file.name}-${index}`}>
+            <div
+              className="add_ai_solution__file-item"
+              key={`${file.name}-${index}`}
+            >
               <div className="add_ai_solution__file-item-info">
                 <span>{file.name}</span>
                 <span className="add_ai_solution__file-item-size">
@@ -302,7 +322,10 @@ const AddNewAISolution = () => {
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
-        setBusinessDomains(result.data);
+        const domains = (result.data || []).filter((domain) =>
+          ALLOWED_BUSINESS_DOMAIN_CODES.has(domain.DomainCode),
+        );
+        setBusinessDomains(domains);
       } else {
         setSubmitStatus({
           type: "error",
@@ -374,7 +397,9 @@ const AddNewAISolution = () => {
     const fetchExisting = async () => {
       try {
         setLoadingExisting(true);
-        const response = await fetch(`${API_BASE_URL}/get-usecases?id=${editId}`);
+        const response = await fetch(
+          `${API_BASE_URL}/get-usecases?id=${editId}`,
+        );
         const result = await response.json();
 
         if (response.ok && result.status === "success" && result.data) {
@@ -522,11 +547,13 @@ const AddNewAISolution = () => {
     }
 
     if (form.RepositoryUrl.trim() && !isValidUrl(form.RepositoryUrl)) {
-      newErrors.RepositoryUrl = "Enter a valid repository URL (e.g. https://github.com/your-repo)";
+      newErrors.RepositoryUrl =
+        "Enter a valid repository URL (e.g. https://github.com/your-repo)";
     }
 
     if (form.DemoLink.trim() && !isValidUrl(form.DemoLink)) {
-      newErrors.DemoLink = "Enter a valid demo URL starting with http:// or https://";
+      newErrors.DemoLink =
+        "Enter a valid demo URL starting with http:// or https://";
     }
 
     if (
@@ -535,23 +562,38 @@ const AddNewAISolution = () => {
       !existingFiles.DemoRecordedVideoLink
     ) {
       newErrors.DemoLink = "Either Demo Link or Demo Video is required";
-      newErrors.DemoRecordedVideo = "Either Demo Link or Demo Video is required";
+      newErrors.DemoRecordedVideo =
+        "Either Demo Link or Demo Video is required";
     }
 
-    if (files.DemoRecordedVideo && files.DemoRecordedVideo.size > 98 * 1024 * 1024) {
+    if (
+      files.DemoRecordedVideo &&
+      files.DemoRecordedVideo.size > 98 * 1024 * 1024
+    ) {
       newErrors.DemoRecordedVideo = "Video file size should not exceed 98MB";
     }
 
-    if (files.SolutionDetailsDoc && files.SolutionDetailsDoc.size > 50 * 1024 * 1024) {
-      newErrors.SolutionDetailsDoc = "Document file size should not exceed 50MB";
+    if (
+      files.SolutionDetailsDoc &&
+      files.SolutionDetailsDoc.size > 50 * 1024 * 1024
+    ) {
+      newErrors.SolutionDetailsDoc =
+        "Document file size should not exceed 50MB";
     }
 
-    if (files.LowLevelDesignDoc && files.LowLevelDesignDoc.size > 50 * 1024 * 1024) {
+    if (
+      files.LowLevelDesignDoc &&
+      files.LowLevelDesignDoc.size > 50 * 1024 * 1024
+    ) {
       newErrors.LowLevelDesignDoc = "LLD file size should not exceed 50MB";
     }
 
-    if (files.ArchitectureDiagram && files.ArchitectureDiagram.size > 50 * 1024 * 1024) {
-      newErrors.ArchitectureDiagram = "Architecture diagram file size should not exceed 50MB";
+    if (
+      files.ArchitectureDiagram &&
+      files.ArchitectureDiagram.size > 50 * 1024 * 1024
+    ) {
+      newErrors.ArchitectureDiagram =
+        "Architecture diagram file size should not exceed 50MB";
     }
 
     if (files.SalesDeskDoc && !isPdfFile(files.SalesDeskDoc)) {
@@ -559,7 +601,8 @@ const AddNewAISolution = () => {
     }
 
     if (files.SalesDeskDoc && files.SalesDeskDoc.size > 50 * 1024 * 1024) {
-      newErrors.SalesDeskDoc = "Sales Pitch PDF file size should not exceed 50MB";
+      newErrors.SalesDeskDoc =
+        "Sales Pitch PDF file size should not exceed 50MB";
     }
 
     const otherDocsCombined = (files.OtherDocuments || []).reduce(
@@ -648,7 +691,10 @@ const AddNewAISolution = () => {
             "PublicationStatus",
             isPublished ? "Published" : "Draft",
           );
-          formDataToSend.append("IsSolutionActive", isPublished ? "true" : "false");
+          formDataToSend.append(
+            "IsSolutionActive",
+            isPublished ? "true" : "false",
+          );
           return;
         }
 
@@ -726,7 +772,8 @@ const AddNewAISolution = () => {
           evangelistDirectory: aiEvangelists,
           solutionOwners,
         });
-        const serializedSolution = serializeCapabilityForNavigation(submittedSolution);
+        const serializedSolution =
+          serializeCapabilityForNavigation(submittedSolution);
         const isPublishedSolution = form.Publish === "Yes";
         if (isPublishedSolution) {
           persistSubmittedCapability(serializedSolution);
@@ -760,7 +807,9 @@ const AddNewAISolution = () => {
           type: "error",
           message:
             result.message ||
-            (isEditMode ? "Failed to update solution" : "Failed to save solution"),
+            (isEditMode
+              ? "Failed to update solution"
+              : "Failed to save solution"),
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -776,11 +825,16 @@ const AddNewAISolution = () => {
   };
 
   const filteredEvangelists = aiEvangelists.filter((evangelist) =>
-    evangelist.Name.toLowerCase().startsWith(evangelistSearch.trim().toLowerCase()),
+    evangelist.Name.toLowerCase().startsWith(
+      evangelistSearch.trim().toLowerCase(),
+    ),
   );
 
   const totalUploadSize =
-    (files.OtherDocuments || []).reduce((sum, file) => sum + (file?.size || 0), 0) +
+    (files.OtherDocuments || []).reduce(
+      (sum, file) => sum + (file?.size || 0),
+      0,
+    ) +
     (files.SolutionDetailsDoc?.size || 0) +
     (files.LowLevelDesignDoc?.size || 0) +
     (files.ArchitectureDiagram?.size || 0) +
@@ -810,11 +864,18 @@ const AddNewAISolution = () => {
       </header>
 
       {submitStatus && (
-        <div className={`add_ai_solution__status add_ai_solution__status--${submitStatus.type}`}>
-          <strong>{submitStatus.type === "success" ? "Success" : "Error"}</strong>
+        <div
+          className={`add_ai_solution__status add_ai_solution__status--${submitStatus.type}`}
+        >
+          <strong>
+            {submitStatus.type === "success" ? "Success" : "Error"}
+          </strong>
           <p>{submitStatus.message}</p>
           {submitStatus.type === "success" && (
-            <Link to="/explore-solutions" className="add_ai_solution__status-link">
+            <Link
+              to="/explore-solutions"
+              className="add_ai_solution__status-link"
+            >
               View saved solutions
             </Link>
           )}
@@ -843,7 +904,9 @@ const AddNewAISolution = () => {
             onChange={(event) => updateField("Title", event.target.value)}
             required
           />
-          {errors.Title && <p className="add_ai_solution__error">{errors.Title}</p>}
+          {errors.Title && (
+            <p className="add_ai_solution__error">{errors.Title}</p>
+          )}
         </div>
 
         <div className="add_ai_solution__row">
@@ -854,13 +917,15 @@ const AddNewAISolution = () => {
             <select
               id="BusinessDomain"
               value={form.BusinessDomain}
-              onChange={(event) => updateField("BusinessDomain", event.target.value)}
+              onChange={(event) =>
+                updateField("BusinessDomain", event.target.value)
+              }
               disabled={loadingDomains}
               required
             >
-              <option value="">
-                {loadingDomains ? "Loading domains..." : "Select a business domain"}
-              </option>
+              {loadingDomains && (
+                <option value="">Loading domains...</option>
+              )}
               {businessDomains.map((domain) => (
                 <option key={domain.DomainCode} value={domain.DomainCode}>
                   {domain.DomainName}
@@ -877,7 +942,9 @@ const AddNewAISolution = () => {
             <select
               id="OwnershipDetails"
               value={form.OwnershipDetails}
-              onChange={(event) => updateField("OwnershipDetails", event.target.value)}
+              onChange={(event) =>
+                updateField("OwnershipDetails", event.target.value)
+              }
               disabled={loadingOwners}
             >
               <option value="">
@@ -1011,7 +1078,9 @@ const AddNewAISolution = () => {
             placeholder="Describe the business problem, target users, and expected outcomes."
             value={form.SolutionContext}
             maxLength={CHAR_LIMITS.SolutionContext}
-            onChange={(event) => updateField("SolutionContext", event.target.value)}
+            onChange={(event) =>
+              updateField("SolutionContext", event.target.value)
+            }
             required
           />
           {errors.SolutionContext && (
@@ -1032,7 +1101,9 @@ const AddNewAISolution = () => {
             placeholder="e.g. GPT-4, LangChain, Azure OpenAI"
             value={form.TechHighlights}
             maxLength={CHAR_LIMITS.TechHighlights}
-            onChange={(event) => updateField("TechHighlights", event.target.value)}
+            onChange={(event) =>
+              updateField("TechHighlights", event.target.value)
+            }
             required
           />
           {errors.TechHighlights && (
@@ -1050,7 +1121,9 @@ const AddNewAISolution = () => {
               inputMode="url"
               placeholder="https://github.com/your-repo"
               value={form.RepositoryUrl}
-              onChange={(event) => updateField("RepositoryUrl", event.target.value)}
+              onChange={(event) =>
+                updateField("RepositoryUrl", event.target.value)
+              }
             />
           </div>
           {errors.RepositoryUrl && (
@@ -1066,10 +1139,7 @@ const AddNewAISolution = () => {
             className="add_ai_solution__evangelist-checkboxes"
           >
             {AI_FOUNDATION_OPTIONS.map((option) => (
-              <label
-                key={option}
-                className="add_ai_solution__checkbox-item"
-              >
+              <label key={option} className="add_ai_solution__checkbox-item">
                 <input
                   type="checkbox"
                   value={option}
@@ -1152,18 +1222,20 @@ const AddNewAISolution = () => {
           note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder, copy the shareable URL, and paste that URL into the Demo Link field."
         />
 
-        {isEditMode && !files.DemoRecordedVideo && existingFiles.DemoRecordedVideoLink && (
-          <p className="add_ai_solution__existing-file">
-            Current video:{" "}
-            <a
-              href={existingFiles.DemoRecordedVideoLink}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached demo video
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.DemoRecordedVideo &&
+          existingFiles.DemoRecordedVideoLink && (
+            <p className="add_ai_solution__existing-file">
+              Current video:{" "}
+              <a
+                href={existingFiles.DemoRecordedVideoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View attached demo video
+              </a>
+            </p>
+          )}
       </section>
 
       <section className="add_ai_solution__card">
@@ -1184,18 +1256,20 @@ const AddNewAISolution = () => {
           }
         />
 
-        {isEditMode && !files.SolutionDetailsDoc && existingFiles.SolutionDetailsDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current document:{" "}
-            <a
-              href={existingFiles.SolutionDetailsDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached document
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.SolutionDetailsDoc &&
+          existingFiles.SolutionDetailsDoc && (
+            <p className="add_ai_solution__existing-file">
+              Current document:{" "}
+              <a
+                href={existingFiles.SolutionDetailsDoc}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View attached document
+              </a>
+            </p>
+          )}
 
         <FileDropzone
           id="SalesDeskDoc"
@@ -1262,18 +1336,20 @@ const AddNewAISolution = () => {
           />
         </div>
 
-        {isEditMode && !files.LowLevelDesignDoc && existingFiles.LowLevelDesignDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current LLD:{" "}
-            <a
-              href={existingFiles.LowLevelDesignDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached LLD
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.LowLevelDesignDoc &&
+          existingFiles.LowLevelDesignDoc && (
+            <p className="add_ai_solution__existing-file">
+              Current LLD:{" "}
+              <a
+                href={existingFiles.LowLevelDesignDoc}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View attached LLD
+              </a>
+            </p>
+          )}
 
         {isEditMode &&
           !files.ArchitectureDiagram &&
@@ -1322,8 +1398,8 @@ const AddNewAISolution = () => {
 
         {totalUploadSize > 0 && (
           <p className="add_ai_solution__upload-size">
-            Total upload size: {(totalUploadSize / (1024 * 1024)).toFixed(2)} MB /{" "}
-            {(AZURE_DEFAULT_BODY_LIMIT / (1024 * 1024)).toFixed(0)} MB
+            Total upload size: {(totalUploadSize / (1024 * 1024)).toFixed(2)} MB
+            / {(AZURE_DEFAULT_BODY_LIMIT / (1024 * 1024)).toFixed(0)} MB
             {totalUploadSize >= AZURE_BODY_LIMIT_WARN_THRESHOLD &&
               totalUploadSize < AZURE_DEFAULT_BODY_LIMIT &&
               " — approaching Azure request body limit"}
