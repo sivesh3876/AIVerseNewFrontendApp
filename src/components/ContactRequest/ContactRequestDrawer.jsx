@@ -221,7 +221,9 @@ const ContactRequestDrawer = ({
   };
 
   const defaultFollowUpAssignee =
-    selectedAssignees[0]?.name || "Unassigned";
+    selectedAssignees.length > 0
+      ? selectedAssignees.map((person) => person.name).join(", ")
+      : "Unassigned";
 
   return (
     <>
@@ -298,8 +300,10 @@ const ContactRequestDrawer = ({
 
           <section className="admin_contact_drawer__section">
             <h3>Assign To</h3>
-            <div className="admin_blog_form__field admin_blog_form__field--full">
-              <span>Team members (multiple)</span>
+            <div className="admin_contact_drawer__assign-field">
+              <span className="admin_contact_drawer__assign-label">
+                Team members (multiple)
+              </span>
 
               <div className="admin_contact_assignees">
                 {selectedAssignees.length === 0 ? (
