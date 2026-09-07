@@ -179,7 +179,7 @@ function AIReadinessAssessmentPage() {
       const response = await fetch(buildApiPath("assessment"), {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/plain;charset=UTF-8",
         },
         body: JSON.stringify({
           answers: answerPayload,
