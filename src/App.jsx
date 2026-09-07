@@ -30,6 +30,8 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import AIReadinessAssessmentPage from "./pages/AIReadinessAssessmentPage";
 import AdminDashboardPage, {
   AdminBlogs,
+  AdminSuccessStories,
+  AdminSuccessStoryForm,
   AdminCertifications,
   AdminCertificationDetail,
   AdminCertifiedProfessionalsPage,
@@ -171,6 +173,15 @@ const AppShell = () => {
           <Route path="contact-requests" element={<ContactRequests />} />
           <Route path="blogs" element={<AdminBlogs />} />
           <Route path="learn-explore" element={<AdminCertifications />} />
+          <Route path="success-stories" element={<AdminSuccessStories />} />
+          <Route
+            path="success-stories/new"
+            element={<AdminSuccessStoryForm />}
+          />
+          <Route
+            path="success-stories/:id/edit"
+            element={<AdminSuccessStoryForm />}
+          />
           <Route
             path="learn-explore/:certificationId/certified-professionals"
             element={<AdminCertifiedProfessionalsPage />}

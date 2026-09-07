@@ -74,12 +74,19 @@
         gap        : 18px;
     }
 
+    &__viewport {
+        flex      : 1;
+        min-width : 0;
+        overflow  : hidden;
+    }
+
     &__grid {
-        display              : grid;
-        flex                 : 1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap                  : 20px;
-        min-width            : 0;
+        display   : flex;
+        gap       : 20px;
+        width     : 100%;
+        min-width : 0;
+        transition: transform 0.4s ease;
+        will-change: transform;
     }
 
     &__nav {
@@ -110,13 +117,26 @@
 
     &__card {
         display       : flex;
+        flex          : 0 0 calc((100% - 40px) / 3);
         flex-direction: column;
+        min-width     : 0;
         min-height    : 360px;
         padding       : 28px 28px 24px;
         border        : 1px solid var(--story-card-border);
         border-radius : 18px;
         background    : linear-gradient(180deg, rgba(17, 29, 47, 0.98) 0%, rgba(12, 22, 36, 0.98) 100%);
         box-shadow    : inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        color         : inherit;
+        text-decoration: none;
+        transition    : transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+
+        &:hover,
+        &:focus-visible {
+            border-color: rgba(24, 224, 204, 0.4);
+            box-shadow  : inset 0 1px 0 rgba(255, 255, 255, 0.04),
+                0 12px 28px rgba(0, 0, 0, 0.2);
+            transform   : translateY(-2px);
+        }
 
         h3 {
             margin     : 18px 0 14px;
@@ -124,6 +144,7 @@
             font-weight: 700;
             line-height: 1.35;
             color      : var(--story-text);
+            overflow-wrap: anywhere;
         }
     }
 
@@ -191,6 +212,36 @@
         }
     }
 
+    &__state {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        flex-direction : column;
+        gap            : 16px;
+        min-height     : 180px;
+        padding        : 28px;
+        border         : 1px solid var(--story-card-border);
+        border-radius  : 18px;
+        background     : rgba(17, 29, 47, 0.72);
+        color          : var(--story-muted);
+        text-align     : center;
+
+        p {
+            margin: 0;
+        }
+
+        button {
+            padding      : 10px 20px;
+            border       : 1px solid var(--story-accent);
+            border-radius: 999px;
+            background   : transparent;
+            color        : var(--story-accent);
+            font         : inherit;
+            font-weight  : 700;
+            cursor       : pointer;
+        }
+    }
+
     &.animate {
         .success_stories__header,
         .success_stories__carousel {
@@ -217,6 +268,10 @@
 
 @media (prefers-reduced-motion: reduce) {
     .success_stories {
+        &__grid {
+            transition: none;
+        }
+
         &.animate {
             .success_stories__header,
             .success_stories__carousel {
@@ -228,11 +283,8 @@
 
 @media (max-width: 1100px) {
     .success_stories {
-        &__grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
         &__card {
+            flex-basis: calc((100% - 20px) / 2);
             min-height: 340px;
         }
     }
@@ -251,19 +303,34 @@
         }
 
         &__carousel {
-            gap: 10px;
+            display              : grid;
+            grid-template-columns: repeat(2, 40px);
+            justify-content      : center;
+            gap                  : 16px 12px;
         }
 
-        &__grid {
-            grid-template-columns: 1fr;
+        &__viewport {
+            grid-column          : 1 / -1;
+            grid-row             : 1;
         }
 
         &__nav {
             width : 40px;
             height: 40px;
+
+            &--prev {
+                grid-column: 1;
+                grid-row   : 2;
+            }
+
+            &--next {
+                grid-column: 2;
+                grid-row   : 2;
+            }
         }
 
         &__card {
+            flex-basis: 100%;
             min-height: 320px;
             padding   : 24px 22px 20px;
 

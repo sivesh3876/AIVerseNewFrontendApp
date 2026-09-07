@@ -80,10 +80,18 @@ const AdminBlogTableToolbar = ({
   onExport,
   exportDisabled = false,
   onAddBlog,
+  onAdd,
+  addLabel = "Add Blog",
   onRefresh,
   loading = false,
   filteredCount = 0,
   totalCount = 0,
+  statuses = BLOG_RECORD_STATUSES,
+  defaultStatusFilter = BLOG_ADMIN_DEFAULT_STATUS_FILTER,
+  defaultStatusLabel = "Active blogs",
+  searchPlaceholder = "Search by title, author, category, track, description...",
+  searchAriaLabel = "Search blogs",
+  showTrackFilter = true,
 }) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef(null);
@@ -102,9 +110,9 @@ const AdminBlogTableToolbar = ({
   }, [filterOpen]);
 
   const activeFilterCount = [
-    statusFilter !== BLOG_ADMIN_DEFAULT_STATUS_FILTER,
+    statusFilter !== defaultStatusFilter,
     categoryFilter !== "all",
-    trackFilter !== "all",
+    showTrackFilter && trackFilter !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -116,8 +124,8 @@ const AdminBlogTableToolbar = ({
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search by title, author, category, track, description..."
-            aria-label="Search blogs"
+            placeholder={searchPlaceholder}
+            aria-label={searchAriaLabel}
           />
         </label>
 
@@ -158,11 +166,11 @@ const AdminBlogTableToolbar = ({
                     value={statusFilter}
                     onChange={(event) => onStatusFilterChange(event.target.value)}
                   >
-                    <option value={BLOG_ADMIN_DEFAULT_STATUS_FILTER}>
-                      Active blogs
+                    <option value={defaultStatusFilter}>
+                      {defaultStatusLabel}
                     </option>
                     <option value="all">All statuses</option>
-                    {BLOG_RECORD_STATUSES.map((status) => (
+                    {statuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
@@ -185,20 +193,24 @@ const AdminBlogTableToolbar = ({
                   </select>
                 </label>
 
-                <label className="admin_demo_toolbar__field">
-                  <span>Track</span>
-                  <select
-                    value={trackFilter}
-                    onChange={(event) => onTrackFilterChange(event.target.value)}
-                  >
-                    <option value="all">All tracks</option>
-                    {trackOptions.map((track) => (
-                      <option key={track} value={track}>
-                        {track}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {showTrackFilter && (
+                  <label className="admin_demo_toolbar__field">
+                    <span>Track</span>
+                    <select
+                      value={trackFilter}
+                      onChange={(event) =>
+                        onTrackFilterChange(event.target.value)
+                      }
+                    >
+                      <option value="all">All tracks</option>
+                      {trackOptions.map((track) => (
+                        <option key={track} value={track}>
+                          {track}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
             )}
           </div>
@@ -216,9 +228,9 @@ const AdminBlogTableToolbar = ({
           <button
             type="button"
             className="admin_demo_toolbar__btn admin_demo_toolbar__btn--primary"
-            onClick={onAddBlog}
+            onClick={onAdd || onAddBlog}
           >
-            Add Blog
+            {addLabel}
           </button>
 
           <button
