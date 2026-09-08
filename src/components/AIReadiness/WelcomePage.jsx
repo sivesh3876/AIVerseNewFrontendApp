@@ -1,3 +1,4 @@
+import { useState } from "react";
 import InstructionsModal from "./InstructionsModal";
 
 export default function WelcomePage({
@@ -14,6 +15,8 @@ export default function WelcomePage({
   maturityLevels,
   scoringTips,
 }) {
+  const [selectedDimension, setSelectedDimension] = useState(null);
+
   return (
     <div className="welcome-page">
 
@@ -36,6 +39,16 @@ export default function WelcomePage({
               key gaps, and discover where to focus next.
             </p>
 
+            <div className="assessment-stats">
+              <div className="assessment-stat"><strong>{totalQuestions}</strong><span>Questions</span></div>
+              <div className="stat-divider" />
+              <div className="assessment-stat"><strong>{totalDimensions}</strong><span>Dimensions</span></div>
+              <div className="stat-divider" />
+              <div className="assessment-stat"><strong>10–15</strong><span>Minutes</span></div>
+              <div className="stat-divider" />
+              <div className="assessment-stat"><strong>1–5</strong><span>Rating Scale</span></div>
+            </div>
+
             <button type="button" className="start-assessment-button" onClick={onStart}>
               Start AI Readiness Assessment
               <span className="button-arrow">→</span>
@@ -46,16 +59,6 @@ export default function WelcomePage({
                 Resume Assessment
               </button>
             )}
-
-            <div className="assessment-stats">
-              <div className="assessment-stat"><strong>{totalQuestions}</strong><span>Questions</span></div>
-              <div className="stat-divider" />
-              <div className="assessment-stat"><strong>{totalDimensions}</strong><span>Dimensions</span></div>
-              <div className="stat-divider" />
-              <div className="assessment-stat"><strong>10–15</strong><span>Minutes</span></div>
-              <div className="stat-divider" />
-              <div className="assessment-stat"><strong>1–5</strong><span>Rating Scale</span></div>
-            </div>
           </div>
         </section>
 
@@ -71,14 +74,92 @@ export default function WelcomePage({
 
           <div className="dimension-grid">
             {assessmentData.map((dimension, index) => (
-              <div className="dimension-card" key={dimension.id}>
-                <div className="dimension-card-number">{String(index + 1).padStart(2, "0")}</div>
+              <div
+                className="dimension-card"
+                key={dimension.id}
+                onClick={() => setSelectedDimension(dimension)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedDimension(dimension);
+                  }
+                }}
+              >
+                <div className="dimension-card-number">
+                  {String(index + 1).padStart(2, "0")}
+                </div>
+
                 <h3>{dimension.title}</h3>
                 <p>{dimension.questions.length} questions</p>
               </div>
             ))}
           </div>
         </section>
+
+        {selectedDimension && (
+          <div
+            className="dimension-preview-overlay"
+            onClick={() => setSelectedDimension(null)}
+          >
+            <div
+              className="dimension-preview-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dimension-preview-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="dimension-preview-close"
+                onClick={() => setSelectedDimension(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+
+              <div className="dimension-preview-number">
+                {String(
+                  assessmentData.findIndex(
+                    (dimension) => dimension.id === selectedDimension.id
+                  ) + 1
+                ).padStart(2, "0")}
+              </div>
+
+              <h2 id="dimension-preview-title">
+                {selectedDimension.title}
+              </h2>
+
+              <p className="dimension-preview-description">
+                These are the questions included in this dimension.
+              </p>
+
+              <div className="dimension-preview-questions">
+                {selectedDimension.questions.map((question, index) => (
+                  <div
+                    className="dimension-preview-question"
+                    key={question.id}
+                  >
+                    <div className="dimension-preview-question-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+
+                    <p>{question.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="dimension-preview-close-button"
+                onClick={() => setSelectedDimension(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="welcome-instructions-action">
           <button type="button" className="instructions-link" onClick={onOpenInstructions}>
