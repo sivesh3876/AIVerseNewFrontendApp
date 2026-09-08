@@ -57,7 +57,7 @@ export default function AssessmentFlow({
             <div className="welcome-badge">AI VERSE • AI READINESS ASSESSMENT</div>
             <h1>
               {(() => {
-                const dimensionName = assessmentData[currentDimension].name;
+                const dimensionName = assessmentData[currentDimension].title;
                 const parts = dimensionName.split(" ");
                 const firstWord = parts[0];
                 const restWords = parts.slice(1).join(" ");
@@ -124,7 +124,7 @@ export default function AssessmentFlow({
                 <div className="assessment-dimension-header">
                   <div>
                     <p className="section-label">DIMENSION</p>
-                    <h2>{dimension.name}</h2>
+                    <h2>{dimension.title}</h2>
                   </div>
                   <span className="dimension-question-count">{dimension.questions.length} questions</span>
                 </div>

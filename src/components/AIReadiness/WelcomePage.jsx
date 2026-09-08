@@ -73,7 +73,7 @@ export default function WelcomePage({
             {assessmentData.map((dimension, index) => (
               <div className="dimension-card" key={dimension.id}>
                 <div className="dimension-card-number">{String(index + 1).padStart(2, "0")}</div>
-                <h3>{dimension.name}</h3>
+                <h3>{dimension.title}</h3>
                 <p>{dimension.questions.length} questions</p>
               </div>
             ))}
