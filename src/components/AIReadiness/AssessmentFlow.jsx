@@ -25,11 +25,11 @@ export default function AssessmentFlow({
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const lastShownError = useRef("");
   useEffect(() => {
-  if (error && error !== lastShownError.current) {
-    lastShownError.current = error;
-    setShowValidationPopup(true);
-  }
-}, [error]);
+    if (error && error !== lastShownError.current) {
+      lastShownError.current = error;
+      setShowValidationPopup(true);
+    }
+  }, [error]);
   if (!questions[questionIndex]) {
     return (
       <div className="welcome-page">
@@ -43,6 +43,10 @@ export default function AssessmentFlow({
       </div>
     );
   }
+
+  const answeredQuestions = answers.filter(
+    (answer) => answer !== undefined
+  ).length;
 
   return (
     <div className="welcome-page assessment-flow">
@@ -78,7 +82,7 @@ export default function AssessmentFlow({
             </p>
 
             <div className="assessment-stats">
-              <div className="assessment-stat"><strong>{questionIndex + 1}/{totalQuestions}</strong><span>Questions</span></div>
+              <div className="assessment-stat"><strong>{answeredQuestions}/{totalQuestions}</strong><span>Questions</span></div>
               <div className="stat-divider" />
               <div className="assessment-stat"><strong>{currentDimension + 1}/{totalDimensions}</strong><span>Dimensions</span></div>
               <div className="stat-divider" />
