@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import "../styles/ai-readiness/base.css";
 import "../styles/ai-readiness/assessment.css";
@@ -31,14 +31,25 @@ import {
 } from "../utils/aiReadinessAssessmentUtils";
 
 const PROGRESS_STORAGE_KEY = "aiReadinessAssessmentProgress";
+const DEFAULT_INDUSTRY = "general";
 
 function AIReadinessAssessmentPage() {
-  const questions = assessmentData.flatMap(
+  const [selectedIndustry, setSelectedIndustry] =
+    useState(DEFAULT_INDUSTRY);
+
+  const [showIndustryModal, setShowIndustryModal] = useState(false);
+
+  const activeAssessmentData = useMemo(
+    () => assessmentData[selectedIndustry] ?? assessmentData[DEFAULT_INDUSTRY],
+    [selectedIndustry]
+  );
+
+  const questions = activeAssessmentData.flatMap(
     (dimension) => dimension.questions
   );
 
   const totalQuestions = questions.length;
-  const totalDimensions = assessmentData.length;
+  const totalDimensions = activeAssessmentData.length;
 
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState([]);
@@ -62,7 +73,7 @@ function AIReadinessAssessmentPage() {
   const dimensionResults = backendResult?.dimensions ?? [];
 
   const currentDimension = getDimensionForQuestion(
-    assessmentData,
+    activeAssessmentData,
     questionIndex
   );
 
@@ -81,6 +92,7 @@ function AIReadinessAssessmentPage() {
   };
 
   const resetAssessment = (returnToWelcome = false) => {
+    setSelectedIndustry(DEFAULT_INDUSTRY);
     setAnswers([]);
     setQuestionIndex(0);
     setSubmitted(false);
@@ -98,6 +110,7 @@ function AIReadinessAssessmentPage() {
   };
 
   const startAssessment = () => {
+    setSelectedIndustry(DEFAULT_INDUSTRY);
     setAnswers([]);
     setQuestionIndex(0);
     setSubmitted(false);
@@ -105,7 +118,21 @@ function AIReadinessAssessmentPage() {
     setSubmitting(false);
     setBackendResult(null);
     setError("");
+    setShowIndustryModal(true);
+  };
+
+  const confirmIndustrySelection = () => {
+    setAnswers([]);
+    setQuestionIndex(0);
+    setSubmitted(false);
+    setBackendResult(null);
+    setError("");
+    setShowIndustryModal(false);
     setStarted(true);
+  };
+
+  const cancelIndustrySelection = () => {
+    setShowIndustryModal(false);
   };
 
   const resumeAssessment = () => {
@@ -115,6 +142,10 @@ function AIReadinessAssessmentPage() {
 
     try {
       const progressState = JSON.parse(saved);
+
+      setSelectedIndustry(
+        progressState.industry ?? DEFAULT_INDUSTRY
+      );
 
       setAnswers(progressState.answers ?? []);
       setQuestionIndex(progressState.questionIndex ?? 0);
@@ -134,6 +165,7 @@ function AIReadinessAssessmentPage() {
     localStorage.setItem(
       PROGRESS_STORAGE_KEY,
       JSON.stringify({
+        industry: selectedIndustry,
         answers,
         questionIndex,
         currentDimension,
@@ -153,10 +185,8 @@ function AIReadinessAssessmentPage() {
 
     if (unansweredQuestions.length > 0) {
       setError(
-        `Please answer all questions before submitting. ${
-          unansweredQuestions.length
-        } question${
-          unansweredQuestions.length === 1 ? "" : "s"
+        `Please answer all questions before submitting. ${unansweredQuestions.length
+        } question${unansweredQuestions.length === 1 ? "" : "s"
         } remaining.`
       );
 
@@ -182,6 +212,7 @@ function AIReadinessAssessmentPage() {
           "Content-Type": "text/plain;charset=UTF-8",
         },
         body: JSON.stringify({
+          industry: selectedIndustry,
           answers: answerPayload,
         }),
       });
@@ -197,7 +228,7 @@ function AIReadinessAssessmentPage() {
       if (!response.ok) {
         throw new Error(
           data?.error ||
-            "The assessment could not be submitted. Please try again."
+          "The assessment could not be submitted. Please try again."
         );
       }
 
@@ -225,7 +256,7 @@ function AIReadinessAssessmentPage() {
 
       setError(
         submissionError?.message ||
-          "Failed to connect to the assessment API. Make sure the backend is running."
+        "Failed to connect to the assessment API. Make sure the backend is running."
       );
     } finally {
       setSubmitting(false);
@@ -259,22 +290,114 @@ function AIReadinessAssessmentPage() {
   };
 
   // Welcome screen
+    // Welcome screen
   if (!started) {
     return (
-      <WelcomePage
-        heroBackground={heroBackground}
-        assessmentData={assessmentData}
-        totalQuestions={totalQuestions}
-        totalDimensions={totalDimensions}
-        hasSavedProgress={hasSavedProgress}
-        onStart={startAssessment}
-        onResume={resumeAssessment}
-        instructionsOpen={showInstructions}
-        onOpenInstructions={() => setShowInstructions(true)}
-        onCloseInstructions={() => setShowInstructions(false)}
-        maturityLevels={maturityLevels}
-        scoringTips={scoringTips}
-      />
+      <>
+        <WelcomePage
+          heroBackground={heroBackground}
+          assessmentData={activeAssessmentData}
+          totalQuestions={totalQuestions}
+          totalDimensions={totalDimensions}
+          hasSavedProgress={hasSavedProgress}
+          onStart={startAssessment}
+          onResume={resumeAssessment}
+          instructionsOpen={showInstructions}
+          onOpenInstructions={() => setShowInstructions(true)}
+          onCloseInstructions={() => setShowInstructions(false)}
+          maturityLevels={maturityLevels}
+          scoringTips={scoringTips}
+        />
+
+        {showIndustryModal && (
+          <div className="industry-modal-overlay">
+            <div
+              className="industry-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="industry-modal-title"
+            >
+              <h2 id="industry-modal-title">Select Your Industry</h2>
+
+              <p>
+                Choose the industry that best represents your organisation.
+              </p>
+
+              <div className="industry-options">
+                <label className="industry-option">
+                  <input
+                    type="radio"
+                    name="industry"
+                    value="general"
+                    checked={selectedIndustry === "general"}
+                    onChange={(event) =>
+                      setSelectedIndustry(event.target.value)
+                    }
+                  />
+                  <span>General</span>
+                </label>
+
+                <label className="industry-option">
+                  <input
+                    type="radio"
+                    name="industry"
+                    value="education"
+                    checked={selectedIndustry === "education"}
+                    onChange={(event) =>
+                      setSelectedIndustry(event.target.value)
+                    }
+                  />
+                  <span>Education</span>
+                </label>
+
+                <label className="industry-option">
+                  <input
+                    type="radio"
+                    name="industry"
+                    value="insurance"
+                    checked={selectedIndustry === "insurance"}
+                    onChange={(event) =>
+                      setSelectedIndustry(event.target.value)
+                    }
+                  />
+                  <span>Insurance</span>
+                </label>
+
+                <label className="industry-option">
+                  <input
+                    type="radio"
+                    name="industry"
+                    value="logistics"
+                    checked={selectedIndustry === "logistics"}
+                    onChange={(event) =>
+                      setSelectedIndustry(event.target.value)
+                    }
+                  />
+                  <span>Logistics</span>
+                </label>
+              </div>
+
+              <div className="industry-modal-actions">
+                <button
+                  type="button"
+                  onClick={cancelIndustrySelection}
+                  className="industry-modal-cancel"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmIndustrySelection}
+                  className="industry-modal-start"
+                >
+                  Start Assessment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -282,7 +405,7 @@ function AIReadinessAssessmentPage() {
   if (showSummary && backendResult) {
     return (
       <AnswerSummary
-        assessmentData={assessmentData}
+        assessmentData={activeAssessmentData}
         questions={questions}
         answers={answers}
         maturityLevels={maturityLevels}
@@ -313,7 +436,7 @@ function AIReadinessAssessmentPage() {
     <AssessmentFlow
       logo={logo}
       heroBackground={heroBackground}
-      assessmentData={assessmentData}
+      assessmentData={activeAssessmentData}
       questions={questions}
       totalQuestions={totalQuestions}
       totalDimensions={totalDimensions}
