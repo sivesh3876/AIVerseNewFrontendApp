@@ -84,6 +84,11 @@ const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
   "Logistics",
 ]);
 
+const BUSINESS_DOMAIN_DISPLAY_NAMES = {
+  CustomerExperienceCRM: "Enterprise Application",
+  DataAnalytics: "Data Management",
+};
+
 const normalizeCardPosition = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return "";
@@ -928,7 +933,8 @@ const AddNewAISolution = () => {
               )}
               {businessDomains.map((domain) => (
                 <option key={domain.DomainCode} value={domain.DomainCode}>
-                  {domain.DomainName}
+                  {BUSINESS_DOMAIN_DISPLAY_NAMES[domain.DomainCode] ||
+                    domain.DomainName}
                 </option>
               ))}
             </select>
