@@ -77,9 +77,13 @@ function AIReadinessAssessmentPage() {
     questionIndex
   );
 
+  const answeredQuestions = answers.filter(
+    (answer) => answer !== undefined
+  ).length;
+
   const progress =
     totalQuestions > 0
-      ? Math.round(((questionIndex + 1) / totalQuestions) * 100)
+      ? Math.round((answeredQuestions / totalQuestions) * 100)
       : 0;
 
   const updateAnswer = (index, value) => {
@@ -290,7 +294,7 @@ function AIReadinessAssessmentPage() {
   };
 
   // Welcome screen
-    // Welcome screen
+  // Welcome screen
   if (!started) {
     return (
       <>
