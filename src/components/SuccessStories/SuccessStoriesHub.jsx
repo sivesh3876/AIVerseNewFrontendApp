@@ -288,7 +288,19 @@ const SuccessStoriesHub = () => {
     try {
       const data = await fetchSuccessStories({ includeUnpublished: false });
       setStories(
-        unwrapStories(data).filter(isPublishedStory).map(normalizeSuccessStory),
+        unwrapStories(data)
+          .filter(isPublishedStory)
+          .map(normalizeSuccessStory)
+          .sort((left, right) => {
+            const leftTime = new Date(
+              left.publishedAt || left.createdAt || left.createdDate || 0,
+            ).getTime();
+            const rightTime = new Date(
+              right.publishedAt || right.createdAt || right.createdDate || 0,
+            ).getTime();
+            return (Number.isNaN(rightTime) ? 0 : rightTime) -
+              (Number.isNaN(leftTime) ? 0 : leftTime);
+          }),
       );
     } catch (loadError) {
       setStories([]);

@@ -31,6 +31,7 @@ const AdminRichTextEditor = ({
   const textColorRef = useRef(null);
   const highlightRef = useRef(null);
   const rootRef = useRef(null);
+  const savedRangeRef = useRef(null);
   const [showMore, setShowMore] = useState(false);
   const [showFontMenu, setShowFontMenu] = useState(false);
   const [activeFormats, setActiveFormats] = useState({});
@@ -59,8 +60,50 @@ const AdminRichTextEditor = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const focusEditor = () => {
-    editorRef.current?.focus();
+  const isSelectionInsideEditor = (range) => {
+    const editor = editorRef.current;
+    if (!editor || !range) return false;
+    const container = range.commonAncestorContainer;
+    return container === editor || editor.contains(container);
+  };
+
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+
+    const range = selection.getRangeAt(0);
+    if (!isSelectionInsideEditor(range)) return false;
+
+    savedRangeRef.current = range.cloneRange();
+    return true;
+  };
+
+  const restoreSelection = () => {
+    const editor = editorRef.current;
+    if (!editor) return false;
+
+    editor.focus({ preventScroll: true });
+
+    const savedRange = savedRangeRef.current;
+    if (!savedRange || !isSelectionInsideEditor(savedRange)) {
+      const selection = window.getSelection();
+      if (!selection) return false;
+
+      const fallbackRange = document.createRange();
+      fallbackRange.selectNodeContents(editor);
+      fallbackRange.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(fallbackRange);
+      savedRangeRef.current = fallbackRange.cloneRange();
+      return true;
+    }
+
+    const selection = window.getSelection();
+    if (!selection) return false;
+
+    selection.removeAllRanges();
+    selection.addRange(savedRange.cloneRange());
+    return true;
   };
 
   const emitChange = () => {
@@ -76,44 +119,19 @@ const AdminRichTextEditor = ({
     });
   };
 
-  const normalizeBoldTags = () => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    editor.querySelectorAll("b").forEach((element) => {
-      const strong = document.createElement("strong");
-      strong.innerHTML = element.innerHTML;
-      element.replaceWith(strong);
-    });
-
-    editor.querySelectorAll('span[style*="font-weight"]').forEach((element) => {
-      const weight = element.style.fontWeight;
-      if (weight === "bold" || Number(weight) >= 600) {
-        const strong = document.createElement("strong");
-        strong.innerHTML = element.innerHTML;
-        element.replaceWith(strong);
-      }
-    });
-  };
-
   const runCommand = (command, commandValue = null) => {
-    focusEditor();
-
-    if (command === "bold") {
-      document.execCommand("styleWithCSS", false, false);
-      document.execCommand("bold", false, null);
-      normalizeBoldTags();
-    } else {
-      document.execCommand(command, false, commandValue);
-    }
+    restoreSelection();
+    document.execCommand("styleWithCSS", false, false);
+    document.execCommand(command, false, commandValue);
 
     emitChange();
+    saveSelection();
     updateActiveFormats();
   };
 
   const handleInput = () => {
-    normalizeBoldTags();
     emitChange();
+    saveSelection();
     updateActiveFormats();
   };
 
@@ -123,13 +141,22 @@ const AdminRichTextEditor = ({
     }
     emitChange();
     setActiveFormats({});
-    focusEditor();
+    savedRangeRef.current = null;
+    editorRef.current?.focus({ preventScroll: true });
   };
 
   const handleAddLink = () => {
+    saveSelection();
     const url = window.prompt("Enter link URL");
     if (!url) return;
-    runCommand("createLink", url);
+
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl || /^\s*javascript:/i.test(trimmedUrl)) return;
+
+    const normalizedUrl = /^(https?:|mailto:|tel:|\/|#)/i.test(trimmedUrl)
+      ? trimmedUrl
+      : `https://${trimmedUrl}`;
+    runCommand("createLink", normalizedUrl);
   };
 
   const handleFontSize = (size) => {
@@ -142,7 +169,8 @@ const AdminRichTextEditor = ({
     runCommand(command, color);
   };
 
-  const preventToolbarFocusLoss = (event) => {
+  const preserveSelectionOnToolbarMouseDown = (event) => {
+    saveSelection();
     event.preventDefault();
   };
 
@@ -153,7 +181,7 @@ const AdminRichTextEditor = ({
       className={`admin_rich_text_editor__btn${
         commandKey && activeFormats[commandKey] ? " is-active" : ""
       }`}
-      onMouseDown={preventToolbarFocusLoss}
+      onMouseDown={preserveSelectionOnToolbarMouseDown}
       onClick={onClick}
       aria-label={label}
       title={label}
@@ -200,7 +228,7 @@ const AdminRichTextEditor = ({
           <button
             type="button"
             className="admin_rich_text_editor__btn admin_rich_text_editor__btn--color"
-            onMouseDown={preventToolbarFocusLoss}
+            onMouseDown={preserveSelectionOnToolbarMouseDown}
             onClick={() => highlightRef.current?.click()}
             aria-label="Highlight color"
             title="Highlight color"
@@ -211,6 +239,11 @@ const AdminRichTextEditor = ({
               type="color"
               className="admin_rich_text_editor__color-input"
               defaultValue="#fff59d"
+              onMouseDown={(event) => {
+                saveSelection();
+                event.stopPropagation();
+              }}
+              onClick={(event) => event.stopPropagation()}
               onChange={(event) =>
                 handleColorPick("hiliteColor", event.target.value)
               }
@@ -220,7 +253,7 @@ const AdminRichTextEditor = ({
           <button
             type="button"
             className="admin_rich_text_editor__btn admin_rich_text_editor__btn--color"
-            onMouseDown={preventToolbarFocusLoss}
+            onMouseDown={preserveSelectionOnToolbarMouseDown}
             onClick={() => textColorRef.current?.click()}
             aria-label="Text color"
             title="Text color"
@@ -231,6 +264,11 @@ const AdminRichTextEditor = ({
               type="color"
               className="admin_rich_text_editor__color-input"
               defaultValue="#0d1e32"
+              onMouseDown={(event) => {
+                saveSelection();
+                event.stopPropagation();
+              }}
+              onClick={(event) => event.stopPropagation()}
               onChange={(event) =>
                 handleColorPick("foreColor", event.target.value)
               }
@@ -241,7 +279,7 @@ const AdminRichTextEditor = ({
             <button
               type="button"
               className={`admin_rich_text_editor__btn${showFontMenu ? " is-active" : ""}`}
-              onMouseDown={preventToolbarFocusLoss}
+              onMouseDown={preserveSelectionOnToolbarMouseDown}
               onClick={() => {
                 setShowFontMenu((prev) => !prev);
                 setShowMore(false);
@@ -258,7 +296,7 @@ const AdminRichTextEditor = ({
                     key={size.value}
                     type="button"
                     className="admin_rich_text_editor__menu-item"
-                    onMouseDown={preventToolbarFocusLoss}
+                    onMouseDown={preserveSelectionOnToolbarMouseDown}
                     onClick={() => handleFontSize(size.value)}
                   >
                     {size.label}
@@ -284,7 +322,7 @@ const AdminRichTextEditor = ({
             <button
               type="button"
               className={`admin_rich_text_editor__btn${showMore ? " is-active" : ""}`}
-              onMouseDown={preventToolbarFocusLoss}
+              onMouseDown={preserveSelectionOnToolbarMouseDown}
               onClick={() => {
                 setShowMore((prev) => !prev);
                 setShowFontMenu(false);
@@ -299,7 +337,7 @@ const AdminRichTextEditor = ({
                 <button
                   type="button"
                   className="admin_rich_text_editor__menu-item"
-                  onMouseDown={preventToolbarFocusLoss}
+                  onMouseDown={preserveSelectionOnToolbarMouseDown}
                   onClick={() => {
                     runCommand("formatBlock", "p");
                     setShowMore(false);
@@ -310,7 +348,7 @@ const AdminRichTextEditor = ({
                 <button
                   type="button"
                   className="admin_rich_text_editor__menu-item"
-                  onMouseDown={preventToolbarFocusLoss}
+                  onMouseDown={preserveSelectionOnToolbarMouseDown}
                   onClick={() => {
                     runCommand("formatBlock", "h3");
                     setShowMore(false);
@@ -321,7 +359,7 @@ const AdminRichTextEditor = ({
                 <button
                   type="button"
                   className="admin_rich_text_editor__menu-item"
-                  onMouseDown={preventToolbarFocusLoss}
+                  onMouseDown={preserveSelectionOnToolbarMouseDown}
                   onClick={() => {
                     runCommand("insertHorizontalRule");
                     setShowMore(false);
@@ -332,7 +370,7 @@ const AdminRichTextEditor = ({
                 <button
                   type="button"
                   className="admin_rich_text_editor__menu-item"
-                  onMouseDown={preventToolbarFocusLoss}
+                  onMouseDown={preserveSelectionOnToolbarMouseDown}
                   onClick={() => {
                     runCommand("removeFormat");
                     setShowMore(false);
@@ -348,7 +386,7 @@ const AdminRichTextEditor = ({
         <button
           type="button"
           className="admin_rich_text_editor__btn admin_rich_text_editor__btn--clear"
-          onMouseDown={preventToolbarFocusLoss}
+          onMouseDown={preserveSelectionOnToolbarMouseDown}
           onClick={handleClear}
           aria-label="Clear description"
           title="Clear"
@@ -366,9 +404,19 @@ const AdminRichTextEditor = ({
         aria-multiline="true"
         data-placeholder={placeholder}
         onInput={handleInput}
-        onMouseUp={updateActiveFormats}
-        onKeyUp={updateActiveFormats}
-        onFocus={updateActiveFormats}
+        onMouseUp={() => {
+          saveSelection();
+          updateActiveFormats();
+        }}
+        onKeyUp={() => {
+          saveSelection();
+          updateActiveFormats();
+        }}
+        onFocus={() => {
+          saveSelection();
+          updateActiveFormats();
+        }}
+        onBlur={saveSelection}
         suppressContentEditableWarning
       />
     </div>

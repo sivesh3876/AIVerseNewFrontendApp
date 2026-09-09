@@ -9,6 +9,7 @@ import { stripHtml } from "./htmlContent";
 export const HOMEPAGE_CARD_COUNT = 6;
 
 export const BLOG_BADGE_COLORS = {
+  MARKETING: "#18E0CC",
   "FEATURED ARTICLE": "#18E0CC",
   GUIDE: "#4D90E3",
   RESEARCH: "#18E0CC",
@@ -42,19 +43,78 @@ export const isHomepageBlog = (blog) =>
       Number(blog.homepageOrder) <= HOMEPAGE_CARD_COUNT,
   );
 
-export const getHomepageInsightCards = () => {
-  const homepageBlogs = getActiveAdminBlogs().filter(isHomepageBlog);
-  const slots = Array.from({ length: HOMEPAGE_CARD_COUNT }, () => null);
+const isMarketingBlog = (blog) =>
+  String(blog?.category || blog?.badge || "")
+    .trim()
+    .toUpperCase() === "MARKETING";
 
-  homepageBlogs.forEach((blog) => {
-    slots[Number(blog.homepageOrder) - 1] = toPublicResource(blog);
+const sortAdminBlogsForHomepage = (left, right) => {
+  const leftOrder = Number(left.homepageOrder);
+  const rightOrder = Number(right.homepageOrder);
+  const leftHasOrder =
+    left.showOnHomepage && leftOrder >= 1 && leftOrder <= HOMEPAGE_CARD_COUNT;
+  const rightHasOrder =
+    right.showOnHomepage && rightOrder >= 1 && rightOrder <= HOMEPAGE_CARD_COUNT;
+
+  if (leftHasOrder && rightHasOrder) return leftOrder - rightOrder;
+  if (leftHasOrder) return -1;
+  if (rightHasOrder) return 1;
+
+  const leftTime = left.publishedAt ? new Date(left.publishedAt).getTime() : 0;
+  const rightTime = right.publishedAt ? new Date(right.publishedAt).getTime() : 0;
+  if (leftTime !== rightTime) return rightTime - leftTime;
+
+  return String(left.title || "").localeCompare(String(right.title || ""));
+};
+
+/**
+ * Homepage marketing cards: prefer Published admin blogs (especially MARKETING)
+ * so titles/descriptions/dates match /admin/blogs. Fill remaining slots from
+ * other published admin blogs, then static defaults only if still empty.
+ */
+export const getHomepageInsightCards = () => {
+  const adminBlogs = getActiveAdminBlogs();
+  const slots = Array.from({ length: HOMEPAGE_CARD_COUNT }, () => null);
+  const usedIds = new Set();
+
+  adminBlogs.filter(isHomepageBlog).forEach((blog) => {
+    const order = Number(blog.homepageOrder);
+    if (!slots[order - 1]) {
+      slots[order - 1] = toPublicResource(blog);
+      usedIds.add(blog.id);
+    }
   });
+
+  const marketingFill = [...adminBlogs]
+    .filter(isMarketingBlog)
+    .filter((blog) => !usedIds.has(blog.id))
+    .sort(sortAdminBlogsForHomepage);
+
+  const otherAdminFill = [...adminBlogs]
+    .filter((blog) => !isMarketingBlog(blog) && !usedIds.has(blog.id))
+    .sort(sortAdminBlogsForHomepage);
+
+  const fillQueue = [...marketingFill, ...otherAdminFill];
+
+  for (let index = 0; index < HOMEPAGE_CARD_COUNT; index += 1) {
+    if (slots[index]) continue;
+    const next = fillQueue.shift();
+    if (!next) break;
+    slots[index] = toPublicResource(next);
+    usedIds.add(next.id);
+  }
 
   let defaultIndex = 0;
   for (let index = 0; index < HOMEPAGE_CARD_COUNT; index += 1) {
-    if (!slots[index] && defaultHomeInsights[defaultIndex]) {
-      slots[index] = defaultHomeInsights[defaultIndex];
+    if (slots[index]) continue;
+
+    while (defaultIndex < defaultHomeInsights.length) {
+      const nextDefault = defaultHomeInsights[defaultIndex];
       defaultIndex += 1;
+      if (usedIds.has(nextDefault.id)) continue;
+      slots[index] = nextDefault;
+      usedIds.add(nextDefault.id);
+      break;
     }
   }
 

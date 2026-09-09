@@ -27,6 +27,17 @@ const ChevronIcon = ({ direction = "right" }) => (
   </svg>
 );
 
+const CARD_GAP = 20;
+
+const storyTimestamp = (story) => {
+  const value = story?.publishedAt || story?.createdAt || story?.createdDate || 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const sortStoriesNewestFirst = (stories) =>
+  [...stories].sort((left, right) => storyTimestamp(right) - storyTimestamp(left));
+
 const isPublishedStory = (story) => {
   const status =
     story?.status ??
@@ -45,7 +56,7 @@ const SuccessStories = () => {
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(3);
-  const [cardStep, setCardStep] = useState(0);
+  const [cardWidth, setCardWidth] = useState(0);
 
   const loadStories = useCallback(async () => {
     setIsLoading(true);
@@ -56,7 +67,11 @@ const SuccessStories = () => {
       const rows = Array.isArray(data)
         ? data
         : data?.items ?? data?.stories ?? data?.data ?? [];
-      setStories(rows.filter(isPublishedStory).map(normalizeSuccessStory));
+      setStories(
+        sortStoriesNewestFirst(
+          rows.filter(isPublishedStory).map(normalizeSuccessStory),
+        ),
+      );
     } catch (loadError) {
       setStories([]);
       setError(loadError?.message || "Unable to load success stories.");
@@ -111,33 +126,35 @@ const SuccessStories = () => {
     const viewport = viewportRef.current;
     if (!viewport) return undefined;
 
-    const updateCardStep = () => {
-      const gap = 20;
-      const cardWidth =
-        (viewport.clientWidth - gap * (cardsPerView - 1)) / cardsPerView;
-      setCardStep(Math.max(0, cardWidth + gap));
+    const updateCardWidth = () => {
+      const width =
+        (viewport.clientWidth - CARD_GAP * (cardsPerView - 1)) / cardsPerView;
+      setCardWidth(Math.max(0, width));
     };
 
-    updateCardStep();
-    const observer = new ResizeObserver(updateCardStep);
+    updateCardWidth();
+    const observer = new ResizeObserver(updateCardWidth);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [cardsPerView]);
+  }, [cardsPerView, stories.length]);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [stories.length, cardsPerView]);
 
+  const cardStep = cardWidth + CARD_GAP;
   const maxIndex = Math.max(0, stories.length - cardsPerView);
   const displayIndex = Math.min(activeIndex, maxIndex);
   const showNav = stories.length > cardsPerView;
 
   const handlePrev = () => {
-    setActiveIndex(Math.max(0, displayIndex - 1));
+    setActiveIndex((current) => Math.max(0, Math.min(current, maxIndex) - 1));
   };
 
   const handleNext = () => {
-    setActiveIndex(Math.min(maxIndex, displayIndex + 1));
+    setActiveIndex((current) =>
+      Math.min(maxIndex, Math.min(current, maxIndex) + 1),
+    );
   };
 
   return (
@@ -185,7 +202,10 @@ const SuccessStories = () => {
               <div
                 className="success_stories__grid"
                 style={{
-                  transform: `translate3d(-${displayIndex * cardStep}px, 0, 0)`,
+                  transform:
+                    cardWidth > 0
+                      ? `translate3d(-${displayIndex * cardStep}px, 0, 0)`
+                      : undefined,
                 }}
               >
                 {stories.map((story) => {
@@ -194,10 +214,18 @@ const SuccessStories = () => {
                   const slug = story.slug || story.id;
 
                   return (
-                    <Link
-                      to={`/success-stories?story=${encodeURIComponent(slug)}`}
+                    <article
                       className="success_stories__card"
                       key={story.id || slug}
+                      style={
+                        cardWidth > 0
+                          ? {
+                              flex: `0 0 ${cardWidth}px`,
+                              width: `${cardWidth}px`,
+                              maxWidth: `${cardWidth}px`,
+                            }
+                          : undefined
+                      }
                     >
                       {(story.industryTag || story.industry) && (
                         <span className="success_stories__tag">
@@ -217,11 +245,14 @@ const SuccessStories = () => {
                         </div>
                       )}
 
-                      <span className="success_stories__link">
+                      <Link
+                        to={`/success-stories?story=${encodeURIComponent(slug)}`}
+                        className="success_stories__link"
+                      >
                         Read Case Study
                         <ChevronIcon />
-                      </span>
-                    </Link>
+                      </Link>
+                    </article>
                   );
                 })}
               </div>

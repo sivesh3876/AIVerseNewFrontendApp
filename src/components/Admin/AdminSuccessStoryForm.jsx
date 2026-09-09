@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createSuccessStory,
@@ -8,6 +8,9 @@ import {
   buildSuccessStoryFormData,
   generateSuccessStorySlug,
   getEmptySuccessStoryForm,
+  getSuccessStoryCategoryOptions,
+  SUCCESS_STORY_ADD_NEW_CATEGORY,
+  SUCCESS_STORY_CATEGORY_PRESETS,
   SUCCESS_STORY_STATUSES,
   successStoryToFormValues,
   validateSuccessStoryForm,
@@ -145,11 +148,14 @@ const AdminSuccessStoryForm = () => {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const {
+    stories,
     loadStory,
     loading: loadingStory,
     error: loadError,
-  } = useSuccessStories({ autoLoad: false });
+  } = useSuccessStories({ autoLoad: true });
   const [values, setValues] = useState(getEmptySuccessStoryForm);
+  const [categorySelect, setCategorySelect] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [errors, setErrors] = useState({});
   const [pageError, setPageError] = useState("");
@@ -161,15 +167,73 @@ const AdminSuccessStoryForm = () => {
   const [removeHeroImage, setRemoveHeroImage] = useState(false);
   const [removeClientLogo, setRemoveClientLogo] = useState(false);
 
+  const categoryOptions = useMemo(
+    () => getSuccessStoryCategoryOptions(stories),
+    [stories],
+  );
+
   useEffect(() => {
     if (!isEdit) return;
     loadStory({ id })
       .then((story) => {
-        setValues(successStoryToFormValues(story));
+        const formValues = successStoryToFormValues(story);
+        setValues(formValues);
         setSlugEdited(true);
+
+        const current = String(formValues.category || "").trim();
+        if (!current) {
+          setCategorySelect("");
+          setCustomCategory("");
+          return;
+        }
+        const presetMatch = SUCCESS_STORY_CATEGORY_PRESETS.find(
+          (option) => option.toLowerCase() === current.toLowerCase(),
+        );
+        if (presetMatch) {
+          setCategorySelect(presetMatch);
+          setCustomCategory("");
+          setValues((prev) => ({ ...prev, category: presetMatch }));
+        } else {
+          setCategorySelect(SUCCESS_STORY_ADD_NEW_CATEGORY);
+          setCustomCategory(current);
+        }
       })
       .catch(() => {});
   }, [id, isEdit, loadStory]);
+
+  useEffect(() => {
+    if (!isEdit) return;
+    const current = String(values.category || "").trim();
+    if (!current || categorySelect === SUCCESS_STORY_ADD_NEW_CATEGORY) return;
+    const matched = categoryOptions.find(
+      (option) => option.toLowerCase() === current.toLowerCase(),
+    );
+    if (matched && matched !== categorySelect) {
+      setCategorySelect(matched);
+    }
+  }, [categoryOptions, isEdit, values.category, categorySelect]);
+
+  const handleCategorySelectChange = (event) => {
+    const next = event.target.value;
+    setCategorySelect(next);
+    setErrors((current) => ({ ...current, category: "" }));
+    if (next === SUCCESS_STORY_ADD_NEW_CATEGORY) {
+      setValues((current) => ({
+        ...current,
+        category: customCategory.trim(),
+      }));
+      return;
+    }
+    setCustomCategory("");
+    setValues((current) => ({ ...current, category: next }));
+  };
+
+  const handleCustomCategoryChange = (event) => {
+    const next = event.target.value;
+    setCustomCategory(next);
+    setValues((current) => ({ ...current, category: next }));
+    setErrors((current) => ({ ...current, category: "" }));
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -201,13 +265,24 @@ const AdminSuccessStoryForm = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const resolvedCategory =
+      categorySelect === SUCCESS_STORY_ADD_NEW_CATEGORY
+        ? customCategory.trim()
+        : categorySelect.trim();
     const nextValues = {
       ...values,
+      category: resolvedCategory,
       heroImageFile: heroImage.file,
     };
     const nextErrors = validateSuccessStoryForm(nextValues, {
       requireHeroImage: true,
     });
+    if (
+      categorySelect === SUCCESS_STORY_ADD_NEW_CATEGORY &&
+      !customCategory.trim()
+    ) {
+      nextErrors.category = "Please enter a new category name.";
+    }
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       setPageError("Complete the required fields before saving.");
@@ -218,7 +293,7 @@ const AdminSuccessStoryForm = () => {
     setSaving(true);
     setPageError("");
     try {
-      const formData = buildSuccessStoryFormData(values, {
+      const formData = buildSuccessStoryFormData(nextValues, {
         id,
         heroImageFile: heroImage.file,
         clientLogoFile: clientLogo.file,
@@ -305,14 +380,41 @@ const AdminSuccessStoryForm = () => {
                 error={errors.client}
                 required
               />
-              <TextField
-                label="Category / Industry"
-                name="category"
-                value={values.category}
-                onChange={handleChange}
-                error={errors.category}
-                required
-              />
+              <div className="admin_success_story_form__field">
+                <span>Category / Industry *</span>
+                <select
+                  name="category"
+                  value={categorySelect}
+                  onChange={handleCategorySelectChange}
+                  aria-invalid={Boolean(errors.category)}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                  <option value={SUCCESS_STORY_ADD_NEW_CATEGORY}>
+                    + Add new category
+                  </option>
+                </select>
+                {categorySelect === SUCCESS_STORY_ADD_NEW_CATEGORY && (
+                  <input
+                    type="text"
+                    className="admin_success_story_form__inline-input"
+                    value={customCategory}
+                    onChange={handleCustomCategoryChange}
+                    placeholder="Enter new category name"
+                    aria-invalid={Boolean(errors.category)}
+                  />
+                )}
+                {errors.category && (
+                  <small className="admin_success_story_form__error">
+                    {errors.category}
+                  </small>
+                )}
+              </div>
               <TextField
                 label="Story Title"
                 name="title"

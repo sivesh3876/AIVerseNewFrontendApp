@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
+import { formatApiDateTime } from "../../utils/dateTime";
 import PipelineStage from "./PipelineStage";
 import FollowUpList from "./FollowUpList";
 import FollowUpModal from "./FollowUpModal";
@@ -25,7 +26,7 @@ const getInitials = (name = "") => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const formatDateTime = (value) => {
+const formatLocalDateTime = (value) => {
   if (!value) return "—";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return String(value);
@@ -37,6 +38,8 @@ const formatDateTime = (value) => {
     minute: "2-digit",
   });
 };
+
+const formatDateTime = (value) => formatApiDateTime(value);
 
 const InfoField = ({ label, children }) => (
   <div className="admin_contact_drawer__field">
@@ -289,7 +292,7 @@ const ContactRequestDrawer = ({
             ) : null}
             {request.preferredCallbackTime ? (
               <InfoField label="Preferred Call Back Time">
-                {formatDateTime(request.preferredCallbackTime)}
+                {formatLocalDateTime(request.preferredCallbackTime)}
               </InfoField>
             ) : null}
             <InfoField label="Message">{request.message}</InfoField>

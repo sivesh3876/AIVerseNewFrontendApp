@@ -858,7 +858,7 @@ const AddNewAISolution = () => {
               disabled={loadingDomains}
               required
             >
-              <option value="">
+              <option value="" disabled hidden>
                 {loadingDomains ? "Loading domains..." : "Select a business domain"}
               </option>
               {businessDomains.map((domain) => (
@@ -895,53 +895,41 @@ const AddNewAISolution = () => {
           </div>
         </div>
 
-        <div className="add_ai_solution__field add_ai_solution__field--publish">
-          <label htmlFor="Publish">Publish</label>
-          <select
-            id="Publish"
-            value={form.Publish}
-            onChange={(event) => updateField("Publish", event.target.value)}
-          >
-            <option value="Yes">Yes - show on Explore Solutions</option>
-            <option value="No">No - keep inactive</option>
-          </select>
-          <p className="add_ai_solution__field-hint">
-            Published solutions stay Active and appear as cards under their
-            selected enterprise service.
-          </p>
-        </div>
+        <div className="add_ai_solution__row">
+          <div className="add_ai_solution__field">
+            <label htmlFor="Publish">Publish</label>
+            <select
+              id="Publish"
+              value={form.Publish}
+              onChange={(event) => updateField("Publish", event.target.value)}
+            >
+              <option value="Yes">Yes - show on Explore Solutions</option>
+              <option value="No">No - keep inactive</option>
+            </select>
+            <p className="add_ai_solution__field-hint">
+              Published solutions stay Active and appear as cards under their
+              selected enterprise service.
+            </p>
+          </div>
 
-        <div className="add_ai_solution__field">
-          <label htmlFor="OrderNumber">Card Position</label>
-          <select
-            id="OrderNumber"
-            value={form.OrderNumber}
-            onChange={(event) => updateField("OrderNumber", event.target.value)}
-          >
-            <option value="">No position</option>
-            {CARD_POSITION_OPTIONS.map((position) => {
-              const occupant = positionOccupancy[position];
-              const isOwnSlot =
-                isEditMode &&
-                occupant &&
-                String(occupant.id) === String(editId);
-              let label = `Position ${position}`;
-              if (occupant && !isOwnSlot) {
-                label = `Position ${position} — ${occupant.title} (will replace)`;
-              } else if (occupant && isOwnSlot) {
-                label = `Position ${position} — current`;
-              }
-
-              return (
+          <div className="add_ai_solution__field">
+            <label htmlFor="OrderNumber">Card Position</label>
+            <select
+              id="OrderNumber"
+              value={form.OrderNumber}
+              onChange={(event) => updateField("OrderNumber", event.target.value)}
+            >
+              <option value="">No position</option>
+              {CARD_POSITION_OPTIONS.map((position) => (
                 <option key={position} value={String(position)}>
-                  {label}
+                  {`Position ${position}`}
                 </option>
-              );
-            })}
-          </select>
-          <p className="add_ai_solution__field-hint">
-            {`Sets the slot (1–8) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
-          </p>
+              ))}
+            </select>
+            <p className="add_ai_solution__field-hint">
+              {`Sets the slot (1–8) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
+            </p>
+          </div>
         </div>
 
         <div className="add_ai_solution__field">

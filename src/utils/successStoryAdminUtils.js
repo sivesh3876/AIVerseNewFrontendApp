@@ -38,6 +38,17 @@ const normalizeStatus = (value) => {
 export const SUCCESS_STORY_STATUSES = ["Draft", "Published", "Archived"];
 export const SUCCESS_STORY_DEFAULT_STATUS_FILTER = "active";
 
+export const SUCCESS_STORY_CATEGORY_PRESETS = [
+  "LOGISTICS",
+  "BFSI",
+  "HEALTHCARE",
+  "EDUCATION",
+  "INSURANCE",
+  "MARKETING",
+];
+
+export const SUCCESS_STORY_ADD_NEW_CATEGORY = "__add_new__";
+
 export const normalizeSuccessStory = (story = {}) => {
   const id = getValue(
     story,
@@ -316,6 +327,11 @@ export const buildSuccessStoryFormData = (
   if (id != null && id !== "") append(formData, "ID", id);
 
   const industryTag = toText(values.category).toUpperCase();
+  const createdDateLabel = new Date().toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
   const fields = {
     Client: values.client,
     Industry: values.category,
@@ -324,6 +340,7 @@ export const buildSuccessStoryFormData = (
     Title: values.title,
     Slug: values.slug,
     Description: values.shortDescription,
+    StoryDate: values.storyDate || createdDateLabel,
     StatValue: values.keyMetric,
     StatLabel: values.metricDescription,
     Metric: [values.keyMetric, values.metricDescription]
@@ -393,6 +410,16 @@ export const getSuccessStoryCategories = (stories) =>
   [...new Set(stories.map((story) => story.category).filter(Boolean))].sort(
     (left, right) => left.localeCompare(right),
   );
+
+export const getSuccessStoryCategoryOptions = (stories = []) => {
+  const extras = getSuccessStoryCategories(stories).filter(
+    (category) =>
+      !SUCCESS_STORY_CATEGORY_PRESETS.some(
+        (preset) => preset.toLowerCase() === category.toLowerCase(),
+      ),
+  );
+  return [...SUCCESS_STORY_CATEGORY_PRESETS, ...extras];
+};
 
 const escapeCsv = (value) => {
   const text = String(value ?? "");

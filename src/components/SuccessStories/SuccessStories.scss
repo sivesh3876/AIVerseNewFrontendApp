@@ -83,8 +83,9 @@
     &__grid {
         display   : flex;
         gap       : 20px;
-        width     : 100%;
-        min-width : 0;
+        width     : max-content;
+        max-width : none;
+        min-width : 100%;
         transition: transform 0.4s ease;
         will-change: transform;
     }
@@ -117,8 +118,9 @@
 
     &__card {
         display       : flex;
-        flex          : 0 0 calc((100% - 40px) / 3);
+        flex          : 0 0 auto;
         flex-direction: column;
+        box-sizing    : border-box;
         min-width     : 0;
         min-height    : 360px;
         padding       : 28px 28px 24px;
@@ -197,6 +199,7 @@
         font-size      : 15px;
         font-weight    : 600;
         text-decoration: none;
+        cursor         : pointer;
         transition     : color 0.2s, transform 0.2s;
 
         svg {
@@ -284,7 +287,6 @@
 @media (max-width: 1100px) {
     .success_stories {
         &__card {
-            flex-basis: calc((100% - 20px) / 2);
             min-height: 340px;
         }
     }
@@ -330,7 +332,6 @@
         }
 
         &__card {
-            flex-basis: 100%;
             min-height: 320px;
             padding   : 24px 22px 20px;
 

@@ -1,5 +1,6 @@
 import AdminBlogActionDropdown from "../Admin/AdminBlogActionDropdown";
 import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
+import { formatApiDate } from "../../utils/dateTime";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -8,16 +9,7 @@ const getInitials = (name = "") => {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 };
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return parsed.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
+const formatDate = (value) => formatApiDate(value);
 
 const stageClass = (stage = "") =>
   String(stage)
