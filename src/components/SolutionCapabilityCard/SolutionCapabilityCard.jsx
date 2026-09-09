@@ -10,14 +10,10 @@ import {
   DocumentIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
 import {
-  getServiceIdForDomain,
   resolveCapabilityIcon,
+  getServiceIdForDomain,
 } from "../../utils/solutionMapper";
-import {
-  buildDocumentsFromCapability,
-  excludeSalesDeskDocuments,
-  getSalesDeskDocumentUrl,
-} from "../../utils/solutionDocuments";
+import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
 
 const getInitials = (name) =>
   name
@@ -164,7 +160,7 @@ const SolutionCapabilityCard = ({
                   <PersonAvatar name={person.name} color={person.color} />
                   <div>
                     <strong>{person.name}</strong>
-                    <span>{person.title}</span>
+                    {/* <span>{person.title}</span> */}
                   </div>
                 </div>
               ))}
@@ -255,30 +251,13 @@ const SolutionCapabilityCard = ({
               <VideoCameraIcon />
             </a>
           ) : (
-            <button type="button" className="ccm_dashboard__action-btn" disabled>
-              Recorded Demo
-              <VideoCameraIcon />
-            </button>
-          )}
-          {hasSalesDesk ? (
-            <a
-              href={salesDeskUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ccm_dashboard__action-btn"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Sales Pitch
-              <DocumentIcon />
-            </a>
-          ) : (
             <button
               type="button"
               className="ccm_dashboard__action-btn"
-              onClick={(event) => event.stopPropagation()}
+              disabled
             >
-              Sales Pitch
-              <DocumentIcon />
+              Recorded Demo
+              <VideoCameraIcon />
             </button>
           )}
         </div>

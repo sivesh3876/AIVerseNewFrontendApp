@@ -46,10 +46,17 @@
     }
 
     &__auth-hint {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
         margin: 8px 0 0;
         font-size: 12px;
         color: #64748b;
         line-height: 1.4;
+
+        p {
+            margin: 0;
+        }
 
         a {
             color: #3A8D9D;

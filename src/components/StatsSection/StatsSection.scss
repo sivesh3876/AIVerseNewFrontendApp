@@ -44,6 +44,13 @@
     }
 }
 
+.stats_section--static {
+    .stat_card {
+        opacity  : 1;
+        transform: none;
+    }
+}
+
 @keyframes slideUp {
     from {
         opacity  : 0;

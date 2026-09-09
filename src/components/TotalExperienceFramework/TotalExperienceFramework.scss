@@ -287,6 +287,111 @@
     }
 }
 
+.total_experience_framework--portal {
+    .total_experience_framework__header,
+    .total_experience_framework__portal-equation {
+        opacity  : 1;
+        transform: none;
+    }
+
+    .total_experience_framework__header {
+        margin-bottom: 0;
+
+        h2 {
+            margin-bottom: 0;
+        }
+    }
+
+    .total_experience_framework__operator {
+        margin-top: 34px;
+        flex-shrink: 0;
+    }
+
+    .total_experience_framework__pillar,
+    .total_experience_framework__pillar.is-result {
+        width     : 180px;
+        flex-shrink: 0;
+    }
+
+    .total_experience_framework__pillar.is-result {
+        .total_experience_framework__badge {
+            width    : 92px;
+            height   : 92px;
+            font-size: 24px;
+        }
+    }
+
+    .total_experience_framework__badge {
+        width : 72px;
+        height: 72px;
+        font-size: 20px;
+    }
+
+    .total_experience_framework__pillar h3 {
+        font-size: 14px;
+    }
+
+    .total_experience_framework__pillar li {
+        font-size: 11px;
+    }
+
+    .total_experience_framework__pillar ul li:nth-child(n + 3) {
+        display: none;
+    }
+}
+
+.txf_portal_row {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    width      : 100%;
+
+    &__viewport {
+        flex     : 1;
+        min-width: 0;
+        overflow : hidden;
+    }
+
+    &__track {
+        display    : flex;
+        flex-wrap  : nowrap;
+        align-items: flex-start;
+        gap        : 8px;
+        width      : max-content;
+        transition : transform 0.35s ease;
+    }
+
+    &:not(.txf_portal_row--carousel) &__track {
+        justify-content: center;
+        width          : 100%;
+    }
+
+    &__nav {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        flex-shrink    : 0;
+        width          : 34px;
+        height         : 34px;
+        border         : 1px solid rgba(56, 189, 248, 0.45);
+        border-radius  : 50%;
+        background     : rgba(7, 21, 40, 0.75);
+        color          : #fff;
+        cursor         : pointer;
+        transition     : border-color 0.2s ease, background 0.2s ease;
+
+        &:hover:not(:disabled) {
+            border-color: rgba(56, 189, 248, 0.85);
+            background  : rgba(14, 116, 144, 0.45);
+        }
+
+        &:disabled {
+            opacity: 0.35;
+            cursor : not-allowed;
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .total_experience_framework {
         padding: 56px 16px 48px;

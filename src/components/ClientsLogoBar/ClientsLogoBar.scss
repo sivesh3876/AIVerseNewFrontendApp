@@ -4,12 +4,12 @@
     overflow  : hidden;
 
     &__inner {
-        display    : flex;
-        align-items: center;
-        gap        : 40px;
-        max-width  : 1280px;
-        margin     : 0 auto;
-        padding    : 0 24px;
+        display       : flex;
+        align-items   : center;
+        gap           : 40px;
+        // max-width  : 1280px;
+        margin        : 0 auto;
+        padding       : 0 24px;
     }
 
     &__label {
