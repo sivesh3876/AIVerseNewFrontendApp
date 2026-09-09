@@ -236,6 +236,12 @@ function AIReadinessAssessmentPage() {
         );
       }
 
+      if (data?.databaseSaved !== true) {
+        throw new Error(
+          "The assessment was calculated but could not be saved. Please try again."
+        );
+      }
+
       if (
         typeof data?.overallScore !== "number" ||
         !data?.readinessLevel ||
