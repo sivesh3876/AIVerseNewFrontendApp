@@ -1,4 +1,5 @@
 // import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./HeroBanner.scss";
 import slider1 from "../../assets/images/slider1.svg";
 import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
@@ -14,6 +15,7 @@ const heroSlide = {
 };
 
 const HeroBannerSlider = () => {
+  const navigate = useNavigate();
   const { openRegisterModal } = useRegistrationReminder();
 
   return (
@@ -61,7 +63,7 @@ const HeroBannerSlider = () => {
           <button
             type="button"
             className="primary_btn hero_capabilities__cta"
-            onClick={() => openRegisterModal("Hero Readiness CTA")}
+            onClick={() => navigate("/ai-readiness-assessment")}
           >
             Improve your readiness
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
