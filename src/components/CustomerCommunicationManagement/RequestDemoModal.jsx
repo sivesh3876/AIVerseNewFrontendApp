@@ -6,6 +6,12 @@ import {
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";
 import { addContactRequest } from "../../utils/contactRequestStorage";
+import {
+  EMAIL_VALIDATION_MESSAGE,
+  isValidEmail,
+  isValidPhone,
+  PHONE_VALIDATION_MESSAGE,
+} from "../../utils/formValidation";
 import "./RequestDemoModal.scss";
 
 const INITIAL_FORM = {
@@ -47,8 +53,14 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
 
     if (!form.email.trim()) {
       nextErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      nextErrors.email = "Enter a valid email address";
+    } else if (!isValidEmail(form.email)) {
+      nextErrors.email = EMAIL_VALIDATION_MESSAGE;
+    }
+
+    if (!form.phone.trim()) {
+      nextErrors.phone = "Phone number is required";
+    } else if (!isValidPhone(form.phone)) {
+      nextErrors.phone = PHONE_VALIDATION_MESSAGE;
     }
 
     setErrors(nextErrors);
@@ -66,59 +78,88 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
       setSuccessPopupMessage("");
 
       if (isContactMode) {
-        addContactRequest({
+        const contactPayload = {
           name: form.name,
           email: form.email,
           company: form.company,
           phone: form.phone,
           reason: "Contact Us",
-          message: form.message,
+          message: form.message || "No message provided",
           type: "Mail",
-        });
+          source: "Contact Us",
+        };
+
+        // Persist locally so Leads page updates immediately in this browser.
+        addContactRequest(contactPayload);
 
         if (isEmailApiReady) {
           try {
-            const result = await sendContactEmail({ form });
+            const result = await sendContactEmail({
+              form: {
+                ...form,
+                message: contactPayload.message,
+                subject: "Contact Inquiry: AI Verse",
+                leadType: "Mail",
+              },
+            });
             setSuccessPopupMessage(
-              result.successMessage || "Mail sent successfully.",
+              result.successMessage ||
+                "Message sent successfully. It is now available on the Leads page.",
             );
             return;
-          } catch {
+          } catch (error) {
             setSuccessPopupMessage(
-              "Your message has been received. Our team will get back to you shortly.",
+              error?.message ||
+                "Your message was saved locally. Our team will get back to you shortly.",
             );
             return;
           }
         }
 
         setSuccessPopupMessage(
-          "Thank you! Your message has been received. Our team will get back to you shortly.",
+          "Thank you! Your message has been received and added to Leads.",
         );
         return;
       }
 
       // Request Demo → always create a Leads card first.
+      const solutionTitle = capability?.title || "";
+      const demoMessage = [
+        solutionTitle ? `Solution: ${solutionTitle}` : "",
+        form.message.trim() || "Demo request submitted",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       addContactRequest({
         name: form.name,
         email: form.email,
         company: form.company,
         phone: form.phone,
-        reason: capability?.title || "Request Demo",
-        message: form.message,
+        reason: solutionTitle || "Request Demo",
+        message: demoMessage,
         type: "Request Demo",
-        solutionTitle: capability?.title || "",
+        solutionTitle,
+        source: "Request Demo",
       });
 
       if (isEmailApiReady) {
         try {
-          const result = await sendRequestDemoEmail({ capability, form });
+          const result = await sendRequestDemoEmail({
+            capability,
+            form: {
+              ...form,
+              message: form.message.trim() || "Demo request submitted",
+            },
+          });
           setSuccessPopupMessage(
-            result.successMessage || "Mail sent successfully.",
+            result.successMessage ||
+              "Demo request sent. It is now available on the Leads page.",
           );
           return;
         } catch {
           setSuccessPopupMessage(
-            "Your demo request has been received. Our team will get back to you shortly.",
+            "Your demo request was saved and is now available on the Leads page.",
           );
           return;
         }
@@ -246,8 +287,12 @@ const RequestDemoModal = ({ capability = null, mode = "demo", onClose }) => {
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="Enter your phone number"
+                className={errors.phone ? "has-error" : ""}
                 disabled={isSending}
               />
+              {errors.phone && (
+                <small className="request_demo_modal__error">{errors.phone}</small>
+              )}
             </label>
 
             <label className="request_demo_modal__field">

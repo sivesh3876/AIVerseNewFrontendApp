@@ -15,7 +15,8 @@ import {
 } from "../utils/registrationStatusStorage";
 
 /** Automatic Registration reminder delay (2 minutes). */
-const REMINDER_DELAY_MS = 120000;
+// Temporarily disabled: auto popup after 2 minutes.
+// const REMINDER_DELAY_MS = 120000;
 
 const RegistrationReminderContext = createContext({
   openRegisterModal: () => {},
@@ -52,8 +53,9 @@ export const RegistrationReminderProvider = ({ children }) => {
   }, []);
 
   const startReminderTimer = useCallback(() => {
+    // Auto Register popup after 2 minutes is temporarily disabled.
     clearTimer();
-
+    /*
     // Only Registration form completion stops reminders.
     if (registeredRef.current || hasCompletedRegistration()) {
       registeredRef.current = true;
@@ -79,6 +81,7 @@ export const RegistrationReminderProvider = ({ children }) => {
       setIsOpen(true);
       isOpenRef.current = true;
     }, REMINDER_DELAY_MS);
+    */
   }, [clearTimer]);
 
   // Navigating into admin with an open popup: close it and keep the cycle going.
@@ -86,16 +89,18 @@ export const RegistrationReminderProvider = ({ children }) => {
     if (!isAdminRoute || !isOpenRef.current) return;
     setIsOpen(false);
     isOpenRef.current = false;
-    if (!registeredRef.current && !hasCompletedRegistration()) {
-      startReminderTimer();
-    }
-  }, [isAdminRoute, startReminderTimer]);
+    // Auto reminder restart disabled.
+    // if (!registeredRef.current && !hasCompletedRegistration()) {
+    //   startReminderTimer();
+    // }
+  }, [isAdminRoute]);
 
   useEffect(() => {
     registeredRef.current = hasCompletedRegistration();
-    if (!registeredRef.current) {
-      startReminderTimer();
-    }
+    // Auto Register popup after 2 minutes is temporarily disabled.
+    // if (!registeredRef.current) {
+    //   startReminderTimer();
+    // }
 
     const onRegistrationFormCompleted = () => {
       registeredRef.current = true;
@@ -113,7 +118,7 @@ export const RegistrationReminderProvider = ({ children }) => {
       );
       clearTimer();
     };
-  }, [clearTimer, startReminderTimer]);
+  }, [clearTimer]);
 
   const openRegisterModal = useCallback(
     (nextSource = "Hero Registration") => {
@@ -137,9 +142,9 @@ export const RegistrationReminderProvider = ({ children }) => {
       return;
     }
 
-    // Restart 2-minute cycle until Registration form is completed.
-    startReminderTimer();
-  }, [clearTimer, startReminderTimer]);
+    // Auto Register popup restart after close is temporarily disabled.
+    // startReminderTimer();
+  }, [clearTimer]);
 
   const handleRegistered = useCallback(() => {
     // Status is already persisted inside RegisterModal via markRegistrationCompleted.

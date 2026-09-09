@@ -9,11 +9,13 @@
     "prepare:azure": "npm run build && node scripts/stage-azure-deploy.cjs",
     "start": "node scripts/azure-start.cjs",
     "deploy:azure": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-aiverse-frontend.ps1",
+    "deploy:dev": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-dev-aiverse-frontend.ps1",
     "lint": "eslint .",
     "preview": "vite preview",
     "create:component": "node scripts/generate-component.cjs"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-icons": "^5.6.0",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createCertifiedProfessionalRecord,
   deleteCertifiedProfessionalRecord,
@@ -26,15 +26,15 @@ const COLUMN_COUNT = 11;
 
 const formatCell = (value) => value || "—";
 
-const syncCertificationTotal = (certificationId) => {
-  syncCertificationTotalCount(
+const syncCertificationTotal = async (certificationId) => {
+  await syncCertificationTotalCount(
     certificationId,
     getCertifiedProfessionalCount(certificationId),
   );
 };
 
-const syncCertificationTotalCount = (certificationId, total) => {
-  updateAdminCertificationRecord(certificationId, {
+const syncCertificationTotalCount = async (certificationId, total) => {
+  await updateAdminCertificationRecord(certificationId, {
     totalCertified: total,
   });
 };
@@ -59,6 +59,7 @@ const AdminCertifiedProfessionalsSection = ({
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const savingRef = useRef(false);
 
   const departmentOptions = useMemo(
     () => getUniqueProfessionalValues(professionals, "department"),
@@ -153,37 +154,47 @@ const AdminCertifiedProfessionalsSection = ({
     setFormMode("add");
   };
 
-  const handleSaveProfessional = (payload) => {
-    if (formMode === "edit" && selectedProfessionalId) {
-      const updated = updateCertifiedProfessionalRecord(
-        certificationId,
-        selectedProfessionalId,
-        payload,
-      );
-      if (updated) {
-        handleProfessionalUpdated(updated);
-        loadProfessionals();
+  const handleSaveProfessional = async (payload) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+
+    try {
+      if (formMode === "edit" && selectedProfessionalId) {
+        const updated = await updateCertifiedProfessionalRecord(
+          certificationId,
+          selectedProfessionalId,
+          payload,
+        );
+        if (updated) {
+          handleProfessionalUpdated(updated);
+          await loadProfessionals();
+        }
+      } else {
+        const created = await createCertifiedProfessionalRecord(
+          certificationId,
+          payload,
+        );
+        if (created) {
+          await loadProfessionals();
+        }
       }
-    } else {
-      const created = createCertifiedProfessionalRecord(certificationId, payload);
-      if (created) {
-        loadProfessionals();
-      }
+
+      await syncCertificationTotal(certificationId);
+      handleCloseForm();
+    } finally {
+      savingRef.current = false;
     }
-
-    syncCertificationTotal(certificationId);
-    handleCloseForm();
   };
 
-  const handleConfirmDelete = (professional) => {
-    deleteCertifiedProfessionalRecord(certificationId, professional.id);
+  const handleConfirmDelete = async (professional) => {
+    await deleteCertifiedProfessionalRecord(certificationId, professional.id);
     setDeleteProfessionalId(null);
-    loadProfessionals();
-    syncCertificationTotal(certificationId);
+    await loadProfessionals();
+    await syncCertificationTotal(certificationId);
   };
 
-  const handleStatusChange = (professional, status) => {
-    const updated = updateCertifiedProfessionalRecord(
+  const handleStatusChange = async (professional, status) => {
+    const updated = await updateCertifiedProfessionalRecord(
       certificationId,
       professional.id,
       { status },

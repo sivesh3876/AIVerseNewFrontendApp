@@ -9,7 +9,6 @@ import {
 import {
   enrichCapabilityContacts,
   filterOutDeletedSolutions,
-  getServiceIdForDomain,
   hydrateCapability,
   isPublicSolutionVisible,
   loadPersistedSubmittedCapabilities,
@@ -138,11 +137,8 @@ const IndustryApiSolutions = ({ domainCode, industryId, industryTitle }) => {
   const handleSolutionNavigate = (capability) => {
     if (!capability?.id) return;
 
-    const serviceForCapability =
-      getServiceIdForDomain(capability.businessDomain) || "agentic-automation";
-
     navigate(
-      `/explore-solutions?domain=${encodeURIComponent(resolvedDomainCode)}&service=${serviceForCapability}&solution=${encodeURIComponent(capability.id)}`,
+      `/explore-solutions?domain=${encodeURIComponent(resolvedDomainCode)}&industry=${industryId}&solution=${encodeURIComponent(capability.id)}`,
     );
   };
 

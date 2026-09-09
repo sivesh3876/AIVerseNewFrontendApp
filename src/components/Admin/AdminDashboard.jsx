@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchAllUseCases } from "../../services/usecasesService";
+import {
+  filterCatalogSolutions,
+  getSolutionStatusLabel,
+} from "../../utils/adminSolutionTableUtils";
 import { getServiceIdForDomain } from "../../utils/solutionMapper";
 import "./AdminDashboard.scss";
 
@@ -25,7 +29,9 @@ const AdminDashboard = () => {
       try {
         setLoading(true);
         setError("");
-        const data = await fetchAllUseCases();
+        const data = filterCatalogSolutions(
+          await fetchAllUseCases({ applyLocalOverrides: false }),
+        );
         if (!isMounted) return;
         setSolutions(data);
       } catch (loadError) {
@@ -46,14 +52,13 @@ const AdminDashboard = () => {
   }, []);
 
   const stats = useMemo(() => {
-    const active = solutions.filter((item) => item.IsSolutionActive !== false);
     const domains = new Set(
-      active.map((item) => item.BusinessDomain).filter(Boolean),
+      solutions.map((item) => item.BusinessDomain).filter(Boolean),
     );
 
     return {
       total: solutions.length,
-      active: active.length,
+      active: solutions.length,
       domains: domains.size,
     };
   }, [solutions]);
@@ -110,7 +115,7 @@ const AdminDashboard = () => {
       <section className="admin_dashboard__table-section">
         <div className="admin_dashboard__table-header">
           <h2>Recent Solutions</h2>
-          <Link to="/explore-solutions">View all</Link>
+          <Link to="/admin/solution-new-ai">View all</Link>
         </div>
 
         {error && <p className="admin_dashboard__error">{error}</p>}
@@ -140,6 +145,7 @@ const AdminDashboard = () => {
                   const serviceId =
                     getServiceIdForDomain(solution.BusinessDomain) ||
                     "agentic-automation";
+                  const statusLabel = getSolutionStatusLabel(solution);
 
                   return (
                     <tr key={solution.ID}>
@@ -149,14 +155,12 @@ const AdminDashboard = () => {
                       <td>
                         <span
                           className={`admin_dashboard__status${
-                            solution.IsSolutionActive === false
+                            statusLabel === "Inactive"
                               ? " admin_dashboard__status--inactive"
                               : ""
                           }`}
                         >
-                          {solution.IsSolutionActive === false
-                            ? "Inactive"
-                            : "Active"}
+                          {statusLabel}
                         </span>
                       </td>
                       <td className="admin_dashboard__row-actions">
@@ -165,7 +169,9 @@ const AdminDashboard = () => {
                         >
                           View
                         </Link>
-                        <Link to={`/get-started?id=${solution.ID}`}>Edit</Link>
+                        <Link to={`/admin/solution-new-ai?id=${solution.ID}`}>
+                          Edit
+                        </Link>
                       </td>
                     </tr>
                   );

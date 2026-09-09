@@ -1,9 +1,16 @@
 import { useRef, useState } from "react";
+import { addContactRequest, LEAD_TYPES } from "../../utils/contactRequestStorage";
 import {
-  addContactRequest,
-  LEAD_TYPES,
-} from "../../utils/contactRequestStorage";
-// import logo from "../../assets/images/logo.svg";
+  EMAIL_VALIDATION_MESSAGE,
+  isValidEmail,
+  isValidPhone,
+  PHONE_VALIDATION_MESSAGE,
+} from "../../utils/formValidation";
+import {
+  isRequestDemoEmailConfigured,
+  sendContactEmail,
+} from "../../services/requestDemoEmailService";
+import logo from "../../assets/images/logo.svg";
 import "./CallbackScheduleModal.scss";
 
 const INITIAL_FORM = {
@@ -13,6 +20,12 @@ const INITIAL_FORM = {
   phone: "",
   preferDate: "",
   preferTime: "",
+};
+
+const formatPreferLabel = (dateValue, timeValue) => {
+  const datePart = dateValue || "—";
+  const timePart = timeValue || "—";
+  return `${datePart} at ${timePart}`;
 };
 
 const CallbackScheduleModal = ({ open, onClose }) => {
@@ -60,10 +73,14 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     if (!form.lastName.trim()) next.lastName = "Last name is required";
     if (!form.email.trim()) {
       next.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      next.email = "Enter a valid email";
+    } else if (!isValidEmail(form.email)) {
+      next.email = EMAIL_VALIDATION_MESSAGE;
     }
-    if (!form.phone.trim()) next.phone = "Contact number is required";
+    if (!form.phone.trim()) {
+      next.phone = "Contact number is required";
+    } else if (!isValidPhone(form.phone)) {
+      next.phone = PHONE_VALIDATION_MESSAGE;
+    }
     if (!form.preferDate.trim()) next.preferDate = "Preferred date is required";
     if (!form.preferTime.trim()) next.preferTime = "Preferred time is required";
     setErrors(next);
@@ -77,28 +94,61 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     onClose?.();
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setErrors({});
+
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+    const preferLabel = formatPreferLabel(form.preferDate, form.preferTime);
+    const preferredCallbackTime = `${form.preferDate}T${form.preferTime}`;
+    const message = [
+      "Schedule a Call request",
+      `Preferred date: ${form.preferDate}`,
+      `Preferred time: ${form.preferTime}`,
+      `Contact number: ${form.phone.trim()}`,
+    ].join("\n");
+
     try {
-      const fullName =
-        `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-      const preferredCallbackTime = `${form.preferDate}T${form.preferTime}`;
+      // Always persist locally so Admin → Leads shows the card immediately.
       addContactRequest({
         name: fullName,
         email: form.email.trim(),
         phone: form.phone.trim(),
         company: "—",
-        reason: LEAD_TYPES.CALLBACK_SCHEDULE,
-        message: `Preferred call time: ${form.preferDate} ${form.preferTime}`,
+        reason: "Schedule a Call",
+        message,
         type: LEAD_TYPES.CALLBACK_SCHEDULE,
         preferredCallbackTime,
         source: "Schedule a Call",
       });
+
+      if (isRequestDemoEmailConfigured()) {
+        try {
+          await sendContactEmail({
+            form: {
+              name: fullName,
+              email: form.email.trim(),
+              company: "",
+              phone: form.phone.trim(),
+              message,
+              subject: `Schedule a Call: ${preferLabel}`,
+              leadType: LEAD_TYPES.CALLBACK_SCHEDULE,
+              preferredCallbackTime: preferLabel,
+            },
+          });
+        } catch (apiError) {
+          console.warn(
+            "Schedule a Call saved to Leads locally; contact-us API sync failed.",
+            apiError,
+          );
+        }
+      }
+
       setSuccessMessage(
-        "Your call is scheduled. Our team will contact you soon.",
+        "Your call is scheduled. It is now available on the Leads page.",
       );
       setForm(INITIAL_FORM);
     } catch {

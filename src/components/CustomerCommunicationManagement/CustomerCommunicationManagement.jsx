@@ -5,7 +5,7 @@ import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapability
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
-import SolutionEngagement from "../SolutionEngagement";
+import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -13,11 +13,13 @@ import {
   EvangelistLabelIcon,
   AiFoundationLabelIcon,
   VideoCameraIcon,
+  DocumentIcon,
 } from "./CapabilityIcons";
 import {
   enterpriseServicesData,
   getEnterpriseServiceIndexById,
 } from "./enterpriseServicesData";
+import { getIndustryByDomainCode } from "../IndustryExplore/industrySolutionsData";
 import {
   buildDetailFromCapability,
   mapApiSolutionToDetail,
@@ -27,8 +29,10 @@ import {
   enrichCapabilityContacts,
   extractSolutionIdFromCapabilityId,
   filterOutDeletedSolutions,
+  buildExploreSolutionPath,
   getServiceIdForDomain,
   hydrateCapability,
+  isIndustryBusinessDomain,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   markSolutionAsDeleted,
@@ -40,7 +44,11 @@ import {
   resolveCapabilityIcon,
   shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
-import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
+import {
+  buildDocumentsFromCapability,
+  excludeSalesDeskDocuments,
+  getSalesDeskDocumentUrl,
+} from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
@@ -49,6 +57,11 @@ import {
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
 } from "../../services/usecasesService";
+import {
+  SOLUTION_STATUS_STORAGE_KEY,
+  SOLUTION_STATUS_UPDATED_EVENT,
+  applyInactiveSolutionOverrides,
+} from "../../utils/solutionStatusStorage";
 import "./CustomerCommunicationManagement.scss";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -87,6 +100,25 @@ const CheckIcon = () => (
   </svg>
 );
 
+const SolutionCardSkeleton = ({ index }) => (
+  <article
+    className="ccm_dashboard__capability ccm_dashboard__capability--skeleton"
+    style={{ animationDelay: `${index * 0.08}s` }}
+    aria-hidden="true"
+  >
+    <div className="ccm_dashboard__skeleton-head">
+      <div className="ccm_dashboard__skeleton-icon" />
+      <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--title" />
+    </div>
+    <div className="ccm_dashboard__skeleton-line" />
+    <div className="ccm_dashboard__skeleton-line" />
+    <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--short" />
+    <div className="ccm_dashboard__skeleton-block" />
+    <div className="ccm_dashboard__skeleton-block" />
+    <div className="ccm_dashboard__skeleton-actions" />
+  </article>
+);
+
 const SolutionDetailPanel = ({
   capability,
   detailSolution,
@@ -99,8 +131,17 @@ const SolutionDetailPanel = ({
   showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
+  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
+  const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
-  const aiFoundation = capability.aiFoundation || [];
+  const attachmentDocuments = excludeSalesDeskDocuments(documents);
+  const businessDomain =
+    capability.businessDomain || detailSolution?.businessDomain;
+  const isIndustrySolution = isIndustryBusinessDomain(businessDomain);
+  const placementLabel = isIndustrySolution ? "Industry" : "Service line";
+  const placementValue = isIndustrySolution
+    ? detailSolution?.industry
+    : detailSolution?.serviceLineLabel || detailSolution?.industry;
 
   return (
     <section className="ccm_dashboard__content">
@@ -143,7 +184,7 @@ const SolutionDetailPanel = ({
       {clientName && (
         <div className="ccm_dashboard__detail-client">
           <span className="ccm_dashboard__client-badge">
-            Client: {clientName}
+            AI Foundation: {clientName}
           </span>
         </div>
       )}
@@ -152,10 +193,10 @@ const SolutionDetailPanel = ({
         <p>{detailSolution.detailedDescription || capability.description}</p>
       </div>
 
-      {detailSolution.industry && (
+      {placementValue && (
         <div className="ccm_dashboard__detail-meta">
           <span>
-            <strong>Industry:</strong> {detailSolution.industry}
+            <strong>{placementLabel}:</strong> {placementValue}
           </span>
         </div>
       )}
@@ -184,7 +225,7 @@ const SolutionDetailPanel = ({
             AI Evangelists
           </span>
           <div className="ccm_dashboard__evangelists">
-            {capability.evangelists.map((person) => (
+            {(capability.evangelists || []).map((person) => (
               <div className="ccm_dashboard__person" key={person.name}>
                 <PersonAvatar name={person.name} color={person.color} />
                 <div>
@@ -197,7 +238,7 @@ const SolutionDetailPanel = ({
         </div>
       </div>
 
-      {capability.techStack.length > 0 && (
+      {(capability.techStack || []).length > 0 && (
         <div className="ccm_dashboard__highlights">
           <h3>Technology Stack</h3>
           <div className="ccm_dashboard__highlights-grid">
@@ -207,7 +248,6 @@ const SolutionDetailPanel = ({
                 key={`${tech.name}-${tech.label}`}
               >
                 <h4>{tech.name}</h4>
-                <p>{tech.label}</p>
               </article>
             ))}
           </div>
@@ -249,11 +289,27 @@ const SolutionDetailPanel = ({
             <VideoCameraIcon />
           </button>
         )}
+        {hasSalesDesk ? (
+          <a
+            href={salesDeskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ccm_dashboard__action-btn"
+          >
+            Sales Pitch
+            <DocumentIcon />
+          </a>
+        ) : (
+          <button type="button" className="ccm_dashboard__action-btn">
+            Sales Pitch
+            <DocumentIcon />
+          </button>
+        )}
       </div>
 
-      {documents.length > 0 && (
+      {attachmentDocuments.length > 0 && (
         <SolutionDocuments
-          documents={documents}
+          documents={attachmentDocuments}
           variant="full"
           title="Solution Resources & Attachments"
           subtitle="Review the solution overview, low level design, architecture diagrams, and any supporting documents."
@@ -273,6 +329,9 @@ const CustomerCommunicationManagement = () => {
   const solutionQueryId = searchParams.get("solution");
   const isDetailView = Boolean(solutionQueryId);
   const activeDomainCode = searchParams.get("domain");
+  const industryId = searchParams.get("industry");
+  const resolvedIndustryId =
+    industryId || getIndustryByDomainCode(activeDomainCode)?.id || null;
   const highlightId = searchParams.get("highlight");
   const submitted = searchParams.get("submitted") === "1";
   const mainRef = useRef(null);
@@ -382,7 +441,17 @@ const CustomerCommunicationManagement = () => {
         setLoadingApiSolutions(true);
         setSolutionsFetchError(null);
 
-        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        const data = filterOutDeletedSolutions(await fetchAllUseCases()).filter(
+          (solution) => {
+            const title = String(solution?.Title || "").trim().toLowerCase();
+            return (
+              title &&
+              title !== "solution title *" &&
+              title !== "solution title*" &&
+              title !== "untitled solution"
+            );
+          },
+        );
         if (requestId !== fetchRequestIdRef.current) return;
 
         setApiSolutions(data);
@@ -430,6 +499,37 @@ const CustomerCommunicationManagement = () => {
       fetchRequestIdRef.current += 1;
     };
   }, [submitted]);
+
+  useEffect(() => {
+    const syncInactiveStatus = async () => {
+      try {
+        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        setApiSolutions(data);
+        setPendingCapabilities(
+          loadPersistedSubmittedCapabilities().map(hydrateCapability),
+        );
+      } catch {
+        setApiSolutions((prev) => applyInactiveSolutionOverrides(prev));
+        setPendingCapabilities((prev) => [...prev]);
+      }
+    };
+
+    const syncStatusAcrossTabs = (event) => {
+      if (event.key === SOLUTION_STATUS_STORAGE_KEY) {
+        syncInactiveStatus();
+      }
+    };
+
+    window.addEventListener(SOLUTION_STATUS_UPDATED_EVENT, syncInactiveStatus);
+    window.addEventListener("storage", syncStatusAcrossTabs);
+    return () => {
+      window.removeEventListener(
+        SOLUTION_STATUS_UPDATED_EVENT,
+        syncInactiveStatus,
+      );
+      window.removeEventListener("storage", syncStatusAcrossTabs);
+    };
+  }, []);
 
   const handleEditCapability = (capability) => {
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);
@@ -500,12 +600,30 @@ const CustomerCommunicationManagement = () => {
   };
 
   const handleIndustryChange = (domainCode) => {
-    navigate(`/explore-solutions?domain=${domainCode}`, {
-      replace: true,
-    });
+    const industry = getIndustryByDomainCode(domainCode);
+
+    navigate(
+      `/explore-solutions?domain=${encodeURIComponent(domainCode)}${industry ? `&industry=${industry.id}` : ""}`,
+      { replace: true },
+    );
   };
 
   const handleBackToSolutions = () => {
+    if (activeDomainCode && resolvedIndustryId) {
+      navigate(
+        `/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}&industry=${resolvedIndustryId}`,
+        { replace: true },
+      );
+      return;
+    }
+
+    if (activeDomainCode) {
+      navigate(`/explore-solutions?domain=${encodeURIComponent(activeDomainCode)}`, {
+        replace: true,
+      });
+      return;
+    }
+
     const serviceLine = detailSolution?.serviceLine || activeService.id;
     navigate(`/explore-solutions?service=${serviceLine}`, { replace: true });
   };
@@ -538,13 +656,20 @@ const CustomerCommunicationManagement = () => {
   const industryDomains = businessDomains.filter(
     (domain) => domain.ParentDomainCode === "Industries",
   );
+  const activeIndustryMeta = activeDomainCode
+    ? getIndustryByDomainCode(activeDomainCode)
+    : null;
   const detailPrimaryCapability = detailSolution
     ? solutionToCapabilityCard(detailSolution)
     : null;
   const BannerIconComponent =
     isDetailView && detailPrimaryCapability
       ? resolveCapabilityIcon(detailPrimaryCapability)
-      : activeService.navIcon;
+      : activeIndustryMeta?.icon || activeService.navIcon;
+  const bannerIconBg =
+    !isDetailView && (activeIndustryMeta?.iconBg || activeService.navIconBg)
+      ? activeIndustryMeta?.iconBg || activeService.navIconBg
+      : undefined;
   const bannerTitle =
     detailSolution?.title ||
     activeIndustryDomain?.DomainName ||
@@ -555,7 +680,7 @@ const CustomerCommunicationManagement = () => {
     activeService.subtitle;
   const bannerFeatures =
     isDetailView && detailPrimaryCapability
-      ? detailPrimaryCapability.techStack.map((tech) => tech.name)
+      ? (detailPrimaryCapability.techStack || []).map((tech) => tech.name)
       : activeIndustryDomain
         ? []
         : activeService.features;
@@ -687,22 +812,68 @@ const CustomerCommunicationManagement = () => {
   ]);
 
   useEffect(() => {
+    const businessDomain =
+      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
+
+    if (isIndustryBusinessDomain(businessDomain)) {
+      return;
+    }
+
     if (detailSolution?.serviceLine) {
       setActiveServiceIndex(
         getEnterpriseServiceIndexById(detailSolution.serviceLine),
       );
     }
-  }, [detailSolution?.serviceLine]);
+  }, [
+    detailPrimaryCapability?.businessDomain,
+    detailSolution?.businessDomain,
+    detailSolution?.serviceLine,
+  ]);
 
   useEffect(() => {
-    if (!detailSolution?.serviceLine || !solutionQueryId) return;
+    if (!solutionQueryId) return;
+
+    const businessDomain =
+      detailPrimaryCapability?.businessDomain || detailSolution?.businessDomain;
+    if (!businessDomain) return;
+
+    if (isIndustryBusinessDomain(businessDomain)) {
+      const domainMatches =
+        activeDomainCode &&
+        String(activeDomainCode).toLowerCase() ===
+          String(businessDomain).toLowerCase();
+      if (serviceId || !domainMatches) {
+        navigate(
+          buildExploreSolutionPath({
+            businessDomain,
+            solutionId: solutionQueryId,
+          }),
+          { replace: true },
+        );
+      }
+      return;
+    }
+
+    if (activeDomainCode) return;
+    if (!detailSolution?.serviceLine) return;
     if (serviceId === detailSolution.serviceLine) return;
 
     navigate(
-      `/explore-solutions?service=${detailSolution.serviceLine}&solution=${encodeURIComponent(solutionQueryId)}`,
+      buildExploreSolutionPath({
+        businessDomain,
+        solutionId: solutionQueryId,
+      }),
       { replace: true },
     );
-  }, [detailSolution?.serviceLine, navigate, serviceId, solutionQueryId]);
+  }, [
+    activeDomainCode,
+    detailPrimaryCapability?.businessDomain,
+    detailSolution?.businessDomain,
+    detailSolution?.serviceLine,
+    navigate,
+    serviceId,
+    solutionQueryId,
+  ]);
 
   const detailDocuments = useMemo(
     () => buildDocumentsFromCapability(detailPrimaryCapability || {}),
@@ -712,11 +883,11 @@ const CustomerCommunicationManagement = () => {
   const handleCapabilityNavigate = (capability) => {
     if (!capability.id) return;
 
-    const serviceForCapability =
-      getServiceIdForDomain(capability.businessDomain) || activeService.id;
-
     navigate(
-      `/explore-solutions?service=${serviceForCapability}&solution=${encodeURIComponent(capability.id)}`,
+      buildExploreSolutionPath({
+        businessDomain: capability.businessDomain,
+        solutionId: capability.id,
+      }),
     );
   };
 
@@ -774,6 +945,8 @@ const CustomerCommunicationManagement = () => {
             <ul>
               {industryDomains.map((domain) => {
                 const isActive = activeDomainCode === domain.DomainCode;
+                const industryMeta = getIndustryByDomainCode(domain.DomainCode);
+                const IndustryIcon = industryMeta?.icon;
 
                 return (
                   <li key={domain.DomainCode}>
@@ -813,17 +986,21 @@ const CustomerCommunicationManagement = () => {
       >
         <section className="ccm_dashboard__banner">
           <div className="ccm_dashboard__banner-header">
-            <div className="ccm_dashboard__banner-icon" aria-hidden="true">
+            <div
+              className="ccm_dashboard__banner-icon"
+              style={bannerIconBg ? { background: bannerIconBg } : undefined}
+              aria-hidden="true"
+            >
               <BannerIconComponent />
             </div>
             <div className="ccm_dashboard__banner-copy">
               <h1>{bannerTitle}</h1>
-              <p>{bannerSubtitle}</p>
+              {!isDetailView && bannerSubtitle ? <p>{bannerSubtitle}</p> : null}
             </div>
           </div>
 
-          <div className="ccm_dashboard__banner-body">
-            {bannerFeatures.length > 0 && (
+          {!isDetailView && bannerFeatures.length > 0 ? (
+            <div className="ccm_dashboard__banner-body">
               <ul className="ccm_dashboard__features">
                 {bannerFeatures.map((feature) => (
                   <li key={feature}>
@@ -832,8 +1009,8 @@ const CustomerCommunicationManagement = () => {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          ) : null}
         </section>
 
         {isDetailView ? (

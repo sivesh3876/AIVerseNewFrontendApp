@@ -9,6 +9,14 @@
 // matrix and is intentionally structured so a future Permission Management
 // module can consume it directly.
 
+import {
+  createRoleApi,
+  deleteRoleApi,
+  fetchRoleByIdApi,
+  fetchRolesApi,
+  updateRoleApi,
+} from "./rolesApiService";
+
 const NETWORK_DELAY = 350;
 
 export const ROLE_STATUSES = ["Active", "Inactive", "Draft"];
@@ -256,6 +264,18 @@ const ACTIVITY_HISTORY = {
   ],
 };
 
+const mapApiRole = (role = {}) => ({
+  id: role.id ?? role.apiId ?? role.ID,
+  apiId: role.apiId ?? role.id ?? role.ID,
+  name: role.name || "",
+  description: role.description || "",
+  status: role.status || "Active",
+  assignedUsers: Number(role.assignedUsers) || 0,
+  permissions: Array.isArray(role.permissions) ? role.permissions : [],
+  createdDate: role.createdDate || new Date().toISOString(),
+  lastUpdated: role.lastUpdated || role.updatedDate || role.createdDate || new Date().toISOString(),
+});
+
 const delay = (value) =>
   new Promise((resolve) => setTimeout(() => resolve(value), NETWORK_DELAY));
 
@@ -267,59 +287,99 @@ const clone = (value) =>
 const nextId = () =>
   ROLES.reduce((max, role) => Math.max(max, Number(role.id) || 0), 0) + 1;
 
-export const fetchRoles = () => delay(clone(ROLES));
-
-export const fetchRoleById = (id) =>
-  delay(clone(ROLES.find((role) => String(role.id) === String(id)) || null));
-
-export const createRole = (payload) => {
-  const now = new Date().toISOString();
-  const role = {
-    id: nextId(),
-    assignedUsers: 0,
-    permissions: [],
-    createdDate: now,
-    lastUpdated: now,
-    ...payload,
-  };
-  ROLES = [role, ...ROLES];
-  return delay(clone(role));
+const tryApi = async (apiFn, fallbackFn) => {
+  try {
+    return await apiFn();
+  } catch {
+    return fallbackFn();
+  }
 };
 
-export const updateRole = (id, updates) => {
-  ROLES = ROLES.map((role) =>
-    String(role.id) === String(id)
-      ? { ...role, ...updates, lastUpdated: new Date().toISOString() }
-      : role,
+export const fetchRoles = async () =>
+  tryApi(
+    async () => {
+      const roles = await fetchRolesApi();
+      return roles.map(mapApiRole);
+    },
+    async () => delay(clone(ROLES)),
   );
-  return delay(
-    clone(ROLES.find((role) => String(role.id) === String(id)) || null),
+
+export const fetchRoleById = async (id) =>
+  tryApi(
+    async () => {
+      const role = await fetchRoleByIdApi(id);
+      return role ? mapApiRole(role) : null;
+    },
+    async () =>
+      delay(clone(ROLES.find((role) => String(role.id) === String(id)) || null)),
   );
-};
 
-export const deleteRole = (id) => {
-  ROLES = ROLES.filter((role) => String(role.id) !== String(id));
-  return delay(true);
-};
+export const createRole = async (payload) =>
+  tryApi(
+    async () => mapApiRole(await createRoleApi(payload)),
+    async () => {
+      const now = new Date().toISOString();
+      const role = {
+        id: nextId(),
+        assignedUsers: 0,
+        permissions: [],
+        createdDate: now,
+        lastUpdated: now,
+        ...payload,
+      };
+      ROLES = [role, ...ROLES];
+      return clone(role);
+    },
+  );
 
-export const setRoleStatus = (id, status) => updateRole(id, { status });
+export const updateRole = async (id, updates) =>
+  tryApi(
+    async () =>
+      mapApiRole(
+        await updateRoleApi({
+          id,
+          apiId: id,
+          ...updates,
+        }),
+      ),
+    async () => {
+      ROLES = ROLES.map((role) =>
+        String(role.id) === String(id)
+          ? { ...role, ...updates, lastUpdated: new Date().toISOString() }
+          : role,
+      );
+      return delay(
+        clone(ROLES.find((role) => String(role.id) === String(id)) || null),
+      );
+    },
+  );
 
-export const duplicateRole = (id) => {
-  const source = ROLES.find((role) => String(role.id) === String(id));
-  if (!source) return delay(null);
+export const deleteRole = async (id) =>
+  tryApi(
+    async () => {
+      await deleteRoleApi(id);
+      return true;
+    },
+    async () => {
+      ROLES = ROLES.filter((role) => String(role.id) !== String(id));
+      return delay(true);
+    },
+  );
 
-  const now = new Date().toISOString();
-  const copy = {
-    ...clone(source),
-    id: nextId(),
+export const setRoleStatus = async (id, status) => updateRole(id, { status });
+
+export const duplicateRole = async (id) => {
+  const source = await fetchRoleById(id);
+  if (!source) {
+    return null;
+  }
+
+  return createRole({
     name: `${source.name} (Copy)`,
+    description: source.description,
     status: "Draft",
-    assignedUsers: 0,
-    createdDate: now,
-    lastUpdated: now,
-  };
-  ROLES = [copy, ...ROLES];
-  return delay(clone(copy));
+    permissions: [...(source.permissions || [])],
+  });
 };
 
 export const fetchRoleActivityHistory = (id) =>

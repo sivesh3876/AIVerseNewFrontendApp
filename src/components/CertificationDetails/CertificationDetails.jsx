@@ -5,6 +5,7 @@ import {
   getAllPublicCertifiedHolders,
   getPublicCertificationDetailsPage,
   PUBLIC_CERTIFICATION_EVENTS,
+  refreshPublicCertificationData,
 } from "../../utils/publicCertificationContent";
 import {
   BeakerIcon,
@@ -33,6 +34,119 @@ const getCategoryIcon = (category) => {
 };
 
 const formatTotal = (value) => Number(value || 0).toLocaleString("en-IN");
+
+const getInitials = (name = "") =>
+  String(name)
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+const getProfessionalKey = (holder = {}) => {
+  const email = String(holder.email || "")
+    .trim()
+    .toLowerCase();
+  if (email) return `email:${email}`;
+
+  const employeeId = String(holder.employeeId || "")
+    .trim()
+    .toLowerCase();
+  if (employeeId) return `employee:${employeeId}`;
+
+  const name = String(holder.name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  if (name) return `name:${name}`;
+
+  return null;
+};
+
+const getUniqueProfessionalsWithPhotos = (holders = []) => {
+  const seen = new Set();
+
+  return holders.filter((holder) => {
+    if (!holder.profilePhoto) return false;
+
+    const key = getProfessionalKey(holder);
+    if (!key || seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+};
+
+const ProfessionalAvatar = ({ holder, className = "" }) => {
+  const name = holder.name || "Professional";
+
+  if (holder.profilePhoto) {
+    return (
+      <div className={`certification_details__avatar ${className}`.trim()}>
+        <img src={holder.profilePhoto} alt={name} loading="lazy" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`certification_details__avatar certification_details__avatar--placeholder ${className}`.trim()}
+      aria-hidden="true"
+    >
+      <span>{getInitials(name)}</span>
+    </div>
+  );
+};
+
+const MIN_MARQUEE_LOOP_COUNT = 4;
+
+const CertifiedProfessionalsMarquee = ({ professionals, title }) => {
+  if (!professionals.length) return null;
+
+  // Only duplicate items for seamless scroll when there are enough unique people.
+  // With 1–3 people, duplication looks like the same profile showing twice.
+  const shouldLoop = professionals.length >= MIN_MARQUEE_LOOP_COUNT;
+  const marqueeItems = shouldLoop
+    ? [...professionals, ...professionals]
+    : professionals;
+
+  return (
+    <section
+      className="certification_details__marquee-section"
+      aria-label={title}
+    >
+      <h3>{title}</h3>
+
+      <div
+        className={`certification_details__marquee${shouldLoop ? "" : " certification_details__marquee--static"}`}
+      >
+        <div className="certification_details__marquee-track">
+          {marqueeItems.map((professional, index) => (
+            <article
+              className="certification_details__marquee-card"
+              key={`${getProfessionalKey(professional) || professional.id}-${index}`}
+              aria-hidden={shouldLoop && index >= professionals.length}
+            >
+              <ProfessionalAvatar
+                holder={professional}
+                className="certification_details__avatar--marquee"
+              />
+              <div className="certification_details__marquee-info">
+                <h4>{professional.name || "Unnamed professional"}</h4>
+                <p>
+                  {professional.designation ||
+                    professional.category ||
+                    "Certified professional"}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const MetaItem = ({ label, value }) => (
   <div className="certification_details__meta-item">
@@ -67,7 +181,11 @@ const CategoryNavItem = ({ label, categoryKey, isActive, onClick }) => {
 };
 
 const ProfessionalCard = ({ holder }) => {
-  const hasCertificate = Boolean(holder.certificateUrl);
+  const certificateUrl = String(holder.certificateUrl || "").trim();
+  const hasCertificate =
+    Boolean(certificateUrl) &&
+    certificateUrl !== "—" &&
+    certificateUrl !== "-";
   const summaryLine = [
     holder.designation,
     [
@@ -128,16 +246,14 @@ const ProfessionalCard = ({ holder }) => {
 
       {hasCertificate ? (
         <a
-          href={holder.certificateUrl}
+          href={certificateUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="certification_details__card-link"
         >
-          View Certificate &gt;
+          View Details &gt;
         </a>
-      ) : (
-        <span className="certification_details__card-link">View Details &gt;</span>
-      )}
+      ) : null}
     </article>
   );
 };
@@ -180,7 +296,16 @@ const CertificationDetails = ({ certificationId = null }) => {
       setHolders(pageData.holders);
     };
 
-    refresh();
+    const loadFromApi = async () => {
+      try {
+        await refreshPublicCertificationData();
+      } catch (error) {
+        console.warn("Certification API unavailable for public page.", error);
+      }
+      refresh();
+    };
+
+    loadFromApi();
 
     PUBLIC_CERTIFICATION_EVENTS.forEach((eventName) => {
       window.addEventListener(eventName, refresh);
@@ -211,6 +336,11 @@ const CertificationDetails = ({ certificationId = null }) => {
         String(activeCategory).toUpperCase(),
     );
   }, [holders, activeCategory]);
+
+  const marqueeProfessionals = useMemo(
+    () => getUniqueProfessionalsWithPhotos(filteredHolders),
+    [filteredHolders],
+  );
 
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
@@ -253,6 +383,10 @@ const CertificationDetails = ({ certificationId = null }) => {
     activeCategory === ALL_CATEGORY
       ? "Certified Professionals"
       : activeCategory;
+  const marqueeTitle =
+    activeCategory === ALL_CATEGORY
+      ? "Meet Our Certified Professionals"
+      : `Meet Our ${activeCategory} Professionals`;
 
   return (
     <div className="certification_details">
@@ -290,10 +424,10 @@ const CertificationDetails = ({ certificationId = null }) => {
               className="certification_details__nav"
               aria-label="Certification categories"
             >
-              <h2>ALL CATEGORIES</h2>
+              <h2>ALL CERTIFICATION</h2>
               <ul>
                 <CategoryNavItem
-                  label="All Categories"
+                  label="All Certification"
                   categoryKey={ALL_CATEGORY}
                   isActive={activeCategory === ALL_CATEGORY}
                   onClick={() => handleCategoryChange(ALL_CATEGORY)}
@@ -325,6 +459,11 @@ const CertificationDetails = ({ certificationId = null }) => {
                 {filteredHolders.length === 1 ? "" : "s"}
               </p>
             </header>
+
+            <CertifiedProfessionalsMarquee
+              professionals={marqueeProfessionals}
+              title={marqueeTitle}
+            />
 
             {filteredHolders.length === 0 ? (
               <div className="certification_details__empty">

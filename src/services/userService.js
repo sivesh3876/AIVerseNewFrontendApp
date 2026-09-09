@@ -9,6 +9,15 @@
 // permissions are exported so that a future Role Management / Permission
 // Management module can reuse the same source of truth.
 
+import {
+  createUserApi,
+  deleteUserApi,
+  fetchUserByIdApi,
+  fetchUsersApi,
+  resetUserPasswordApi,
+  updateUserApi,
+} from "./usersApiService";
+
 const NETWORK_DELAY = 350;
 
 export const USER_ROLES = [
@@ -246,6 +255,24 @@ const ACTIVITY_LOG = {
   ],
 };
 
+const mapApiUser = (user = {}) => ({
+  id: user.id ?? user.apiId ?? user.ID,
+  apiId: user.apiId ?? user.id ?? user.ID,
+  fullName: user.fullName || "",
+  email: user.email || "",
+  phone: user.phone || "",
+  employeeId: user.employeeId || "",
+  department: user.department || "",
+  designation: user.designation || "",
+  role: user.role || "",
+  status: user.status || "Active",
+  lastLogin: user.lastLogin || null,
+  createdDate: user.createdDate || user.createdAt || new Date().toISOString(),
+  avatarColor: user.avatarColor || "#3A8D9D",
+  loginHistory: user.loginHistory || [],
+  activityLog: user.activityLog || [],
+});
+
 const delay = (value) =>
   new Promise((resolve) => setTimeout(() => resolve(value), NETWORK_DELAY));
 
@@ -257,50 +284,106 @@ const clone = (value) =>
 const nextId = () =>
   USERS.reduce((max, user) => Math.max(max, Number(user.id) || 0), 0) + 1;
 
+const tryApi = async (apiFn, fallbackFn) => {
+  try {
+    return await apiFn();
+  } catch {
+    return fallbackFn();
+  }
+};
+
 export const getPermissionsForRole = (role) =>
   ROLE_PERMISSIONS[role] || [];
 
-export const fetchUsers = () => delay(clone(USERS));
-
-export const fetchUserById = (id) =>
-  delay(clone(USERS.find((user) => String(user.id) === String(id)) || null));
-
-export const createUser = (payload) => {
-  const user = {
-    id: nextId(),
-    avatarColor: "#3A8D9D",
-    lastLogin: null,
-    createdDate: new Date().toISOString(),
-    ...payload,
-  };
-  USERS = [user, ...USERS];
-  return delay(clone(user));
-};
-
-export const updateUser = (id, updates) => {
-  USERS = USERS.map((user) =>
-    String(user.id) === String(id) ? { ...user, ...updates } : user,
+export const fetchUsers = async () =>
+  tryApi(
+    async () => {
+      const users = await fetchUsersApi();
+      return users.map(mapApiUser);
+    },
+    async () => delay(clone(USERS)),
   );
-  return delay(
-    clone(USERS.find((user) => String(user.id) === String(id)) || null),
+
+export const fetchUserById = async (id) =>
+  tryApi(
+    async () => {
+      const user = await fetchUserByIdApi(id);
+      return user ? mapApiUser(user) : null;
+    },
+    async () =>
+      delay(clone(USERS.find((user) => String(user.id) === String(id)) || null)),
   );
+
+export const createUser = async (payload) =>
+  tryApi(
+    async () => mapApiUser(await createUserApi(payload)),
+    async () => {
+      const user = {
+        id: nextId(),
+        avatarColor: "#3A8D9D",
+        lastLogin: null,
+        createdDate: new Date().toISOString(),
+        ...payload,
+      };
+      USERS = [user, ...USERS];
+      return clone(user);
+    },
+  );
+
+export const updateUser = async (id, updates) =>
+  tryApi(
+    async () =>
+      mapApiUser(
+        await updateUserApi({
+          id,
+          apiId: id,
+          ...updates,
+        }),
+      ),
+    async () => {
+      USERS = USERS.map((user) =>
+        String(user.id) === String(id) ? { ...user, ...updates } : user,
+      );
+      return delay(
+        clone(USERS.find((user) => String(user.id) === String(id)) || null),
+      );
+    },
+  );
+
+export const deleteUser = async (id) =>
+  tryApi(
+    async () => {
+      await deleteUserApi(id);
+      return true;
+    },
+    async () => {
+      USERS = USERS.filter((user) => String(user.id) !== String(id));
+      return delay(true);
+    },
+  );
+
+export const setUserStatus = async (id, status) => updateUser(id, { status });
+
+export const assignUserRole = async (id, role) => updateUser(id, { role });
+
+export const resetUserPassword = async (id) =>
+  tryApi(
+    async () => resetUserPasswordApi(id),
+    async () => delay({ id, success: true }),
+  );
+
+export const fetchUserLoginHistory = async (id) => {
+  const user = await fetchUserById(id);
+  if (user?.loginHistory?.length) {
+    return user.loginHistory;
+  }
+  return delay(clone(LOGIN_HISTORY[id] || LOGIN_HISTORY.default));
 };
 
-export const deleteUser = (id) => {
-  USERS = USERS.filter((user) => String(user.id) !== String(id));
-  return delay(true);
+export const fetchUserActivityLog = async (id) => {
+  const user = await fetchUserById(id);
+  if (user?.activityLog?.length) {
+    return user.activityLog;
+  }
+  return delay(clone(ACTIVITY_LOG[id] || ACTIVITY_LOG.default));
 };
-
-export const setUserStatus = (id, status) => updateUser(id, { status });
-
-export const assignUserRole = (id, role) => updateUser(id, { role });
-
-export const resetUserPassword = (id) =>
-  // Placeholder for a real "send reset link" endpoint.
-  delay({ id, success: true });
-
-export const fetchUserLoginHistory = (id) =>
-  delay(clone(LOGIN_HISTORY[id] || LOGIN_HISTORY.default));
-
-export const fetchUserActivityLog = (id) =>
-  delay(clone(ACTIVITY_LOG[id] || ACTIVITY_LOG.default));

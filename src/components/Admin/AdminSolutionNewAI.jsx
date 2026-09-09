@@ -9,6 +9,17 @@ import {
   getUniqueSolutionValues,
 } from "../../utils/adminSolutionTableUtils";
 import { getSolutionEngagement } from "../../utils/solutionEngagementStorage";
+import {
+  getAdminEngagementCounts,
+  loadEngagementSummaryMap,
+  lookupEngagementCounts,
+  toEngagementLookupKey,
+} from "../../utils/solutionEngagement";
+import {
+  removePersistedSubmittedCapabilitiesByTitle,
+  removePersistedSubmittedCapability,
+} from "../../utils/solutionMapper";
+import { setSolutionInactiveLocally } from "../../utils/solutionStatusStorage";
 import AddNewAISolution from "../AddNewAISolution";
 import AdminBlogActionDropdown from "./AdminBlogActionDropdown";
 import AdminBlogPagination from "./AdminBlogPagination";
@@ -50,7 +61,8 @@ const matchesSolutionRequest = (request, solution) => {
 
 const AdminSolutionNewAI = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { solutions, loading, error, loadSolutions } = useAdminSolutions();
+  const { solutions, setSolutions, loading, error, loadSolutions } =
+    useAdminSolutions();
   const { requests: demoRequests, loadRequests: loadDemoRequests } =
     useAdminDemoRequests();
 
@@ -65,10 +77,11 @@ const AdminSolutionNewAI = () => {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [domainFilter, setDomainFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [engagementTick, setEngagementTick] = useState(0);
+  const [engagementSummary, setEngagementSummary] = useState(() => new Map());
 
   const domainOptions = useMemo(
     () => getUniqueSolutionValues(solutions, "BusinessDomain"),
@@ -123,9 +136,82 @@ const AdminSolutionNewAI = () => {
       );
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSummary = async () => {
+      const map = await loadEngagementSummaryMap();
+      if (isMounted) {
+        setEngagementSummary(map);
+        setEngagementTick((prev) => prev + 1);
+      }
+    };
+
+    loadSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const pageSolutionIds = paginatedSolutions
+    .map((solution) => String(solution.ID))
+    .join(",");
+
+  // Sync visible rows from the same per-solution API as the explore card.
+  useEffect(() => {
+    if (!pageSolutionIds) {
+      return undefined;
+    }
+
+    let isMounted = true;
+    const solutionsForPage = pageSolutionIds
+      .split(",")
+      .filter(Boolean)
+      .map((id) => ({ ID: id }));
+
+    const syncVisiblePage = async () => {
+      const entries = await Promise.all(
+        solutionsForPage.map(async (solution) => {
+          try {
+            const counts = await getAdminEngagementCounts(solution.ID);
+            return [solution.ID, counts];
+          } catch {
+            return [solution.ID, null];
+          }
+        }),
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      setEngagementSummary((prev) => {
+        const next = new Map(prev);
+        entries.forEach(([id, counts]) => {
+          if (!counts) return;
+          const key = toEngagementLookupKey(id);
+          if (!key) return;
+          next.set(key, counts);
+          if (/^\d+$/.test(key)) {
+            next.set(`api-${key}`, counts);
+          }
+        });
+        return next;
+      });
+      setEngagementTick((prev) => prev + 1);
+    };
+
+    syncVisiblePage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pageSolutionIds]);
+
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
-    statusFilter !== "all" ||
+    statusFilter !== "Active" ||
     domainFilter !== "all";
 
   const viewSolution = useMemo(
@@ -167,7 +253,13 @@ const AdminSolutionNewAI = () => {
 
   const handleRefresh = async () => {
     setEngagementTick((prev) => prev + 1);
-    await Promise.all([loadSolutions(), loadDemoRequests()]);
+    const [, , summaryMap] = await Promise.all([
+      loadSolutions(),
+      loadDemoRequests(),
+      loadEngagementSummaryMap(),
+    ]);
+    setEngagementSummary(summaryMap);
+    setEngagementTick((prev) => prev + 1);
   };
 
   const handleBackToList = () => {
@@ -234,15 +326,47 @@ const AdminSolutionNewAI = () => {
   };
 
   const handleStatusChange = async (solution, status) => {
-    if (updatingStatusId) return;
+    if (updatingStatusId != null) return;
+    if (getSolutionStatusLabel(solution) === status) return;
 
     const isActive = status === "Active";
+    const solutionId = solution.ID;
+    const nextFields = {
+      IsSolutionActive: isActive,
+      Publish: isActive ? "Yes" : "No",
+      PublicationStatus: isActive ? "Published" : "Draft",
+    };
+
     try {
-      setUpdatingStatusId(solution.ID);
+      setUpdatingStatusId(solutionId);
+      // Persist locally so Inactive survives API reloads and hides on Explore.
+      setSolutionInactiveLocally(solutionId, !isActive);
+
+      setSolutions((prev) =>
+        prev.map((item) =>
+          String(item.ID) === String(solutionId)
+            ? { ...item, ...nextFields }
+            : item,
+        ),
+      );
+
       await updateUseCaseStatus(solution, isActive);
+
+      if (!isActive) {
+        removePersistedSubmittedCapability(String(solutionId));
+        removePersistedSubmittedCapability(`api-${solutionId}`);
+        removePersistedSubmittedCapabilitiesByTitle(solution.Title);
+      }
+
       await loadSolutions();
     } catch (statusError) {
-      window.alert(statusError.message || "Failed to update solution status.");
+      // Keep local inactive flag; only roll back UI if user cancelled intentionally.
+      // If API fails, still keep local override so Enterprise Services stay in sync.
+      window.alert(
+        statusError.message ||
+          "Server status update failed. Local status was still saved so Enterprise Services stay in sync.",
+      );
+      await loadSolutions();
     } finally {
       setUpdatingStatusId(null);
     }
@@ -250,7 +374,7 @@ const AdminSolutionNewAI = () => {
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setStatusFilter("all");
+    setStatusFilter("Active");
     setDomainFilter("all");
   };
 
@@ -348,7 +472,16 @@ const AdminSolutionNewAI = () => {
             ) : (
               paginatedSolutions.map((solution) => {
                 const statusLabel = getSolutionStatusLabel(solution);
-                const engagement = getSolutionEngagement(solution.ID);
+                const localEngagement = getSolutionEngagement(solution.ID);
+                const apiCounts = lookupEngagementCounts(
+                  engagementSummary,
+                  solution.ID,
+                );
+                const viewCount = apiCounts?.views ?? localEngagement.views;
+                const likeCount = apiCounts?.likes ?? localEngagement.likes;
+                const commentCount =
+                  apiCounts?.comments ?? localEngagement.comments.length;
+                const dislikeCount = localEngagement.dislikes;
                 const requestCount = demoRequests.filter((request) =>
                   matchesSolutionRequest(request, solution),
                 ).length;
@@ -388,7 +521,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Views {engagement.views}</span>
+                          <span>Views {viewCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -399,7 +532,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Likes {engagement.likes}</span>
+                          <span>Likes {likeCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -417,7 +550,7 @@ const AdminSolutionNewAI = () => {
                               strokeWidth="1.8"
                             />
                           </svg>
-                          <span>Dislikes {engagement.dislikes}</span>
+                          <span>Dislikes {dislikeCount}</span>
                         </span>
                         <span className="admin_solution_enhancement__metric">
                           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -429,7 +562,7 @@ const AdminSolutionNewAI = () => {
                               strokeLinejoin="round"
                             />
                           </svg>
-                          <span>Comments {engagement.comments.length}</span>
+                          <span>Comments {commentCount}</span>
                         </span>
                       </button>
                     </td>
@@ -457,6 +590,9 @@ const AdminSolutionNewAI = () => {
                     <td className="admin_demo_table__status-cell">
                       <AdminSolutionStatusDropdown
                         value={statusLabel}
+                        disabled={
+                          String(updatingStatusId) === String(solution.ID)
+                        }
                         onChange={(nextStatus) =>
                           handleStatusChange(solution, nextStatus)
                         }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CERTIFICATIONS_CHANGED_EVENT,
   loadAdminCertifications,
+  refreshCertificationsFromApi,
 } from "../../utils/adminCertificationStorage";
 
 export const useAdminCertifications = () => {
@@ -9,13 +10,22 @@ export const useAdminCertifications = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadCertifications = useCallback(() => {
+  const loadCertifications = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
+      try {
+        await refreshCertificationsFromApi({ includeUnpublished: true });
+      } catch (apiError) {
+        console.warn(
+          "Certification API unavailable; showing local/seed certifications.",
+          apiError,
+        );
+      }
       setCertifications(loadAdminCertifications());
     } catch (loadError) {
       setError(loadError.message || "Failed to load certifications.");
+      setCertifications([]);
     } finally {
       setLoading(false);
     }
@@ -26,7 +36,7 @@ export const useAdminCertifications = () => {
   }, [loadCertifications]);
 
   useEffect(() => {
-    const handleRefresh = () => loadCertifications();
+    const handleRefresh = () => setCertifications(loadAdminCertifications());
 
     window.addEventListener(CERTIFICATIONS_CHANGED_EVENT, handleRefresh);
     window.addEventListener("storage", handleRefresh);
@@ -35,7 +45,7 @@ export const useAdminCertifications = () => {
       window.removeEventListener(CERTIFICATIONS_CHANGED_EVENT, handleRefresh);
       window.removeEventListener("storage", handleRefresh);
     };
-  }, [loadCertifications]);
+  }, []);
 
   const handleCertificationUpdated = useCallback((updatedRecord) => {
     setCertifications((prev) =>

@@ -1,0 +1,162 @@
+@media (max-width: 600px) {
+
+    /* Welcome */
+    .welcome-header {
+        padding: 0 20px;
+        height: auto;
+        min-height: var(--app-header-height);
+    }
+
+    .welcome-header .brand {
+        font-size: 12px;
+    }
+
+    .welcome-header .brand-logo {
+        height: 28px;
+        max-width: 130px;
+    }
+
+    .welcome-header .platform-name {
+        font-size: 11px;
+    }
+
+    .app-header {
+        width: calc(100% + 30px);
+        margin-left: -15px;
+        margin-right: -15px;
+        padding: 14px 15px;
+    }
+
+    .welcome-hero {
+        padding: 50px 20px 45px;
+    }
+
+    .welcome-badge {
+        font-size: 10px;
+
+        letter-spacing: 0.8px;
+    }
+
+    .welcome-hero h1 {
+        font-size: 36px;
+    }
+
+    .welcome-description {
+        font-size: 16px;
+
+        line-height: 1.6;
+    }
+
+    .start-assessment-button {
+        width: 100%;
+
+        padding: 16px;
+    }
+
+    .assessment-stats {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 22px;
+
+        margin-top: 40px;
+    }
+
+    .assessment-stat {
+        min-width: 0;
+    }
+
+    .assessment-overview {
+        padding: 50px 20px;
+    }
+
+    .assessment-body {
+        padding: 50px 20px;
+    }
+
+    .section-heading h2 {
+        font-size: 28px;
+    }
+
+    .dimension-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .before-section {
+        padding: 0 20px 50px;
+    }
+
+    .before-card {
+        padding: 22px;
+    }
+
+    .welcome-footer {
+        margin: 0;
+
+        padding: 24px 20px;
+    }
+}
+
+.scoring-guide-section {
+    padding: 80px 24px;
+}
+
+.scoring-guide-grid {
+    max-width: 1100px;
+    margin: 40px auto 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.scoring-guide-card {
+    padding: 24px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+}
+
+.scoring-guide-number {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #111827;
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+.scoring-guide-content h3 {
+    margin: 0 0 10px;
+}
+
+.scoring-guide-content p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.scoring-guide-note {
+    max-width: 1100px;
+    margin: 24px auto 0;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: #f8fafc;
+    line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+    .scoring-guide-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .scoring-guide-grid {
+        grid-template-columns: 1fr;
+    }
+}

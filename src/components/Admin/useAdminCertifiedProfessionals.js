@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CERTIFIED_PROFESSIONALS_CHANGED_EVENT,
   loadCertifiedProfessionals,
+  refreshCertifiedProfessionalsFromApi,
 } from "../../utils/adminCertifiedProfessionalStorage";
 
 export const useAdminCertifiedProfessionals = (certificationId) => {
@@ -9,7 +10,7 @@ export const useAdminCertifiedProfessionals = (certificationId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadProfessionals = useCallback(() => {
+  const loadProfessionals = useCallback(async () => {
     if (!certificationId) {
       setProfessionals([]);
       setLoading(false);
@@ -19,9 +20,18 @@ export const useAdminCertifiedProfessionals = (certificationId) => {
     try {
       setLoading(true);
       setError("");
+      try {
+        await refreshCertifiedProfessionalsFromApi();
+      } catch (apiError) {
+        console.warn(
+          "Certified professionals API unavailable; showing local/seed data.",
+          apiError,
+        );
+      }
       setProfessionals(loadCertifiedProfessionals(certificationId));
     } catch (loadError) {
       setError(loadError.message || "Failed to load certified professionals.");
+      setProfessionals([]);
     } finally {
       setLoading(false);
     }
@@ -32,7 +42,10 @@ export const useAdminCertifiedProfessionals = (certificationId) => {
   }, [loadProfessionals]);
 
   useEffect(() => {
-    const handleRefresh = () => loadProfessionals();
+    const handleRefresh = () => {
+      if (!certificationId) return;
+      setProfessionals(loadCertifiedProfessionals(certificationId));
+    };
 
     window.addEventListener(CERTIFIED_PROFESSIONALS_CHANGED_EVENT, handleRefresh);
     window.addEventListener("storage", handleRefresh);
@@ -44,7 +57,7 @@ export const useAdminCertifiedProfessionals = (certificationId) => {
       );
       window.removeEventListener("storage", handleRefresh);
     };
-  }, [loadProfessionals]);
+  }, [certificationId]);
 
   const handleProfessionalUpdated = useCallback((updatedRecord) => {
     setProfessionals((prev) =>

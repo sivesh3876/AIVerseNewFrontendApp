@@ -1,9 +1,12 @@
 import { useEffect } from "react";
-import { HOME_SECTION_SCROLL_OFFSET } from "./homeSections";
+import {
+  getHomeScrollBehavior,
+  getHomeSectionScrollOffset,
+} from "./homeSections";
 
 export const scrollToPageSection = (
   element,
-  offset = HOME_SECTION_SCROLL_OFFSET,
+  offset = getHomeSectionScrollOffset(),
 ) => {
   if (!element) return;
 
@@ -12,7 +15,7 @@ export const scrollToPageSection = (
 
   window.scrollTo({
     top: Math.max(0, top),
-    behavior: "smooth",
+    behavior: getHomeScrollBehavior(),
   });
 };
 

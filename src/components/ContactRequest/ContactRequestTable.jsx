@@ -1,4 +1,5 @@
 import AdminBlogActionDropdown from "../Admin/AdminBlogActionDropdown";
+import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -34,8 +35,8 @@ const typeClass = (type = "") => {
   ) {
     return "schedule";
   }
-  if (value.includes("request demo") || value.includes("demo")) return "demo";
-  if (value.includes("mail")) return "mail";
+  if (value.includes("demo")) return "demo";
+  if (value.includes("mail") && !value.includes("contact")) return "mail";
   return "message";
 };
 
@@ -64,7 +65,9 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
             <td colSpan={COLUMN_COUNT}>No leads found.</td>
           </tr>
         ) : (
-          requests.map((request) => (
+          requests.map((request) => {
+            const typeLabel = formatLeadTypeLabel(request.type);
+            return (
             <tr key={request.requestKey || request.id}>
               <td>
                 <AdminBlogActionDropdown
@@ -102,10 +105,10 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
               <td>
                 <span
                   className={`admin_contact_type admin_contact_type--${typeClass(
-                    request.type,
+                    typeLabel,
                   )}`}
                 >
-                  {request.type || "Message"}
+                  {typeLabel}
                 </span>
               </td>
               <td>{request.assignedTo}</td>
@@ -120,7 +123,8 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
                 </span>
               </td>
             </tr>
-          ))
+            );
+          })
         )}
       </tbody>
     </table>

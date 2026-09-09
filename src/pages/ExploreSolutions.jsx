@@ -3,11 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import Breadcrumb from "../components/Breadcrumb";
 import CustomerCommunicationManagement from "../components/CustomerCommunicationManagement";
 import { getEnterpriseServiceById } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
+import {
+  getIndustryById,
+  getIndustryByDomainCode,
+} from "../components/IndustryExplore/industrySolutionsData";
 import { fetchUseCaseById } from "../services/usecasesService";
 
 const ExploreSolutions = () => {
   const [searchParams] = useSearchParams();
   const domainCode = searchParams.get("domain");
+  const industryId = searchParams.get("industry");
   const serviceId = searchParams.get("service");
   const solutionId = searchParams.get("solution");
   const activeService = getEnterpriseServiceById(serviceId);
@@ -44,20 +49,35 @@ const ExploreSolutions = () => {
     };
   }, [solutionId]);
 
-  const breadcrumbItems = [
-    { label: "AI Verse", to: "/" },
-    { label: "Enterprise Services", to: "/explore-solutions" },
-  ];
+  const industry = industryId
+    ? getIndustryById(industryId)
+    : getIndustryByDomainCode(domainCode);
 
-  if (domainCode) {
-    breadcrumbItems.push({
-      label: domainCode.replace(/([a-z])([A-Z])/g, "$1 $2"),
-    });
-  } else if (serviceId && activeService) {
-    breadcrumbItems.push({
-      label: activeService.label,
-      to: `/explore-solutions?service=${serviceId}`,
-    });
+  const breadcrumbItems = industry
+    ? [
+        { label: "AI Verse", to: "/" },
+        { label: "Industry Solutions", to: "/industry-solutions" },
+        {
+          label: industry.title,
+          to: `/industry-solutions?industry=${industry.id}`,
+        },
+      ]
+    : [
+        { label: "AI Verse", to: "/" },
+        { label: "Enterprise Services", to: "/explore-solutions" },
+      ];
+
+  if (!industry) {
+    if (domainCode) {
+      breadcrumbItems.push({
+        label: domainCode.replace(/([a-z])([A-Z])/g, "$1 $2"),
+      });
+    } else if (serviceId && activeService) {
+      breadcrumbItems.push({
+        label: activeService.label,
+        to: `/explore-solutions?service=${serviceId}`,
+      });
+    }
   }
 
   if (solutionId) {

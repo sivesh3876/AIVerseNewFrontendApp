@@ -42,7 +42,11 @@ if (Test-Path $zipPath) {
 }
 
 Push-Location $stagingPath
-Compress-Archive -Path * -DestinationPath $zipPath -Force
+tar.exe -a -cf $zipPath *
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    Write-Error "Failed to create deployment zip with tar."
+}
 Pop-Location
 
 if (-not $ResourceGroup) {
@@ -53,11 +57,12 @@ if (-not $ResourceGroup) {
     }
 }
 
-Write-Host "Ensuring Azure startup command is npm start..."
+Write-Host "Ensuring Azure startup command serves static build..."
+$startupCommand = 'npx -y serve@14.2.6 . -s -l ${PORT:-8080}'
 az webapp config set `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --startup-file "npm start" `
+    --startup-file $startupCommand `
     --output none
 
 az webapp config appsettings set `
@@ -74,7 +79,6 @@ az webapp deploy `
     --name $WebAppName `
     --src-path $zipPath `
     --type zip `
-    --clean true `
     --restart true
 
 Write-Host "Deployment complete."

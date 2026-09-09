@@ -27,6 +27,9 @@ export const toPublicResource = (blog) => ({
   description: stripHtml(blog.description),
   date: blog.date || blog.publishedDate,
   url: blog.url || "",
+  linkTo: blog.url ? undefined : `/blogs?article=${encodeURIComponent(blog.id)}`,
+  isCustom: Boolean(blog.isCustom),
+  publishedAt: blog.publishedAt || null,
 });
 
 export const getActiveAdminBlogs = () =>
@@ -94,28 +97,40 @@ export const getLearnExploreResourcesForTrack = (trackId = "all") => {
   return merged;
 };
 
+/** Public /blogs hub: all Published admin blogs + seed content (newest first). */
 export const getBlogHubResources = () => {
-  const adminBlogs = getActiveAdminBlogs().filter((blog) => !isHomepageBlog(blog));
-  const homepageIds = new Set(
-    getActiveAdminBlogs().filter(isHomepageBlog).map((blog) => blog.id),
-  );
+  const adminBlogs = getActiveAdminBlogs();
+  const adminById = new Map(adminBlogs.map((blog) => [blog.id, blog]));
 
-  const staticBlogs = getResourcesByCategory("blogs").filter(
-    (resource) => !homepageIds.has(resource.id),
-  );
-
+  const staticBlogs = getResourcesByCategory("blogs");
   const merged = [];
   const seen = new Set();
 
+  // Custom / newly created Published blogs first so they are visible immediately.
+  [...adminBlogs]
+    .sort((left, right) => {
+      const leftCustom = left.isCustom ? 1 : 0;
+      const rightCustom = right.isCustom ? 1 : 0;
+      if (leftCustom !== rightCustom) return rightCustom - leftCustom;
+
+      const leftTime = left.publishedAt ? new Date(left.publishedAt).getTime() : 0;
+      const rightTime = right.publishedAt
+        ? new Date(right.publishedAt).getTime()
+        : 0;
+      return rightTime - leftTime;
+    })
+    .forEach((blog) => {
+      if (seen.has(blog.id)) return;
+      merged.push(toPublicResource(blog));
+      seen.add(blog.id);
+    });
+
   staticBlogs.forEach((resource) => {
-    const adminVersion = adminBlogs.find((blog) => blog.id === resource.id);
+    if (seen.has(resource.id)) return;
+
+    const adminVersion = adminById.get(resource.id);
     merged.push(adminVersion ? toPublicResource(adminVersion) : resource);
     seen.add(resource.id);
-  });
-
-  adminBlogs.forEach((blog) => {
-    if (seen.has(blog.id)) return;
-    merged.push(toPublicResource(blog));
   });
 
   return merged;

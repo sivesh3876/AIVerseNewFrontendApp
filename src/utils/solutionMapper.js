@@ -8,8 +8,12 @@ import {
 } from "../components/CustomerCommunicationManagement/CapabilityIcons";
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
 import {
+  getIndustryByDomainCode,
+} from "../components/IndustryExplore/industrySolutionsData";
+import {
   buildDocumentsFromApiSolution,
 } from "./solutionDocuments";
+import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
 
 const capabilityIconMap = {
   brain: BrainIcon,
@@ -139,6 +143,56 @@ export const getServiceIdForDomain = (domainCode) => {
   return null;
 };
 
+export const isIndustryBusinessDomain = (domainCode) =>
+  Boolean(getIndustryByDomainCode(domainCode));
+
+export const normalizeSolutionCapabilityId = (solutionId) => {
+  if (solutionId == null || solutionId === "") return "";
+
+  const raw = String(solutionId).trim();
+  if (/^api-/i.test(raw)) return raw;
+  if (/^\d+$/.test(raw)) return `api-${raw}`;
+  return raw;
+};
+
+export const buildExploreSolutionPath = ({
+  businessDomain,
+  solutionId,
+  extraParams = {},
+} = {}) => {
+  const capabilityId = normalizeSolutionCapabilityId(solutionId);
+  const params = new URLSearchParams(
+    Object.entries(extraParams).reduce((acc, [key, value]) => {
+      if (value != null && value !== "") {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {}),
+  );
+
+  const serviceId = getServiceIdForDomain(businessDomain);
+  const isIndustry = isIndustryBusinessDomain(businessDomain);
+
+  if (serviceId && !isIndustry) {
+    params.set("service", serviceId);
+  } else if (businessDomain) {
+    params.set("domain", businessDomain);
+    const industry = getIndustryByDomainCode(businessDomain);
+    if (industry?.id) {
+      params.set("industry", industry.id);
+    }
+  } else {
+    params.set("service", "agentic-automation");
+  }
+
+  if (capabilityId) {
+    params.set("solution", capabilityId);
+  }
+
+  const query = params.toString();
+  return `/explore-solutions${query ? `?${query}` : ""}`;
+};
+
 export const solutionMatchesExploreFilter = ({
   businessDomain,
   activeServiceId,
@@ -148,6 +202,10 @@ export const solutionMatchesExploreFilter = ({
 
   if (activeDomainCode) {
     return normalizeKey(businessDomain) === normalizeKey(activeDomainCode);
+  }
+
+  if (isIndustryBusinessDomain(businessDomain)) {
+    return false;
   }
 
   return getServiceIdForDomain(businessDomain) === activeServiceId;
@@ -266,15 +324,75 @@ const resolveRecordedDemoLink = (solution = {}) => {
   return recordedVideoLink || demoLink;
 };
 
+const TECH_STACK_NAME_KEYS = [
+  "name",
+  "Name",
+  "title",
+  "Title",
+  "technology",
+  "Technology",
+  "tech",
+  "Tech",
+  "value",
+  "Value",
+];
+
+const getTechStackSource = (solution = {}) =>
+  solution.TechHighlights ??
+  solution.TechnologyHighlights ??
+  solution.TechStack ??
+  solution.Technologies ??
+  solution.techHighlights ??
+  "";
+
+const normalizeTechStackItem = (item) => {
+  if (item == null) return null;
+
+  if (typeof item === "string" || typeof item === "number") {
+    const name = String(item)
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+    return name ? { name, label: "Technology" } : null;
+  }
+
+  if (typeof item === "object") {
+    const name = TECH_STACK_NAME_KEYS.map((key) => item[key]).find(Boolean);
+    const label = item.label || item.Label || item.role || item.category || "Technology";
+    const resolvedName = String(name || "")
+      .replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "")
+      .trim();
+
+    return resolvedName
+      ? { name: resolvedName, label: String(label).trim() || "Technology" }
+      : null;
+  }
+
+  return null;
+};
+
 const parseTechStack = (techHighlights) => {
+  if (Array.isArray(techHighlights)) {
+    return techHighlights.map(normalizeTechStackItem).filter(Boolean);
+  }
+
   const value =
     techHighlights === null || techHighlights === undefined
       ? ""
-      : String(techHighlights);
+      : String(techHighlights).trim();
+
+  if (!value) return [];
+
+  if (value.startsWith("[") || value.startsWith("{")) {
+    try {
+      return parseTechStack(JSON.parse(value));
+    } catch {
+      // Fall through to delimiter parsing.
+    }
+  }
 
   return value
-    .split(/[,;|]/)
-    .map((item) => item.trim())
+    .split(/[,;|\n]+/)
+    .map((item) => item.replace(/^(?:[-•*]\s+|\d+[.)]\s+)/, "").trim())
     .filter(Boolean)
     .map((name) => ({ name, label: "Technology" }));
 };
@@ -300,38 +418,66 @@ export const getSolutionOrderNumber = (solution = {}) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-export const isPublicSolutionVisible = (solution = {}) => {
-  if (solution?.IsSolutionActive === false) return false;
-
-  const publishValue =
-    solution.Publish ??
-    solution.publish ??
-    solution.IsPublished ??
-    solution.isPublished ??
-    solution.PublicationStatus ??
-    solution.publicationStatus;
-
-  if (publishValue == null || publishValue === "") return true;
-
-  const normalized = String(publishValue).trim().toLowerCase();
-  return !["no", "false", "0", "draft", "inactive", "archive"].includes(
-    normalized,
-  );
+const isExplicitlyInactiveFlag = (value) => {
+  if (value === false || value === 0) return true;
+  if (value == null || value === "") return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ["false", "0", "no", "inactive"].includes(normalized);
 };
+
+/** True when a solution should be treated as Inactive in admin + public views. */
+export const isSolutionMarkedInactive = (solution = {}) => {
+  const rawId = solution?.ID ?? solution?.id;
+  if (rawId != null && isSolutionIdMarkedInactiveLocally(rawId)) {
+    return true;
+  }
+
+  const numericId = String(rawId || "").match(/(\d+)$/);
+  if (numericId && isSolutionIdMarkedInactiveLocally(numericId[1])) {
+    return true;
+  }
+
+  if (
+    isExplicitlyInactiveFlag(
+      solution?.IsSolutionActive ?? solution?.isSolutionActive,
+    )
+  ) {
+    return true;
+  }
+
+  const publishValue = String(
+    solution?.Publish ?? solution?.publish ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["no", "false", "0", "inactive"].includes(publishValue)) return true;
+
+  const publicationStatus = String(
+    solution?.PublicationStatus ?? solution?.publicationStatus ?? "",
+  )
+    .trim()
+    .toLowerCase();
+  if (["draft", "inactive", "archive", "unpublished"].includes(publicationStatus)) {
+    return true;
+  }
+
+  return false;
+};
+
+export const isPublicSolutionVisible = (solution = {}) =>
+  !isSolutionMarkedInactive(solution);
 
 export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
   [...solutions]
     .filter(isPublicSolutionVisible)
+    .filter((solution) => {
+      const order = getSolutionOrderNumber(solution);
+      return Number.isFinite(order) && order >= 1 && order <= 8;
+    })
     .sort((left, right) => {
       const leftOrder = getSolutionOrderNumber(left);
       const rightOrder = getSolutionOrderNumber(right);
 
-      if (leftOrder == null && rightOrder == null) {
-        return Number(left?.ID || 0) - Number(right?.ID || 0);
-      }
-
-      if (leftOrder == null) return 1;
-      if (rightOrder == null) return -1;
       if (leftOrder !== rightOrder) return leftOrder - rightOrder;
 
       return Number(left?.ID || 0) - Number(right?.ID || 0);
@@ -342,29 +488,35 @@ export const mapApiSolutionToHomeCard = (solution) => {
   if (!solution) return null;
 
   const orderNumber = getSolutionOrderNumber(solution);
-  const serviceId =
-    getServiceIdForDomain(solution.BusinessDomain) || "agentic-automation";
+  const serviceId = getServiceIdForDomain(solution.BusinessDomain);
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const industry = getIndustryByDomainCode(solution.BusinessDomain);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
   const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
+  const detailUrl = buildExploreSolutionPath({
+    businessDomain: solution.BusinessDomain,
+    solutionId: solution.ID,
+  });
 
   return {
     id: solutionApiId,
     title: solution.Title || "Untitled Solution",
     description:
-      truncateText(solution.SolutionContext) ||
+      toText(solution.SolutionContext).trim() ||
       "Explore this enterprise AI solution.",
-    domainLabel: service?.label || solution.BusinessDomain || "Enterprise AI",
+    domainLabel:
+      service?.label || industry?.title || solution.BusinessDomain || "Enterprise AI",
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),
     techHighlight: techStack[0]?.name || null,
     techText: techStack.map((entry) => entry.name).join(" "),
-    serviceId,
+    serviceId: serviceId || null,
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
-    detailUrl: `/explore-solutions?service=${serviceId}&solution=${encodeURIComponent(solutionApiId)}`,
+    salesDeskDoc: solution.SalesDeskDoc || null,
+    detailUrl,
     capabilityForDemo: {
       id: solutionApiId,
       title: solution.Title || "Untitled Solution",
@@ -434,12 +586,13 @@ export const mapApiSolutionToCapability = (
   { evangelistDirectory = [], solutionOwners = [] } = {},
 ) => {
   const evangelists = parseEvangelists(solution.AiEvangelists, evangelistDirectory);
-  const techStack = parseTechStack(solution.TechHighlights);
+  const techStack = parseTechStack(getTechStackSource(solution));
   const recordedDemoLink = resolveRecordedDemoLink(solution);
 
   return {
     id: `api-${solution.ID}`,
     isApiSolution: true,
+    IsSolutionActive: solution.IsSolutionActive,
     title: solution.Title || "Untitled Solution",
     iconKey: "brain",
     description: solution.SolutionContext || "No description available.",
@@ -466,6 +619,7 @@ export const mapApiSolutionToCapability = (
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
+    salesDeskDoc: solution.SalesDeskDoc || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
       ? solution.OtherDocuments
       : [],
@@ -762,6 +916,21 @@ export const removePersistedSubmittedCapability = (capabilityId) => {
   savePersistedSubmittedCapabilities(next);
 };
 
+const normalizeCapabilityTitle = (value) =>
+  String(value || "").trim().toLowerCase();
+
+/** Optimistic cards are stored with temporary ids, so title is the only reliable key. */
+export const removePersistedSubmittedCapabilitiesByTitle = (title) => {
+  const key = normalizeCapabilityTitle(title);
+  if (!key) return;
+
+  const existing = getPersistedSubmittedCapabilities();
+  const next = existing.filter(
+    (item) => normalizeCapabilityTitle(item?.title) !== key,
+  );
+  savePersistedSubmittedCapabilities(next);
+};
+
 export const loadPersistedSubmittedCapabilities = getPersistedSubmittedCapabilities;
 
 export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) => {
@@ -769,8 +938,15 @@ export const prunePersistedCapabilitiesSyncedWithApi = (apiCapabilities = []) =>
   if (persisted.length === 0) return;
 
   const apiIds = new Set(apiCapabilities.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
+  );
 
-  const remaining = persisted.filter((capability) => !apiIds.has(capability.id));
+  const remaining = persisted.filter(
+    (capability) =>
+      !apiIds.has(capability.id) &&
+      !apiTitles.has(normalizeCapabilityTitle(capability.title)),
+  );
 
   savePersistedSubmittedCapabilities(remaining);
 };
@@ -788,40 +964,32 @@ export const mergeSubmittedCapabilities = ({
       activeDomainCode,
     });
 
-  const fromApi = apiCapabilities.filter(matchesFilter);
-
-  const pendingById = new Map(
-    pendingCapabilities
-      .filter(matchesFilter)
-      .filter((capability) => capability?.id)
-      .map((capability) => [capability.id, capability]),
+  const fromApi = apiCapabilities.filter(
+    (capability) => matchesFilter(capability) && isPublicSolutionVisible(capability),
   );
 
-  const mergedFromApi = fromApi.map((capability) => {
-    const pending = pendingById.get(capability.id);
-    if (!pending) {
-      return capability;
-    }
-
-    const apiFoundation = capability.aiFoundation || [];
-    const pendingFoundation = pending.aiFoundation || [];
-
-    return {
-      ...capability,
-      aiFoundation:
-        apiFoundation.length > 0 ? apiFoundation : pendingFoundation,
-    };
-  });
-
-  const apiIds = new Set(mergedFromApi.map((capability) => capability.id));
+  const apiIds = new Set(fromApi.map((capability) => capability.id));
+  const apiTitles = new Set(
+    apiCapabilities.map((capability) => normalizeCapabilityTitle(capability.title)),
+  );
 
   const fromPending = pendingCapabilities.filter((capability) => {
+    if (isSolutionMarkedInactive(capability)) {
+      return false;
+    }
+
     if (!matchesFilter(capability)) {
+      return false;
+    }
+
+    if (apiTitles.has(normalizeCapabilityTitle(capability.title))) {
       return false;
     }
 
     return capability.id && !apiIds.has(capability.id);
   });
 
-  return dedupeCapabilitiesById([...mergedFromApi, ...fromPending]);
+  return dedupeCapabilitiesById([...fromApi, ...fromPending]).filter(
+    isPublicSolutionVisible,
+  );
 };

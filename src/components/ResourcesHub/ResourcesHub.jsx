@@ -1,12 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getResourcesByCategory } from "../LearnExplore/learnExploreData";
-import { BLOGS_CHANGED_EVENT } from "../../utils/adminBlogStorage";
+import {
+  BLOGS_CHANGED_EVENT,
+  refreshBlogsFromApi,
+} from "../../utils/adminBlogStorage";
 import { getBlogHubResources } from "../../utils/publicBlogContent";
 import BlogResourceLink from "../BlogResourceLink/BlogResourceLink";
 import { useScrollToSection } from "../../utils/pageScroll";
 import "./ResourcesHub.scss";
 
 const ResourcesHub = ({ title, description, category, eyebrow }) => {
+  const [searchParams] = useSearchParams();
+  const articleId = searchParams.get("article");
   const [resources, setResources] = useState(() =>
     category === "blogs"
       ? getBlogHubResources()
@@ -20,21 +26,56 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
       return undefined;
     }
 
-    const refreshResources = () => {
-      setResources(getBlogHubResources());
+    let cancelled = false;
+
+    const refreshResources = async () => {
+      try {
+        // Public page only needs Published blogs from production API.
+        await refreshBlogsFromApi({ includeUnpublished: false });
+      } catch (error) {
+        console.warn("Blog API unavailable; showing seed blogs.", error);
+      }
+      if (!cancelled) {
+        setResources(getBlogHubResources());
+      }
     };
 
     refreshResources();
-    window.addEventListener(BLOGS_CHANGED_EVENT, refreshResources);
-    window.addEventListener("storage", refreshResources);
+    const onLocalChange = () => setResources(getBlogHubResources());
+    window.addEventListener(BLOGS_CHANGED_EVENT, onLocalChange);
+    window.addEventListener("storage", onLocalChange);
 
     return () => {
-      window.removeEventListener(BLOGS_CHANGED_EVENT, refreshResources);
-      window.removeEventListener("storage", refreshResources);
+      cancelled = true;
+      window.removeEventListener(BLOGS_CHANGED_EVENT, onLocalChange);
+      window.removeEventListener("storage", onLocalChange);
     };
   }, [category]);
 
+  useEffect(() => {
+    if (!articleId) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`resource-${articleId}`);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [articleId, resources]);
+
   useScrollToSection(heroRef, [category]);
+
+  const orderedResources = useMemo(() => {
+    if (!articleId) return resources;
+
+    const highlighted = resources.find((item) => item.id === articleId);
+    if (!highlighted) return resources;
+
+    return [
+      highlighted,
+      ...resources.filter((item) => item.id !== articleId),
+    ];
+  }, [resources, articleId]);
 
   return (
     <div className="resources_hub">
@@ -48,15 +89,20 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
 
       <section className="resources_hub__content">
         <div className="resources_hub__container">
-          {resources.length === 0 ? (
+          {orderedResources.length === 0 ? (
             <p className="resources_hub__empty">No resources available yet.</p>
           ) : (
             <div className="resources_hub__grid">
-              {resources.map((resource) => (
+              {orderedResources.map((resource) => (
                 <BlogResourceLink
                   key={resource.id}
+                  id={`resource-${resource.id}`}
                   resource={resource}
-                  className="resources_hub__card"
+                  className={`resources_hub__card${
+                    articleId === resource.id
+                      ? " resources_hub__card--highlight"
+                      : ""
+                  }`}
                 >
                   <span
                     className="resources_hub__badge"

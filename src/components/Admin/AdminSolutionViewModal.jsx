@@ -81,6 +81,13 @@ const getAttachmentLinks = (solution) => {
     });
   }
 
+  if (solution.SalesDeskDoc) {
+    links.push({
+      label: "Sales Pitch PDF",
+      href: solution.SalesDeskDoc,
+    });
+  }
+
   if (solution.DemoRecordedVideoLink) {
     links.push({
       label: "Demo Recorded Video",

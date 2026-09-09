@@ -22,15 +22,20 @@ export const getUniqueBlogValues = (blogs, key) =>
     a.localeCompare(b),
   );
 
+export const BLOG_ADMIN_DEFAULT_STATUS_FILTER = "active";
+
 export const filterAdminBlogs = (
   blogs,
-  { search = "", status = "all", category = "all", track = "all" } = {},
+  { search = "", status = BLOG_ADMIN_DEFAULT_STATUS_FILTER, category = "all", track = "all" } = {},
 ) =>
   blogs.filter((blog) => {
     const query = normalize(search);
     const matchesSearch = !query || getSearchableText(blog).includes(query);
+    const recordStatus = blog.recordStatus || "Published";
     const matchesStatus =
-      status === "all" || (blog.recordStatus || "Published") === status;
+      status === "all" ||
+      (status === "active" && recordStatus !== "Archive") ||
+      recordStatus === status;
     const matchesCategory =
       category === "all" || blog.category === category;
     const matchesTrack = track === "all" || blog.trackLabel === track;
