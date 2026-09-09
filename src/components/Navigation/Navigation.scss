@@ -3,7 +3,7 @@
 }
 
 .navbar {
-    max-width      : 1280px;
+    // max-width      : 1280px;
     margin         : 0 auto;
     height         : 64px;
     background     : #0d1e32;
@@ -75,29 +75,29 @@
 
             &:hover {
                 background: rgba(24, 224, 204, 0.12);
-                color       : #fff;
+                color     : #fff;
             }
         }
 
         .nav-callback-btn {
-            display        : inline-flex;
-            align-items    : center;
-            gap            : 8px;
-            padding        : 8px 14px;
-            border         : 1px solid rgba(255, 122, 26, 0.55);
-            border-radius  : 8px;
-            background     : rgba(255, 122, 26, 0.1);
-            color          : #ff9a4d;
-            font-size      : 13px;
-            font-weight    : 600;
-            font-family    : inherit;
-            white-space    : nowrap;
-            cursor         : pointer;
-            transition     : background 0.2s, color 0.2s, border-color 0.2s;
+            display      : inline-flex;
+            align-items  : center;
+            gap          : 8px;
+            padding      : 8px 14px;
+            border       : 1px solid rgba(255, 122, 26, 0.55);
+            border-radius: 8px;
+            background   : rgba(255, 122, 26, 0.1);
+            color        : #ff9a4d;
+            font-size    : 13px;
+            font-weight  : 600;
+            font-family  : inherit;
+            white-space  : nowrap;
+            cursor       : pointer;
+            transition   : background 0.2s, color 0.2s, border-color 0.2s;
 
             svg {
-                width : 16px;
-                height: 16px;
+                width      : 16px;
+                height     : 16px;
                 flex-shrink: 0;
             }
 
@@ -136,15 +136,15 @@
 
         /* Keep icon; shorten label on tighter headers */
         font-size: 0;
-        gap: 0;
+        gap      : 0;
 
         svg {
             font-size: 13px;
         }
 
         &::after {
-            content: "Schedule a Call";
-            font-size: 12px;
+            content    : "Schedule a Call";
+            font-size  : 12px;
             margin-left: 6px;
         }
     }

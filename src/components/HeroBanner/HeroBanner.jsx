@@ -58,6 +58,22 @@ const HeroBannerSlider = () => {
         <div className="hero_capabilities__header">
           <h2>Live AI use cases — try them now</h2>
           <p>Click any card to launch a live demo in seconds</p>
+          <button
+            type="button"
+            className="primary_btn hero_capabilities__cta"
+            onClick={() => openRegisterModal("Hero Readiness CTA")}
+          >
+            Improve your readiness
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M7 17 17 7M17 7H9M17 7v8"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
         <HomeCapabilitiesPreview />
       </div>
