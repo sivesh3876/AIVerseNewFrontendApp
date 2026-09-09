@@ -60,6 +60,28 @@ const defaultServices = [
 
 const CARDS_PER_ROW = 3;
 
+const ChevronIcon = ({ direction = "right" }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    {direction === "left" ? (
+      <path
+        d="M15 18l-6-6 6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ) : (
+      <path
+        d="M9 18l6-6-6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    )}
+  </svg>
+);
+
 const getCardAnimation = (index) => {
   const positionInRow = index % CARDS_PER_ROW;
   const rowIndex = Math.floor(index / CARDS_PER_ROW);
@@ -73,14 +95,55 @@ const getCardAnimation = (index) => {
   };
 };
 
+const ServiceCard = ({ service, onKnowMore, className = "", style }) => {
+  const Icon = service.icon;
+
+  return (
+    <Link
+      className={`enterprise_services__card ${className}`.trim()}
+      style={style}
+      to={`/explore-solutions?service=${service.exploreServiceId}`}
+      onClick={() => onKnowMore?.(service)}
+    >
+      <div
+        className="enterprise_services__icon"
+        style={{ background: service.iconBg }}
+      >
+        <Icon />
+      </div>
+
+      <h3>{service.title}</h3>
+      <p>{service.description}</p>
+
+      <span className="enterprise_services__link">
+        Know More
+        <ExternalLinkIcon />
+      </span>
+    </Link>
+  );
+};
+
 const EnterpriseTransformationServices = ({
   services = defaultServices,
   onKnowMore,
+  disableAnimation = false,
+  variant = "default",
+  sliderCardsPerView,
 }) => {
+  const isSlider = variant === "slider";
+  const fixedCardsPerView =
+    typeof sliderCardsPerView === "number" ? sliderCardsPerView : null;
   const sectionRef = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const carouselRef = useRef(null);
+  const [visible, setVisible] = useState(disableAnimation || isSlider);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [cardsPerView, setCardsPerView] = useState(fixedCardsPerView ?? 1);
 
   useEffect(() => {
+    if (disableAnimation || isSlider) {
+      return undefined;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -95,54 +158,166 @@ const EnterpriseTransformationServices = ({
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [disableAnimation, isSlider]);
+
+  useEffect(() => {
+    if (!isSlider) {
+      return undefined;
+    }
+
+    if (fixedCardsPerView !== null) {
+      setCardsPerView(fixedCardsPerView);
+      return undefined;
+    }
+
+    const updateCardsPerView = () => {
+      const width = carouselRef.current?.clientWidth ?? window.innerWidth;
+
+      if (width >= 720) {
+        setCardsPerView(2);
+        return;
+      }
+
+      setCardsPerView(1);
+    };
+
+    updateCardsPerView();
+
+    const observer = carouselRef.current
+      ? new ResizeObserver(updateCardsPerView)
+      : null;
+
+    if (carouselRef.current && observer) {
+      observer.observe(carouselRef.current);
+    }
+
+    window.addEventListener("resize", updateCardsPerView);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateCardsPerView);
+    };
+  }, [fixedCardsPerView, isSlider]);
+
+  const maxIndex = Math.max(0, services.length - cardsPerView);
+  const showNav = isSlider && services.length > cardsPerView;
+  const visibleServices = isSlider
+    ? services.slice(activeIndex, activeIndex + cardsPerView)
+    : services;
+
+  useEffect(() => {
+    if (!isSlider) {
+      return;
+    }
+
+    setActiveIndex((current) => Math.min(current, maxIndex));
+  }, [isSlider, maxIndex]);
+
+  const handlePrev = () => {
+    setActiveIndex((current) => Math.max(0, current - 1));
+  };
+
+  const handleNext = () => {
+    setActiveIndex((current) => Math.min(maxIndex, current + 1));
+  };
 
   return (
     <section
       id="enterprise-transformation"
-      className={`enterprise_services ${visible ? "animate" : ""}`}
+      className={`enterprise_services ${
+        isSlider ? "enterprise_services--slider" : ""
+      } ${visible && !disableAnimation && !isSlider ? "animate" : ""} ${
+        disableAnimation || isSlider ? "enterprise_services--static" : ""
+      }`}
       ref={sectionRef}
     >
       <div className="enterprise_services__container">
         <header className="enterprise_services__header">
           <h2>AI Capabilities by Service Line</h2>
-          <p>
-            Every Espire service line, mapped to its AI capabilities — with a
-            live demo for each
-          </p>
+          {!isSlider ? (
+            <p>
+              Every Espire service line, mapped to its AI capabilities — with a
+              live demo for each
+            </p>
+          ) : null}
         </header>
 
-        <div className="enterprise_services__grid">
-          {services.map((service, index) => {
-            const Icon = service.icon;
-            const { className, animationDelay } = getCardAnimation(index);
-
-            return (
-              <Link
-                className={`enterprise_services__card ${className}`}
-                key={service.title}
-                style={{ animationDelay }}
-                to={`/explore-solutions?service=${service.exploreServiceId}`}
-                onClick={() => onKnowMore?.(service)}
+        {isSlider ? (
+          <div className="enterprise_services__carousel" ref={carouselRef}>
+            <div className="enterprise_services__carousel-row">
+              <button
+                type="button"
+                className="enterprise_services__nav enterprise_services__nav--prev"
+                onClick={handlePrev}
+                disabled={!showNav || activeIndex === 0}
+                aria-label="Previous service line"
               >
-                <div
-                  className="enterprise_services__icon"
-                  style={{ background: service.iconBg }}
-                >
-                  <Icon />
-                </div>
+                <ChevronIcon direction="left" />
+              </button>
 
-                <h3>{service.title}</h3>
-                <p>{service.description}</p>
+              <div
+                className="enterprise_services__slider-track"
+                style={{ "--cards-per-view": cardsPerView }}
+              >
+                {visibleServices.map((service) => (
+                  <ServiceCard
+                    key={service.title}
+                    service={service}
+                    onKnowMore={onKnowMore}
+                  />
+                ))}
+              </div>
 
-                <span className="enterprise_services__link">
-                  Know More
-                  <ExternalLinkIcon />
-                </span>
-              </Link>
-            );
-          })}
-        </div>
+              <button
+                type="button"
+                className="enterprise_services__nav enterprise_services__nav--next"
+                onClick={handleNext}
+                disabled={!showNav || activeIndex >= maxIndex}
+                aria-label="Next service line"
+              >
+                <ChevronIcon direction="right" />
+              </button>
+            </div>
+
+            {showNav ? (
+              <div
+                className="enterprise_services__dots"
+                role="tablist"
+                aria-label="Service line slides"
+              >
+                {Array.from({ length: maxIndex + 1 }, (_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`enterprise_services__dot ${
+                      activeIndex === index ? "is-active" : ""
+                    }`}
+                    onClick={() => setActiveIndex(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                    aria-selected={activeIndex === index}
+                    role="tab"
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="enterprise_services__grid">
+            {services.map((service, index) => {
+              const { className, animationDelay } = getCardAnimation(index);
+
+              return (
+                <ServiceCard
+                  key={service.title}
+                  service={service}
+                  onKnowMore={onKnowMore}
+                  className={className}
+                  style={disableAnimation ? undefined : { animationDelay }}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

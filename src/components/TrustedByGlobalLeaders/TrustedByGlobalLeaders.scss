@@ -4,9 +4,9 @@
     overflow  : hidden;
 
     &__container {
-        max-width: 1280px;
-        margin   : 0 auto;
-        padding  : 0 20px;
+        // max-width: 1280px;
+        margin : 0 auto;
+        padding: 0 20px;
 
         h2 {
             margin     : 0 0 40px;
@@ -72,9 +72,9 @@
         height         : 100%;
 
         &--dark {
-            padding   : 8px 14px;
+            padding      : 8px 14px;
             border-radius: 8px;
-            background: linear-gradient(90deg, #1a4a8e 0%, #0d1e32 100%);
+            background   : linear-gradient(90deg, #1a4a8e 0%, #0d1e32 100%);
         }
     }
 

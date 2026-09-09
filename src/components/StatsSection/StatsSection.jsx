@@ -33,11 +33,15 @@ const statsData = [
   },
 ];
 
-const StatsSection = () => {
+const StatsSection = ({ disableAnimation = false }) => {
   const sectionRef = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(disableAnimation);
 
   useEffect(() => {
+    if (disableAnimation) {
+      return undefined;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -52,11 +56,13 @@ const StatsSection = () => {
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [disableAnimation]);
 
   return (
     <section
-      className={`stats_section ${visible ? "animate" : ""}`}
+      className={`stats_section ${visible && !disableAnimation ? "animate" : ""} ${
+        disableAnimation ? "stats_section--static" : ""
+      }`}
       ref={sectionRef}
     >
       <div className="stats_container">
@@ -64,7 +70,9 @@ const StatsSection = () => {
           <div
             className="stat_card"
             key={index}
-            style={{ animationDelay: `${index * 0.2}s` }}
+            style={
+              disableAnimation ? undefined : { animationDelay: `${index * 0.2}s` }
+            }
           >
             <img src={item.icon} alt={item.label} />
 
