@@ -1,12 +1,12 @@
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
 import { clientsData, getClientSection } from "../components/ClientExplore/clientsData";
-import { successStories } from "../components/SuccessStories/successStoriesData";
 import {
   homePageClients,
   homePagePartners,
 } from "../data/homeLogoBarData";
 import { HOME_NAV_LINKS } from "./homeSections";
 import { fetchAllUseCases } from "../services/usecasesService";
+import { fetchSuccessStories } from "../services/successStoriesApiService";
 import {
   buildExploreSolutionPath,
   resolveSolutionAiFoundation,
@@ -281,6 +281,30 @@ export const mapSolutionToSearchEntry = (solution) => {
   });
 };
 
+const mapSuccessStoryToSearchEntry = (story) => {
+  const slug = story?.slug || story?.Slug;
+  const status = story?.status || story?.Status;
+  if (!slug || (status && status !== "Published")) return null;
+
+  const title = story.title || story.Title || "Untitled Success Story";
+  const description =
+    story.shortDescription || story.ShortDescription || story.description || "";
+
+  return withTypeSubtitle({
+    title,
+    description,
+    keywords: [
+      title,
+      story.client || story.clientName || story.ClientName,
+      story.category || story.industry || story.Industry,
+      story.industryTag || story.IndustryTag,
+      description,
+    ].filter(Boolean),
+    path: `/success-stories?story=${encodeURIComponent(slug)}`,
+    type: "story",
+  });
+};
+
 let solutionSearchEntriesCache = null;
 let solutionSearchEntriesPromise = null;
 
@@ -290,11 +314,23 @@ export const loadSolutionSearchEntries = async () => {
   }
 
   if (!solutionSearchEntriesPromise) {
-    solutionSearchEntriesPromise = fetchAllUseCases()
-      .then((solutions) => {
-        solutionSearchEntriesCache = (solutions || [])
-          .map(mapSolutionToSearchEntry)
-          .filter(Boolean);
+    solutionSearchEntriesPromise = Promise.allSettled([
+      fetchAllUseCases(),
+      fetchSuccessStories({ includeUnpublished: false }),
+    ])
+      .then(([solutionsResult, storiesResult]) => {
+        const solutions =
+          solutionsResult.status === "fulfilled" ? solutionsResult.value : [];
+        const storyResponse =
+          storiesResult.status === "fulfilled" ? storiesResult.value : [];
+        const stories = Array.isArray(storyResponse)
+          ? storyResponse
+          : storyResponse?.stories || storyResponse?.data || [];
+
+        solutionSearchEntriesCache = [
+          ...(solutions || []).map(mapSolutionToSearchEntry),
+          ...stories.map(mapSuccessStoryToSearchEntry),
+        ].filter(Boolean);
         return solutionSearchEntriesCache;
       })
       .catch((error) => {
@@ -383,22 +419,6 @@ const buildSiteSearchIndex = () => {
       ].filter(Boolean),
       path: `/clients?client=${client.id}`,
       type: section === "partners" ? "partner" : "client",
-    });
-  });
-
-  successStories.forEach((story) => {
-    items.push({
-      title: story.title,
-      description: story.description,
-      keywords: [
-        story.title,
-        story.client,
-        story.industry,
-        story.industryTag,
-        story.subtitle,
-      ].filter(Boolean),
-      path: `/success-stories?story=${story.id}`,
-      type: "story",
     });
   });
 

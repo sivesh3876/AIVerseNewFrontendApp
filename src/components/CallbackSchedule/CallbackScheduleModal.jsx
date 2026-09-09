@@ -87,10 +87,14 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     return Object.keys(next).length === 0;
   };
 
-  const handleClose = () => {
+  const handleReset = () => {
     setForm(INITIAL_FORM);
     setErrors({});
     setSuccessMessage("");
+  };
+
+  const handleClose = () => {
+    handleReset();
     onClose?.();
   };
 
@@ -164,12 +168,8 @@ const CallbackScheduleModal = ({ open, onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="callback-schedule-title"
-      onClick={handleClose}
     >
-      <div
-        className="callback_schedule_modal"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="callback_schedule_modal">
         <button
           type="button"
           className="callback_schedule_modal__close"
@@ -361,7 +361,7 @@ const CallbackScheduleModal = ({ open, onClose }) => {
               <button
                 type="button"
                 className="callback_schedule_modal__cancel"
-                onClick={handleClose}
+                onClick={handleReset}
                 disabled={isSubmitting}
               >
                 Cancel

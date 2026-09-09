@@ -27,6 +27,11 @@ const adminNavItems = [
     end: false,
   },
   {
+    label: "Success Stories",
+    to: "/admin/success-stories",
+    end: false,
+  },
+  {
     label: "Solution New AI",
     to: "/admin/solution-new-ai",
     end: true,

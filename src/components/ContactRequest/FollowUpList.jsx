@@ -1,4 +1,4 @@
-import { formatFollowUpDateTime } from "./followUpUtils";
+import { formatAssigneesLabel, formatFollowUpDateTime } from "./followUpUtils";
 
 const getTypeLabel = (followUp) =>
   followUp.customLabel || followUp.type || "Follow-up";
@@ -34,7 +34,7 @@ const FollowUpList = ({ followUps = [], loading = false }) => {
           </p>
           <p className="admin_contact_followup_card__meta">
             <span>{followUp.type}</span>
-            <span>Assigned to {followUp.assignedTo}</span>
+            <span>Assigned to {formatAssigneesLabel(followUp.assignedTo)}</span>
             {followUp.reminder && <span>Reminder on</span>}
           </p>
           {followUp.notes && (

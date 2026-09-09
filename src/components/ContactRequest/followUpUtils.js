@@ -92,6 +92,32 @@ export const getMemberEmail = (members = [], name = "") => {
   return match?.email || "";
 };
 
+/** Emails for selected assignee names, in selection order, skipping blanks. */
+export const getMemberEmails = (members = [], names = []) => {
+  const list = Array.isArray(names)
+    ? names
+    : String(names || "")
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+  return list
+    .map((name) => getMemberEmail(members, name))
+    .map((email) => String(email || "").trim())
+    .filter(Boolean);
+};
+
+export const joinAssigneeNames = (names = []) =>
+  (Array.isArray(names) ? names : [])
+    .map((name) => String(name || "").trim())
+    .filter(Boolean)
+    .join(", ");
+
+export const joinAssigneeEmails = (emails = []) =>
+  (Array.isArray(emails) ? emails : [])
+    .map((email) => String(email || "").trim())
+    .filter(Boolean)
+    .join(", ");
+
 export const ensureMemberInList = (members = [], name = "", email = "") => {
   const trimmedName = String(name || "").trim();
   if (
@@ -141,6 +167,28 @@ export const parseAssignees = (value, memberDirectory = []) => {
       };
     }),
   );
+};
+
+/** Ensure every assignee from a comma-separated / array value is in the member list. */
+export const ensureAssigneesInList = (members = [], assignees = "") => {
+  let next = members;
+  parseAssignees(assignees, members).forEach((person) => {
+    next = ensureMemberInList(next, person.name, person.email);
+  });
+  return next;
+};
+
+/** Default selected names from lead assignees (comma string / array) or first member. */
+export const resolveDefaultAssigneeNames = (defaultAssignee, members = []) => {
+  const fromLead = parseAssignees(defaultAssignee, members)
+    .map((member) => member.name)
+    .filter(Boolean);
+
+  if (fromLead.length > 0) {
+    return fromLead;
+  }
+
+  return members[0]?.name ? [members[0].name] : [];
 };
 
 export const formatAssigneesLabel = (assignees = []) => {
