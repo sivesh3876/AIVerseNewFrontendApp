@@ -14,7 +14,6 @@ import {
   getServiceIdForDomain,
 } from "../../utils/solutionMapper";
 import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
-import SolutionEngagement from "../SolutionEngagement";
 
 const getInitials = (name) =>
   name
