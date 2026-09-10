@@ -1,20 +1,21 @@
 import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionDocuments from "../SolutionDocuments";
-import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
+import SolutionEngagement from "../SolutionEngagement";
 import {
   CoeLabelIcon,
   EvangelistLabelIcon,
   TechStackLabelIcon,
   AiFoundationLabelIcon,
   VideoCameraIcon,
-  DocumentIcon,
 } from "../CustomerCommunicationManagement/CapabilityIcons";
 import {
   resolveCapabilityIcon,
   getServiceIdForDomain,
 } from "../../utils/solutionMapper";
-import { buildDocumentsFromCapability } from "../../utils/solutionDocuments";
-import SolutionEngagement from "../SolutionEngagement";
+import {
+  buildDocumentsFromCapability,
+  excludeSalesDeskDocuments,
+} from "../../utils/solutionDocuments";
 
 const getInitials = (name) =>
   name
@@ -52,8 +53,6 @@ const SolutionCapabilityCard = ({
 }) => {
   const CardIcon = resolveCapabilityIcon(capability);
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
-  const hasSalesDesk = Boolean(salesDeskUrl);
   const isSubmitted = Boolean(capability.isApiSolution);
   const documents = excludeSalesDeskDocuments(
     buildDocumentsFromCapability(capability),

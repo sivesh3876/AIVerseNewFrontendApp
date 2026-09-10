@@ -43,7 +43,10 @@ export const RegistrationReminderProvider = ({ children }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isAdminRouteRef = useRef(isAdminRoute);
-  isAdminRouteRef.current = isAdminRoute;
+
+  useEffect(() => {
+    isAdminRouteRef.current = isAdminRoute;
+  }, [isAdminRoute]);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -52,10 +55,11 @@ export const RegistrationReminderProvider = ({ children }) => {
     }
   }, []);
 
-  const startReminderTimer = useCallback(() => {
+  /*
+  const startReminderTimer = () => {
     // Auto Register popup after 2 minutes is temporarily disabled.
     clearTimer();
-    /*
+
     // Only Registration form completion stops reminders.
     if (registeredRef.current || hasCompletedRegistration()) {
       registeredRef.current = true;
@@ -81,8 +85,8 @@ export const RegistrationReminderProvider = ({ children }) => {
       setIsOpen(true);
       isOpenRef.current = true;
     }, REMINDER_DELAY_MS);
-    */
-  }, [clearTimer]);
+  };
+  */
 
   // Navigating into admin with an open popup: close it and keep the cycle going.
   useEffect(() => {

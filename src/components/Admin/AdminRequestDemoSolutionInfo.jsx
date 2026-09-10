@@ -41,11 +41,10 @@ const getFeedbackSummary = (request) => {
     request.feedbackRating || latest?.rating
       ? `${request.feedbackRating || latest?.rating}★`
       : "";
-  const preview =
-    request.feedbackMessage || latest?.message
-      ? (request.feedbackMessage || latest?.message).slice(0, 28) +
-        ((request.feedbackMessage || latest?.message).length > 28 ? "…" : "")
-      : latest?.sentiment === "like"
+  const feedbackText = request.feedbackMessage || latest?.message || "";
+  const preview = feedbackText
+    ? feedbackText.slice(0, 28) + (feedbackText.length > 28 ? "…" : "")
+    : latest?.sentiment === "like"
         ? "👍 Like"
         : latest?.sentiment === "dislike"
           ? "👎 Dislike"

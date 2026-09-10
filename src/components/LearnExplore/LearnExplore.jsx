@@ -84,8 +84,6 @@ const LearnExplore = () => {
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [articleId, activeTrackIndex]);
 
-  const activeTrack = learnExploreTracks[activeTrackIndex];
-
   const handleTrackChange = (index) => {
     setActiveTrackIndex(index);
     navigate(`/learn-explore?track=${learnExploreTracks[index].id}`, {

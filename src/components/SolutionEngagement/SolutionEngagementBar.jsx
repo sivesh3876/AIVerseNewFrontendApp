@@ -66,7 +66,7 @@ const CommentIcon = () => (
   </svg>
 );
 
-const SolutionEngagementBar = ({ solutionId, className = "", compact = false }) => {
+const SolutionEngagementBar = ({ solutionId, className = "" }) => {
   const { isAuthenticated, adminEmail, adminName } = useAdminAuth();
   const [engagement, setEngagement] = useState(() =>
     getSolutionEngagement(solutionId),

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   isRequestDemoEmailConfigured,
-  REQUEST_DEMO_EMAIL_SETUP_MESSAGE,
   sendContactEmail,
   sendRequestDemoEmail,
 } from "../../services/requestDemoEmailService";

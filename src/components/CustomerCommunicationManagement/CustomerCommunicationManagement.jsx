@@ -8,10 +8,8 @@ import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import RequestDemoModal from "./RequestDemoModal";
 import {
-  TechStackLabelIcon,
   CoeLabelIcon,
   EvangelistLabelIcon,
-  AiFoundationLabelIcon,
   VideoCameraIcon,
   DocumentIcon,
 } from "./CapabilityIcons";
@@ -98,25 +96,6 @@ const CheckIcon = () => (
       strokeLinejoin="round"
     />
   </svg>
-);
-
-const SolutionCardSkeleton = ({ index }) => (
-  <article
-    className="ccm_dashboard__capability ccm_dashboard__capability--skeleton"
-    style={{ animationDelay: `${index * 0.08}s` }}
-    aria-hidden="true"
-  >
-    <div className="ccm_dashboard__skeleton-head">
-      <div className="ccm_dashboard__skeleton-icon" />
-      <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--title" />
-    </div>
-    <div className="ccm_dashboard__skeleton-line" />
-    <div className="ccm_dashboard__skeleton-line" />
-    <div className="ccm_dashboard__skeleton-line ccm_dashboard__skeleton-line--short" />
-    <div className="ccm_dashboard__skeleton-block" />
-    <div className="ccm_dashboard__skeleton-block" />
-    <div className="ccm_dashboard__skeleton-actions" />
-  </article>
 );
 
 const SolutionDetailPanel = ({
@@ -945,8 +924,6 @@ const CustomerCommunicationManagement = () => {
             <ul>
               {industryDomains.map((domain) => {
                 const isActive = activeDomainCode === domain.DomainCode;
-                const industryMeta = getIndustryByDomainCode(domain.DomainCode);
-                const IndustryIcon = industryMeta?.icon;
 
                 return (
                   <li key={domain.DomainCode}>

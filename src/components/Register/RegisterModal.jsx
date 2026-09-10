@@ -8,7 +8,6 @@ import {
   isRequestDemoEmailConfigured,
   sendContactEmail,
 } from "../../services/requestDemoEmailService";
-import logo from "../../assets/images/logo.svg";
 import "./RegisterModal.scss";
 
 const INITIAL_FORM = {

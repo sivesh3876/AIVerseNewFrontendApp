@@ -10,7 +10,6 @@ import {
   isRequestDemoEmailConfigured,
   sendContactEmail,
 } from "../../services/requestDemoEmailService";
-import logo from "../../assets/images/logo.svg";
 import "./CallbackScheduleModal.scss";
 
 const INITIAL_FORM = {
