@@ -1,5 +1,3 @@
-import { successStories } from "../SuccessStories/successStoriesData";
-
 const CLIENT_STORY_KEYWORDS = {
   "hh-global": ["hh global"],
   "the-dispute-service": ["dispute service", "tds"],
@@ -12,7 +10,11 @@ const CLIENT_STORY_KEYWORDS = {
 const normalize = (value = "") => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const storyMatchesClient = (story, client, linkedStoryIds) => {
-  if (linkedStoryIds.has(story.id)) {
+  if (
+    linkedStoryIds.has(story.id) ||
+    linkedStoryIds.has(story.slug) ||
+    linkedStoryIds.has(story.apiId)
+  ) {
     return true;
   }
 
@@ -35,7 +37,7 @@ const storyMatchesClient = (story, client, linkedStoryIds) => {
   });
 };
 
-export const getSuccessStoriesForClient = (client) => {
+export const getSuccessStoriesForClient = (client, stories = []) => {
   if (!client) return [];
 
   const linkedStoryIds = new Set(
@@ -44,7 +46,7 @@ export const getSuccessStoriesForClient = (client) => {
       .filter(Boolean),
   );
 
-  const matched = successStories.filter((story) =>
+  const matched = stories.filter((story) =>
     storyMatchesClient(story, client, linkedStoryIds),
   );
 
