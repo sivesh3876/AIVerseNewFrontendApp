@@ -4,6 +4,8 @@ import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import ClientLogo from "./ClientLogo";
 import { useScrollToSection } from "../../utils/pageScroll";
+import { fetchSuccessStories } from "../../services/successStoriesApiService";
+import { normalizeSuccessStory } from "../../utils/successStoryAdminUtils";
 import {
   CLIENT_SECTION,
   getSectionItemById,
@@ -25,11 +27,32 @@ const ClientExplore = () => {
     [clientId],
   );
 
-  const [activeIndex, setActiveIndex] = useState(sectionState.index);
+  const activeIndex = sectionState.index;
+  const [publishedStories, setPublishedStories] = useState([]);
 
   useEffect(() => {
-    setActiveIndex(sectionState.index);
-  }, [sectionState.index]);
+    let active = true;
+
+    fetchSuccessStories({ includeUnpublished: false })
+      .then((response) => {
+        if (!active) return;
+        const records = Array.isArray(response)
+          ? response
+          : response?.stories || response?.data || [];
+        setPublishedStories(
+          records
+            .map(normalizeSuccessStory)
+            .filter((story) => story.status === "Published"),
+        );
+      })
+      .catch(() => {
+        if (active) setPublishedStories([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useScrollToSection(mainRef, [clientId, sectionState.section]);
 
@@ -38,8 +61,11 @@ const ClientExplore = () => {
   const isClientSection = section === CLIENT_SECTION;
 
   const successStories = useMemo(
-    () => (isClientSection ? getSuccessStoriesForClient(activeClient) : []),
-    [activeClient, isClientSection],
+    () =>
+      isClientSection
+        ? getSuccessStoriesForClient(activeClient, publishedStories)
+        : [],
+    [activeClient, isClientSection, publishedStories],
   );
 
   const standalonePocs = useMemo(
@@ -51,7 +77,6 @@ const ClientExplore = () => {
   );
 
   const handleItemChange = (index) => {
-    setActiveIndex(index);
     navigate(`/clients?client=${sectionItems[index].id}`, { replace: true });
   };
 
@@ -163,7 +188,7 @@ const ClientExplore = () => {
                         </p>
                       )}
                       <Link
-                        to={`/success-stories?story=${story.id}`}
+                        to={`/success-stories?story=${encodeURIComponent(story.slug || story.id)}`}
                         className="client_explore__poc-link"
                       >
                         Read full success story
@@ -181,9 +206,7 @@ const ClientExplore = () => {
               <div className="client_explore__pocs-grid">
                 {standalonePocs.map((poc) => {
                   const pocKey = poc.storyId ?? poc.title;
-                  const pocLink = poc.storyId
-                    ? `/success-stories?story=${poc.storyId}`
-                    : poc.href;
+                  const pocLink = poc.href;
 
                   return (
                     <article key={pocKey} className="client_explore__poc">

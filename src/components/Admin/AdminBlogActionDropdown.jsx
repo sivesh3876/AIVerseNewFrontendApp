@@ -21,7 +21,10 @@ const DotsIcon = () => (
   </svg>
 );
 
-const AdminBlogActionDropdown = ({ onSelect }) => {
+const AdminBlogActionDropdown = ({
+  onSelect,
+  ariaLabel = "Open actions menu",
+}) => {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
@@ -123,7 +126,7 @@ const AdminBlogActionDropdown = ({ onSelect }) => {
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
           aria-haspopup="menu"
-          aria-label="Open blog actions menu"
+          aria-label={ariaLabel}
         >
           <DotsIcon />
         </button>

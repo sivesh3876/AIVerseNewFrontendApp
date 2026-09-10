@@ -118,12 +118,10 @@ const EnterpriseTransformationServices = ({
             const { className, animationDelay } = getCardAnimation(index);
 
             return (
-              <Link
+              <article
                 className={`enterprise_services__card ${className}`}
                 key={service.title}
                 style={{ animationDelay }}
-                to={`/explore-solutions?service=${service.exploreServiceId}`}
-                onClick={() => onKnowMore?.(service)}
               >
                 <div
                   className="enterprise_services__icon"
@@ -135,11 +133,15 @@ const EnterpriseTransformationServices = ({
                 <h3>{service.title}</h3>
                 <p>{service.description}</p>
 
-                <span className="enterprise_services__link">
+                <Link
+                  className="enterprise_services__link"
+                  to={`/explore-solutions?service=${service.exploreServiceId}`}
+                  onClick={() => onKnowMore?.(service)}
+                >
                   Know More
                   <ExternalLinkIcon />
-                </span>
-              </Link>
+                </Link>
+              </article>
             );
           })}
         </div>

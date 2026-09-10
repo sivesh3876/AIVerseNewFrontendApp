@@ -59,9 +59,7 @@
         border-radius  : 14px;
         backdrop-filter: blur(8px);
         opacity        : 0;
-        text-decoration: none;
         color          : inherit;
-        cursor         : pointer;
         transition     : border-color 0.3s, box-shadow 0.3s, transform 0.2s;
 
         &--from-left {
@@ -106,18 +104,19 @@
     }
 
     &__link {
-        display    : inline-flex;
-        align-items: center;
-        gap        : 8px;
-        padding    : 0;
-        border     : none;
-        background : transparent;
-        color      : #18E0CC;
-        font-size  : 14px;
-        font-weight: 500;
-        font-family: inherit;
-        cursor     : pointer;
-        transition : color 0.3s;
+        display        : inline-flex;
+        align-items    : center;
+        gap            : 8px;
+        padding        : 0;
+        border         : none;
+        background     : transparent;
+        color          : #18E0CC;
+        font-size      : 14px;
+        font-weight    : 500;
+        font-family    : inherit;
+        text-decoration: none;
+        cursor         : pointer;
+        transition     : color 0.3s;
 
         svg {
             flex-shrink: 0;
