@@ -3,13 +3,21 @@
     grid-template-columns: 280px minmax(0, 1fr);
     gap                  : 32px;
     max-width            : 1280px;
+    width                : 100%;
     margin               : 0 auto;
     padding              : 40px 20px 80px;
+    box-sizing           : border-box;
+    overflow             : hidden;
 
     &__sidebar {
         display       : flex;
         flex-direction: column;
         gap           : 24px;
+        min-width     : 0;
+    }
+
+    &__main {
+        min-width: 0;
     }
 
     &__nav {
@@ -61,6 +69,32 @@
         color: #3A8D9D;
     }
 
+    &__mobile-selector {
+        display: none;
+    }
+
+    &__nav-state {
+        margin     : 0;
+        color      : #6b7280;
+        font-size  : 14px;
+        line-height: 1.5;
+
+        p {
+            margin: 0 0 8px;
+        }
+
+        button {
+            padding      : 7px 14px;
+            border       : 1px solid #3A8D9D;
+            border-radius: 999px;
+            background   : transparent;
+            color        : #3A8D9D;
+            font         : inherit;
+            font-weight  : 600;
+            cursor       : pointer;
+        }
+    }
+
     &__header {
         margin-bottom: 32px;
 
@@ -97,6 +131,7 @@
         color          : inherit;
         box-shadow     : 0 4px 16px rgba(13, 30, 50, 0.05);
         transition     : border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+        min-width      : 0;
 
         &:hover {
             border-color: rgba(58, 141, 157, 0.35);
@@ -120,6 +155,8 @@
     &__card-body {
         display       : flex;
         flex-direction: column;
+        flex          : 1;
+        min-width     : 0;
         padding       : 24px;
 
         h2 {
@@ -128,6 +165,7 @@
             font-weight: 700;
             line-height: 1.35;
             color      : #0d1e32;
+            overflow-wrap: anywhere;
         }
 
         p {
@@ -153,12 +191,24 @@
         font-size     : 11px;
         font-weight   : 700;
         letter-spacing: 0.06em;
+
+        &--story {
+            background: #18E0CC;
+            color     : #042f2e;
+            border-radius: 999px;
+            letter-spacing: 0.1em;
+        }
     }
 
     &__metric {
         margin     : 0 0 12px;
         font-size  : 15px;
         font-weight: 700;
+        color      : #3A8D9D;
+    }
+
+    &__card-body p#{&}__metric {
+        color: #3A8D9D;
     }
 
     &__card-link {
@@ -176,6 +226,10 @@
         overflow       : hidden;
         background-size: cover;
         background-position: center;
+
+        &--plain {
+            background: linear-gradient(135deg, #0d1e32 0%, #1a4a8e 100%);
+        }
     }
 
     &__hero-overlay {
@@ -190,6 +244,7 @@
         max-width: 720px;
         padding : 48px;
         color   : #fff;
+        overflow-wrap: anywhere;
 
         h1 {
             margin     : 12px 0;
@@ -197,6 +252,24 @@
             font-weight: 700;
             line-height: 1.25;
         }
+
+        time {
+            display   : block;
+            margin-top: 14px;
+            color     : #cbd5e1;
+            font-size : 13px;
+        }
+    }
+
+    &__client-logo {
+        display      : block;
+        max-width    : 132px;
+        max-height   : 58px;
+        margin-bottom: 16px;
+        padding      : 8px;
+        border-radius: 8px;
+        background   : rgba(255, 255, 255, 0.92);
+        object-fit   : contain;
     }
 
     &__client {
@@ -267,6 +340,10 @@
                 border-radius: 50%;
                 background   : #18E0CC;
             }
+        }
+
+        p + ul {
+            margin-top: 16px;
         }
     }
 
@@ -485,6 +562,79 @@
         word-break : break-all;
     }
 
+    &__subheading {
+        margin-top: 24px !important;
+    }
+
+    &__testimonial {
+        margin       : 0;
+        padding      : 30px;
+        border-left  : 4px solid #18E0CC;
+        border-radius: 14px;
+        background   : #0d1e32;
+        color        : #fff;
+
+        p {
+            margin     : 0;
+            color      : #e2e8f0;
+            font-size  : 18px;
+            line-height: 1.7;
+        }
+
+        cite {
+            display   : block;
+            margin-top: 14px;
+            color     : #18E0CC;
+            font-size : 14px;
+            font-style: normal;
+            font-weight: 600;
+        }
+    }
+
+    &__gallery {
+        display              : grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap                  : 16px;
+
+        img {
+            display      : block;
+            width        : 100%;
+            height       : 180px;
+            border-radius: 10px;
+            object-fit   : cover;
+        }
+    }
+
+    &__state {
+        display        : flex;
+        min-height     : 240px;
+        padding        : 32px;
+        border         : 1px solid #e5e7eb;
+        border-radius  : 14px;
+        background     : #fff;
+        align-items    : center;
+        justify-content: center;
+        flex-direction : column;
+        gap            : 16px;
+        color          : #6b7280;
+        text-align     : center;
+
+        p {
+            margin: 0;
+        }
+
+        button {
+            padding      : 9px 18px;
+            border       : none;
+            border-radius: 999px;
+            background   : #3A8D9D;
+            color        : #fff;
+            font         : inherit;
+            font-weight  : 600;
+            cursor       : pointer;
+        }
+    }
+
     &__case-partners {
         display    : flex;
         flex-wrap  : wrap;
@@ -512,6 +662,34 @@
 @media (max-width: 992px) {
     .success_stories_hub {
         grid-template-columns: 1fr;
+
+        &__desktop-nav {
+            display: none;
+        }
+
+        &__mobile-selector {
+            display       : flex;
+            flex-direction: column;
+            gap           : 8px;
+
+            span {
+                color      : #374151;
+                font-size  : 13px;
+                font-weight: 600;
+            }
+
+            select {
+                box-sizing   : border-box;
+                width        : 100%;
+                max-width    : 100%;
+                padding      : 12px 38px 12px 14px;
+                border       : 1px solid #d1d5db;
+                border-radius: 10px;
+                background   : #fff;
+                color        : #0d1e32;
+                font         : inherit;
+            }
+        }
 
         &__grid {
             grid-template-columns: 1fr;
@@ -544,8 +722,24 @@
     .success_stories_hub {
         padding: 24px 15px 64px;
 
+        &__sidebar {
+            gap: 18px;
+        }
+
+        &__hero {
+            min-height: 280px;
+        }
+
         &__detail-body section {
             padding: 20px;
+        }
+
+        &__gallery {
+            grid-template-columns: 1fr;
+        }
+
+        &__testimonial {
+            padding: 22px;
         }
     }
 }
