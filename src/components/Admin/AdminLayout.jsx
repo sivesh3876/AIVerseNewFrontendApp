@@ -22,6 +22,11 @@ const adminNavItems = [
     end: true,
   },
   {
+    label: "Success Stories",
+    to: "/admin/success-stories",
+    end: false,
+  },
+  {
     label: "Learn & Explore",
     to: "/admin/learn-explore",
     end: false,
