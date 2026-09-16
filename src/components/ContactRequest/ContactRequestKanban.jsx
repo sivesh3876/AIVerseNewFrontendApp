@@ -1,5 +1,6 @@
 import ContactRequestCard from "./ContactRequestCard";
 import { PIPELINE_STAGES } from "./placeholders";
+import { getStageLabel } from "./PipelineStage";
 
 const ContactRequestKanban = ({ requests, onCardClick }) => (
   <div className="admin_contact_kanban__scroll">
@@ -10,7 +11,7 @@ const ContactRequestKanban = ({ requests, onCardClick }) => (
         return (
           <div key={stage} className="admin_contact_kanban__column">
             <header className="admin_contact_kanban__column-head">
-              <h3>{stage}</h3>
+              <h3>{getStageLabel(stage)}</h3>
               <span className="admin_contact_kanban__count">{stageRequests.length}</span>
             </header>
 

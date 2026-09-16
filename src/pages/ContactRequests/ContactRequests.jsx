@@ -563,7 +563,7 @@ const ContactRequests = () => {
   return (
     <AdminDemoPageShell
       title="Leads"
-      description="Manage and track Contact Us, Schedule a Call, Register, and Request Demo inquiries (API + locally saved submissions)."
+      description="Manage and track Contact Us, Schedule a Call, Register, and Request Demo inquiries."
     >
       <ContactRequestSummary stats={stats} />
 

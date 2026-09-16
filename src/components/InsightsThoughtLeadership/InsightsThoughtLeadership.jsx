@@ -149,7 +149,7 @@ const InsightsThoughtLeadership = ({
     >
       <div className="insights_leadership__container">
         <header className="insights_leadership__header">
-          <h2>Learn &amp; Explore</h2>
+          <h2>Blogs</h2>
           <p>Stay informed with the latest AI trends and enterprise insights</p>
         </header>
 

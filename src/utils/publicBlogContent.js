@@ -3,7 +3,7 @@ import {
   homeInsights as defaultHomeInsights,
   learnExploreResources,
 } from "../components/LearnExplore/learnExploreData";
-import { loadAdminBlogs } from "./adminBlogStorage";
+import { getDeletedBlogIdSet, loadAdminBlogs } from "./adminBlogStorage";
 import { stripHtml } from "./htmlContent";
 
 export const HOMEPAGE_CARD_COUNT = 6;
@@ -43,6 +43,7 @@ export const isHomepageBlog = (blog) =>
   );
 
 export const getHomepageInsightCards = () => {
+  const deleted = getDeletedBlogIdSet();
   const homepageBlogs = getActiveAdminBlogs().filter(isHomepageBlog);
   const slots = Array.from({ length: HOMEPAGE_CARD_COUNT }, () => null);
 
@@ -50,10 +51,14 @@ export const getHomepageInsightCards = () => {
     slots[Number(blog.homepageOrder) - 1] = toPublicResource(blog);
   });
 
+  const availableDefaults = defaultHomeInsights.filter(
+    (insight) => !deleted.has(String(insight.id)),
+  );
+
   let defaultIndex = 0;
   for (let index = 0; index < HOMEPAGE_CARD_COUNT; index += 1) {
-    if (!slots[index] && defaultHomeInsights[defaultIndex]) {
-      slots[index] = defaultHomeInsights[defaultIndex];
+    if (!slots[index] && availableDefaults[defaultIndex]) {
+      slots[index] = availableDefaults[defaultIndex];
       defaultIndex += 1;
     }
   }
@@ -62,6 +67,7 @@ export const getHomepageInsightCards = () => {
 };
 
 export const getLearnExploreResourcesForTrack = (trackId = "all") => {
+  const deleted = getDeletedBlogIdSet();
   const adminBlogs = getActiveAdminBlogs();
   const homepageIds = new Set(
     adminBlogs.filter(isHomepageBlog).map((blog) => blog.id),
@@ -81,6 +87,7 @@ export const getLearnExploreResourcesForTrack = (trackId = "all") => {
   const seen = new Set();
 
   staticResources.forEach((resource) => {
+    if (deleted.has(String(resource.id))) return;
     if (homepageIds.has(resource.id)) return;
 
     const adminVersion = trackBlogs.find((blog) => blog.id === resource.id);
@@ -89,6 +96,7 @@ export const getLearnExploreResourcesForTrack = (trackId = "all") => {
   });
 
   trackBlogs.forEach((blog) => {
+    if (deleted.has(String(blog.id))) return;
     if (seen.has(blog.id)) return;
     merged.push(toPublicResource(blog));
     seen.add(blog.id);
@@ -99,6 +107,7 @@ export const getLearnExploreResourcesForTrack = (trackId = "all") => {
 
 /** Public /blogs hub: all Published admin blogs + seed content (newest first). */
 export const getBlogHubResources = () => {
+  const deleted = getDeletedBlogIdSet();
   const adminBlogs = getActiveAdminBlogs();
   const adminById = new Map(adminBlogs.map((blog) => [blog.id, blog]));
 
@@ -120,12 +129,14 @@ export const getBlogHubResources = () => {
       return rightTime - leftTime;
     })
     .forEach((blog) => {
+      if (deleted.has(String(blog.id))) return;
       if (seen.has(blog.id)) return;
       merged.push(toPublicResource(blog));
       seen.add(blog.id);
     });
 
   staticBlogs.forEach((resource) => {
+    if (deleted.has(String(resource.id))) return;
     if (seen.has(resource.id)) return;
 
     const adminVersion = adminById.get(resource.id);
@@ -138,6 +149,9 @@ export const getBlogHubResources = () => {
 
 export const getPublicResourceById = (resourceId) => {
   if (!resourceId) return null;
+
+  const deleted = getDeletedBlogIdSet();
+  if (deleted.has(String(resourceId))) return null;
 
   const adminBlog = getActiveAdminBlogs().find((blog) => blog.id === resourceId);
   if (adminBlog) return toPublicResource(adminBlog);
