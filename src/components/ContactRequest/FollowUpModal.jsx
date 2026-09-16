@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import TeamMemberMultiSelect from "./TeamMemberMultiSelect";
 import {
   FOLLOW_UP_TYPES,
   EMAIL_RE,
@@ -8,32 +9,45 @@ import {
   getSuggestedFollowUp,
   loadTeamMembers,
   mergeTeamMembers,
+  parseAssignees,
   saveTeamMember,
 } from "./followUpUtils";
-
-const ADD_MEMBER_VALUE = "__add_member__";
 
 const EMPTY_FORM = {
   type: "Call",
   customLabel: "",
   date: "",
   time: "",
-  assignedTo: "",
   notes: "",
   reminder: false,
 };
 
-const resolveDefaultAssignee = (defaultAssignee, members) => {
-  if (defaultAssignee && defaultAssignee !== "Unassigned") {
-    return defaultAssignee;
+const resolveDefaultAssignees = (defaultAssignees, members) => {
+  const fromProp = Array.isArray(defaultAssignees)
+    ? defaultAssignees
+    : parseAssignees(defaultAssignees, members);
+
+  if (fromProp.length > 0) {
+    return fromProp.map((person) => ({
+      name: person.name,
+      email:
+        person.email || getMemberEmail(members, person.name) || "",
+    }));
   }
-  return members[0]?.name || "";
+
+  if (members[0]) {
+    return [{ name: members[0].name, email: members[0].email || "" }];
+  }
+
+  return [];
 };
 
 const FollowUpModal = ({
   open,
   onClose,
   pipelineStage,
+  defaultAssignees = [],
+  /** @deprecated use defaultAssignees */
   defaultAssignee = "Unassigned",
   saving = false,
   onSave,
@@ -44,6 +58,7 @@ const FollowUpModal = ({
   );
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [error, setError] = useState("");
   const [members, setMembers] = useState([]);
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -62,30 +77,32 @@ const FollowUpModal = ({
       ]);
       if (!isMounted) return;
 
-      const withDefault = ensureMemberInList(
-        mergeTeamMembers(owners, storedMembers),
-        defaultAssignee,
+      const legacyDefault =
+        Array.isArray(defaultAssignees) && defaultAssignees.length > 0
+          ? defaultAssignees
+          : defaultAssignee;
+
+      let directory = mergeTeamMembers(owners, storedMembers);
+      const seedAssignees = resolveDefaultAssignees(legacyDefault, directory);
+      directory = seedAssignees.reduce(
+        (list, person) => ensureMemberInList(list, person.name, person.email),
+        directory,
       );
 
-      setMembers(withDefault);
-      setIsAddingMember(withDefault.length === 0);
+      setMembers(directory);
+      setIsAddingMember(directory.length === 0);
       setNewMemberName("");
       setNewMemberEmail("");
-
-      const assignedTo = resolveDefaultAssignee(defaultAssignee, withDefault);
+      setSelectedAssignees(seedAssignees);
 
       if (suggestion) {
         setForm({
           ...EMPTY_FORM,
           type: suggestion.type,
           customLabel: suggestion.label,
-          assignedTo,
         });
       } else {
-        setForm({
-          ...EMPTY_FORM,
-          assignedTo,
-        });
+        setForm({ ...EMPTY_FORM });
       }
       setError("");
     };
@@ -95,26 +112,12 @@ const FollowUpModal = ({
     return () => {
       isMounted = false;
     };
-  }, [open, suggestion, defaultAssignee]);
+  }, [open, suggestion, defaultAssignees, defaultAssignee]);
 
   if (!open) return null;
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleAssigneeSelect = (value) => {
-    if (value === ADD_MEMBER_VALUE) {
-      setIsAddingMember(true);
-      setNewMemberName("");
-      setNewMemberEmail("");
-      return;
-    }
-
-    setIsAddingMember(false);
-    setNewMemberName("");
-    setNewMemberEmail("");
-    handleChange("assignedTo", value);
   };
 
   const handleAddMember = () => {
@@ -131,10 +134,17 @@ const FollowUpModal = ({
     }
 
     const nextMembers = saveTeamMember(trimmedName, trimmedEmail);
-    const withDefault = ensureMemberInList(nextMembers, defaultAssignee);
+    const withDefault = ensureMemberInList(nextMembers, trimmedName, trimmedEmail);
+    const person = { name: trimmedName, email: trimmedEmail };
 
-    setMembers(withDefault);
-    setForm((prev) => ({ ...prev, assignedTo: trimmedName }));
+    setMembers(mergeTeamMembers(members, withDefault));
+    setSelectedAssignees((prev) => {
+      const exists = prev.some(
+        (item) =>
+          item.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+      );
+      return exists ? prev : [...prev, person];
+    });
     setIsAddingMember(false);
     setNewMemberName("");
     setNewMemberEmail("");
@@ -154,8 +164,8 @@ const FollowUpModal = ({
       setError("Please add or select a team member.");
       return;
     }
-    if (!form.assignedTo) {
-      setError("Please assign a team member.");
+    if (selectedAssignees.length === 0) {
+      setError("Please assign at least one team member.");
       return;
     }
     if (form.type === "Custom" && !form.customLabel.trim()) {
@@ -163,11 +173,19 @@ const FollowUpModal = ({
       return;
     }
 
-    const assignedToEmail = getMemberEmail(members, form.assignedTo);
+    const resolvedAssignees = selectedAssignees.map((person) => ({
+      name: person.name,
+      email:
+        person.email || getMemberEmail(members, person.name) || "",
+    }));
+
     if (form.reminder) {
-      if (!assignedToEmail || !EMAIL_RE.test(assignedToEmail)) {
+      const missingEmail = resolvedAssignees.some(
+        (person) => !person.email || !EMAIL_RE.test(person.email),
+      );
+      if (missingEmail) {
         setError(
-          "Reminder emails need an assignee with a valid email. Add or update the team member.",
+          "Reminder emails need every assignee to have a valid email. Add or update team members.",
         );
         return;
       }
@@ -178,8 +196,11 @@ const FollowUpModal = ({
       customLabel: form.customLabel.trim(),
       date: form.date,
       time: form.time,
-      assignedTo: form.assignedTo,
-      assignedToEmail,
+      assignedTo: resolvedAssignees.map((person) => person.name).join(", "),
+      assignedToEmail: resolvedAssignees
+        .map((person) => person.email)
+        .filter(Boolean)
+        .join(", "),
       notes: form.notes.trim(),
       reminder: form.reminder,
     });
@@ -269,78 +290,32 @@ const FollowUpModal = ({
             </label>
 
             <div className="admin_blog_form__field admin_blog_form__field--full">
-              <span>Assigned Team Member *</span>
-              <select
-                value={isAddingMember ? ADD_MEMBER_VALUE : form.assignedTo}
-                onChange={(event) => handleAssigneeSelect(event.target.value)}
-              >
-                {members.length === 0 && !isAddingMember && (
-                  <option value="" disabled>
-                    Select team member
-                  </option>
-                )}
-                {members.map((member) => (
-                  <option key={member.name} value={member.name}>
-                    {member.email
-                      ? `${member.name} (${member.email})`
-                      : member.name}
-                  </option>
-                ))}
-                <option value={ADD_MEMBER_VALUE}>+ Add team member</option>
-              </select>
-
-              {isAddingMember && (
-                <div className="admin_contact_followup_modal__add-member">
-                  <input
-                    type="text"
-                    value={newMemberName}
-                    onChange={(event) => setNewMemberName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleAddMember();
-                      }
-                    }}
-                    placeholder="Enter member name"
-                    autoFocus
-                  />
-                  <input
-                    type="email"
-                    value={newMemberEmail}
-                    onChange={(event) => setNewMemberEmail(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleAddMember();
-                      }
-                    }}
-                    placeholder="Enter member email"
-                  />
-                  <button
-                    type="button"
-                    className="admin_request_demos__btn admin_request_demos__btn--primary"
-                    onClick={handleAddMember}
-                    disabled={saving}
-                  >
-                    Add
-                  </button>
-                  {members.length > 0 && (
-                    <button
-                      type="button"
-                      className="admin_request_demos__btn admin_request_demos__btn--secondary"
-                      onClick={() => {
-                        setIsAddingMember(false);
-                        setNewMemberName("");
-                        setNewMemberEmail("");
-                        setError("");
-                      }}
-                      disabled={saving}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              )}
+              <span>Assigned Team Members *</span>
+              <TeamMemberMultiSelect
+                members={members}
+                selected={selectedAssignees}
+                onChange={setSelectedAssignees}
+                title="Assign To"
+                subtitle="Select team members (multiple)"
+                showHeader={false}
+                isAddingMember={isAddingMember}
+                onStartAddMember={() => {
+                  setIsAddingMember(true);
+                  setError("");
+                }}
+                onCancelAddMember={() => {
+                  setIsAddingMember(false);
+                  setNewMemberName("");
+                  setNewMemberEmail("");
+                  setError("");
+                }}
+                newMemberName={newMemberName}
+                newMemberEmail={newMemberEmail}
+                onNewMemberNameChange={setNewMemberName}
+                onNewMemberEmailChange={setNewMemberEmail}
+                onAddMember={handleAddMember}
+                saving={saving}
+              />
             </div>
 
             <label className="admin_blog_form__field admin_blog_form__field--full">
@@ -367,7 +342,7 @@ const FollowUpModal = ({
             {form.reminder && (
               <p className="admin_contact_followup_modal__hint">
                 A confirmation email with the date and time will be sent now to
-                the lead and assigned team member. Another reminder will be sent
+                the lead and assigned team members. Another reminder will be sent
                 at the scheduled date and time.
               </p>
             )}

@@ -69,9 +69,9 @@ const STATIC_ENTRIES = [
     type: "page",
   },
   {
-    title: "Learn & Explore",
+    title: "Blogs",
     description: "Certifications, learning paths, and AI skills",
-    keywords: ["learn", "explore", "certification", "training", "courses"],
+    keywords: ["learn", "explore", "certification", "training", "courses", "blogs"],
     path: "/learn-explore",
     type: "page",
   },

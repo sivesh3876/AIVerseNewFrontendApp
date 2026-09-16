@@ -5,7 +5,10 @@ import { homePageClients } from "../../data/homeLogoBarData";
 import "./ClientsLogoBar.scss";
 
 const ClientsLogoBar = ({ clients = homePageClients }) => {
-  const marqueeItems = [...clients, ...clients];
+  // Even copies so translateX(-50%) stays seamless; 4× when few logos on wide screens
+  const copyCount = clients.length > 0 && clients.length < 8 ? 4 : 2;
+  const marqueeItems = Array.from({ length: copyCount }, () => clients).flat();
+  const halfCount = Math.floor(marqueeItems.length / 2);
 
   return (
     <section className="clients_bar" aria-label="Client logos">
@@ -39,7 +42,7 @@ const ClientsLogoBar = ({ clients = homePageClients }) => {
                   <div
                     className={className}
                     key={`${item.id}-${index}`}
-                    aria-hidden={index >= clients.length}
+                    aria-hidden={index >= halfCount}
                     aria-label={item.name}
                     title={item.name}
                   >
@@ -53,7 +56,7 @@ const ClientsLogoBar = ({ clients = homePageClients }) => {
                   to={`/clients?client=${item.id}`}
                   className={className}
                   key={`${item.id}-${index}`}
-                  aria-hidden={index >= clients.length}
+                  aria-hidden={index >= halfCount}
                   aria-label={`View ${item.name} client page`}
                   title={item.name}
                 >

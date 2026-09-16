@@ -13,7 +13,7 @@ export const HOME_NAV_LINKS = [
   { label: "Industries", sectionId: HOME_SECTIONS.industries },
   { label: "Success Stories", sectionId: HOME_SECTIONS.successStories },
   { label: "Partners", sectionId: HOME_SECTIONS.partners },
-  { label: "Learn & Explore", sectionId: HOME_SECTIONS.learnExplore },
+  { label: "Blogs", sectionId: HOME_SECTIONS.learnExplore },
 ];
 
 const DEFAULT_HEADER_HEIGHT = 64;
