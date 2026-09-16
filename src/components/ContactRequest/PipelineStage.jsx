@@ -11,10 +11,11 @@ export const PIPELINE_STAGE_OPTIONS = [
 ];
 
 export const PIPELINE_STAGE_LABELS = {
+  Contacted: "To be Contacted",
   "Proposal Sent": "Proposal",
 };
 
-const getStageLabel = (stage) => PIPELINE_STAGE_LABELS[stage] || stage;
+export const getStageLabel = (stage) => PIPELINE_STAGE_LABELS[stage] || stage;
 
 /**
  * Interactive pipeline stage selector with optimistic updates, loading state,

@@ -5273,7 +5273,19 @@
 }
 
 .admin_contact_followup_modal {
-    width: min(520px, calc(100vw - 32px));
+    width: min(560px, calc(100vw - 32px));
+
+    .team_member_multi_select {
+        margin-top: 8px;
+    }
+
+    .team_member_multi_select__list {
+        max-height: 200px;
+    }
+
+    .team_member_multi_select__chips {
+        max-height: 120px;
+    }
 
     &__toggle {
         display    : flex;

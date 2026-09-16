@@ -5,6 +5,9 @@ import PipelineStage from "./PipelineStage";
 import FollowUpList from "./FollowUpList";
 import FollowUpModal from "./FollowUpModal";
 import InternalNotes from "./InternalNotes";
+import TeamMemberMultiSelect, {
+  getMemberInitials,
+} from "./TeamMemberMultiSelect";
 import {
   loadTeamMembers,
   saveTeamMember,
@@ -17,13 +20,6 @@ import {
 } from "./followUpUtils";
 
 const SCHEDULE_CLICK_GUARD_MS = 450;
-
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-};
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -162,24 +158,8 @@ const ContactRequestDrawer = ({
         person.name.trim().toLowerCase() === String(name || "").trim().toLowerCase(),
     );
 
-  const handleToggleAssignee = (member) => {
-    const selected = isAssigneeSelected(member.name);
-    const next = selected
-      ? selectedAssignees.filter(
-          (person) =>
-            person.name.trim().toLowerCase() !== member.name.trim().toLowerCase(),
-        )
-      : [...selectedAssignees, member];
-    persistAssignees(next);
-  };
-
-  const handleRemoveAssignee = (name) => {
-    persistAssignees(
-      selectedAssignees.filter(
-        (person) =>
-          person.name.trim().toLowerCase() !== String(name || "").trim().toLowerCase(),
-      ),
-    );
+  const handleAssigneesChange = (nextAssignees) => {
+    persistAssignees(nextAssignees);
   };
 
   const handleAddMember = () => {
@@ -220,8 +200,7 @@ const ContactRequestDrawer = ({
     }
   };
 
-  const defaultFollowUpAssignee =
-    selectedAssignees[0]?.name || "Unassigned";
+  const defaultFollowUpAssignees = selectedAssignees;
 
   return (
     <>
@@ -239,7 +218,7 @@ const ContactRequestDrawer = ({
               style={{ background: request.avatarColor || "#3A8D9D" }}
               aria-hidden="true"
             >
-              {getInitials(request.name)}
+              {getMemberInitials(request.name)}
             </span>
             <div>
               <h2>{request.name}</h2>
@@ -297,143 +276,31 @@ const ContactRequestDrawer = ({
           </section>
 
           <section className="admin_contact_drawer__section">
-            <h3>Assign To</h3>
-            <div className="admin_blog_form__field admin_blog_form__field--full">
-              <span>Team members (multiple)</span>
-
-              <div className="admin_contact_assignees">
-                {selectedAssignees.length === 0 ? (
-                  <p className="admin_contact_assignees__empty">Unassigned</p>
-                ) : (
-                  <div className="admin_contact_assignees__chips">
-                    {selectedAssignees.map((person) => (
-                      <button
-                        key={person.name}
-                        type="button"
-                        className="admin_contact_assignees__chip"
-                        onClick={() => handleRemoveAssignee(person.name)}
-                        title="Remove assignee"
-                      >
-                        <span>
-                          {person.email
-                            ? `${person.name} (${person.email})`
-                            : person.name}
-                        </span>
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div
-                  className="admin_contact_assignees__list"
-                  role="group"
-                  aria-label="Assignable team members"
-                >
-                  {loadingMembers ? (
-                    <p className="admin_contact_assignees__empty">
-                      Loading team members…
-                    </p>
-                  ) : members.length === 0 ? (
-                    <p className="admin_contact_assignees__empty">
-                      No team members found. Add one below.
-                    </p>
-                  ) : (
-                    members.map((member) => {
-                      const checked = isAssigneeSelected(member.name);
-                      return (
-                        <label
-                          key={member.name}
-                          className={`admin_contact_assignees__option${
-                            checked ? " is-selected" : ""
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => handleToggleAssignee(member)}
-                          />
-                          <span className="admin_contact_assignees__meta">
-                            <span className="admin_contact_assignees__name">
-                              {member.name}
-                            </span>
-                            {member.email ? (
-                              <span className="admin_contact_assignees__email">
-                                {member.email}
-                              </span>
-                            ) : null}
-                          </span>
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-
-                {!isAddingMember ? (
-                  <button
-                    type="button"
-                    className="admin_contact_assignees__add-btn"
-                    onClick={() => {
-                      setIsAddingMember(true);
-                      setAssignError("");
-                    }}
-                  >
-                    + Add team member
-                  </button>
-                ) : (
-                  <div className="admin_contact_followup_modal__add-member">
-                    <input
-                      type="text"
-                      value={newMemberName}
-                      onChange={(event) => setNewMemberName(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleAddMember();
-                        }
-                      }}
-                      placeholder="Enter member name"
-                      autoFocus
-                    />
-                    <input
-                      type="email"
-                      value={newMemberEmail}
-                      onChange={(event) => setNewMemberEmail(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleAddMember();
-                        }
-                      }}
-                      placeholder="Enter member email"
-                    />
-                    <button
-                      type="button"
-                      className="admin_request_demos__btn admin_request_demos__btn--primary"
-                      onClick={handleAddMember}
-                    >
-                      Add
-                    </button>
-                    <button
-                      type="button"
-                      className="admin_request_demos__btn admin_request_demos__btn--secondary"
-                      onClick={() => {
-                        setIsAddingMember(false);
-                        setNewMemberName("");
-                        setNewMemberEmail("");
-                        setAssignError("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {assignError ? (
-                <p className="admin_request_demos__error">{assignError}</p>
-              ) : null}
-            </div>
+            <TeamMemberMultiSelect
+              members={members}
+              selected={selectedAssignees}
+              onChange={handleAssigneesChange}
+              loading={loadingMembers}
+              title="Assign To"
+              subtitle="Select team members (multiple)"
+              isAddingMember={isAddingMember}
+              onStartAddMember={() => {
+                setIsAddingMember(true);
+                setAssignError("");
+              }}
+              onCancelAddMember={() => {
+                setIsAddingMember(false);
+                setNewMemberName("");
+                setNewMemberEmail("");
+                setAssignError("");
+              }}
+              newMemberName={newMemberName}
+              newMemberEmail={newMemberEmail}
+              onNewMemberNameChange={setNewMemberName}
+              onNewMemberEmailChange={setNewMemberEmail}
+              onAddMember={handleAddMember}
+              addMemberError={assignError}
+            />
           </section>
 
           <section className="admin_contact_drawer__section">
@@ -492,7 +359,7 @@ const ContactRequestDrawer = ({
             open
             onClose={() => setFollowUpModalOpen(false)}
             pipelineStage={request.stage}
-            defaultAssignee={defaultFollowUpAssignee}
+            defaultAssignees={defaultFollowUpAssignees}
             saving={savingFollowUp}
             onSave={handleFollowUpSave}
           />,
