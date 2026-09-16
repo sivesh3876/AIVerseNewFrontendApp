@@ -5,7 +5,7 @@ const ContactRequestSummary = ({ stats }) => (
       <strong>{stats.total}</strong>
     </article>
     <article className="admin_contact_summary__card admin_contact_summary__card--new">
-      <span>Contacted</span>
+      <span>To be Contacted</span>
       <strong>{stats.contacted}</strong>
     </article>
     <article className="admin_contact_summary__card admin_contact_summary__card--qualified">

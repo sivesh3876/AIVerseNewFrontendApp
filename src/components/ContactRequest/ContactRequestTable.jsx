@@ -1,5 +1,6 @@
 import AdminBlogActionDropdown from "../Admin/AdminBlogActionDropdown";
 import { formatLeadTypeLabel } from "../../utils/contactRequestStorage";
+import { getStageLabel } from "./PipelineStage";
 
 const getInitials = (name = "") => {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -119,7 +120,7 @@ const ContactRequestTable = ({ requests, onRowAction }) => (
                     request.stage,
                   )}`}
                 >
-                  {request.stage || "—"}
+                  {getStageLabel(request.stage) || "—"}
                 </span>
               </td>
             </tr>

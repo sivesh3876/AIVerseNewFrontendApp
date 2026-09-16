@@ -1,4 +1,5 @@
 import {
+  FEATURED_CARD_POSITION_MAX,
   getSolutionOrderNumber,
   selectTopOrderedSolutions,
 } from "../utils/solutionMapper";
@@ -23,7 +24,9 @@ export const fetchAllUseCases = async ({ includeInactive = false } = {}) => {
   return applyInactiveSolutionOverrides(result.data);
 };
 
-export const fetchTopOrderedSolutions = async (limit = 8) => {
+export const fetchTopOrderedSolutions = async (
+  limit = FEATURED_CARD_POSITION_MAX,
+) => {
   const data = await fetchAllUseCases();
   return selectTopOrderedSolutions(data, limit);
 };
@@ -150,9 +153,13 @@ const persistUseCaseOrderNumber = async (solution, orderNumber) => {
 
   if (
     parsed != null &&
-    (!Number.isFinite(parsed) || parsed < 1 || parsed > 8)
+    (!Number.isFinite(parsed) ||
+      parsed < 1 ||
+      parsed > FEATURED_CARD_POSITION_MAX)
   ) {
-    throw new Error("Card position must be between 1 and 8.");
+    throw new Error(
+      `Card position must be between 1 and ${FEATURED_CARD_POSITION_MAX}.`,
+    );
   }
 
   // Backend ignores empty string for OrderNumber; 0 clears featured slot.
@@ -183,14 +190,18 @@ const persistUseCaseOrderNumber = async (solution, orderNumber) => {
 };
 
 /**
- * Clears any other solution currently holding this Featured slot (1–8).
+ * Clears any other solution currently holding this Featured slot (1–9).
  */
 export const claimFeaturedCardPosition = async ({
   orderNumber,
   excludeSolutionId = null,
 } = {}) => {
   const parsed = Number(orderNumber);
-  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 8) {
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < 1 ||
+    parsed > FEATURED_CARD_POSITION_MAX
+  ) {
     return [];
   }
 
@@ -227,7 +238,11 @@ export const getFeaturedPositionOccupancy = async () => {
 
   solutions.forEach((solution) => {
     const order = getSolutionOrderNumber(solution);
-    if (!Number.isFinite(order) || order < 1 || order > 8) {
+    if (
+      !Number.isFinite(order) ||
+      order < 1 ||
+      order > FEATURED_CARD_POSITION_MAX
+    ) {
       return;
     }
     occupancy[order] = {
@@ -240,7 +255,7 @@ export const getFeaturedPositionOccupancy = async () => {
 };
 
 /**
- * Sets Featured Solutions card position (1–8). Pass null/"" to clear (stored as 0).
+ * Sets Featured Solutions card position (1–9). Pass null/"" to clear (stored as 0).
  * Claiming a slot clears any previous occupant first.
  */
 export const updateUseCaseOrderNumber = async (solution, orderNumber) => {
@@ -255,9 +270,13 @@ export const updateUseCaseOrderNumber = async (solution, orderNumber) => {
 
   if (
     parsed != null &&
-    (!Number.isFinite(parsed) || parsed < 1 || parsed > 8)
+    (!Number.isFinite(parsed) ||
+      parsed < 1 ||
+      parsed > FEATURED_CARD_POSITION_MAX)
   ) {
-    throw new Error("Card position must be between 1 and 8.");
+    throw new Error(
+      `Card position must be between 1 and ${FEATURED_CARD_POSITION_MAX}.`,
+    );
   }
 
   if (parsed != null) {

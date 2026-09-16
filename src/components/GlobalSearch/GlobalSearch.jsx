@@ -12,6 +12,8 @@ const GlobalSearch = ({
   variant = "hero",
   placeholder = "Search capabilities, services, industries...",
   className = "",
+  formId,
+  hideSubmit = false,
 }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,6 +61,7 @@ const GlobalSearch = ({
   };
 
   const showResults = searchQuery.trim().length > 0;
+  const isHeroCard = variant === "hero-card";
   const rootClassName = [
     "global-search",
     `global-search--${variant}`,
@@ -70,23 +73,33 @@ const GlobalSearch = ({
 
   return (
     <div className={rootClassName}>
-      <form className="global-search__form" onSubmit={handleSearchSubmit}>
+      <form
+        id={formId}
+        className="global-search__form"
+        onSubmit={handleSearchSubmit}
+      >
         <span className="global-search__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="11"
-              cy="11"
-              r="7"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-            <path
-              d="M20 20l-3.5-3.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          {isHeroCard ? (
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.5l1.55 4.73h5.02l-4.06 2.95 1.55 4.73L12 12.2l-4.06 2.71 1.55-4.73-4.06-2.95h5.02L12 2.5Z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
         </span>
 
         <input
@@ -104,9 +117,11 @@ const GlobalSearch = ({
           aria-controls="global-search-results"
         />
 
-        <button type="submit" className="global-search__submit">
-          Search
-        </button>
+        {!hideSubmit ? (
+          <button type="submit" className="global-search__submit">
+            Search
+          </button>
+        ) : null}
       </form>
 
       {showResults && searchResults.length > 0 && (

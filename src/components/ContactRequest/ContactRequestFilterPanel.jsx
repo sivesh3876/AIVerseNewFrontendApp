@@ -5,6 +5,7 @@ import {
   INDUSTRY_OPTIONS,
   PIPELINE_STAGES,
 } from "./placeholders";
+import { getStageLabel } from "./PipelineStage";
 import {
   fetchSolutionOwnerMembers,
   loadTeamMembers,
@@ -105,7 +106,7 @@ const ContactRequestFilterPanel = ({
               <option value="all">All stages</option>
               {PIPELINE_STAGES.map((stage) => (
                 <option key={stage} value={stage}>
-                  {stage}
+                  {getStageLabel(stage)}
                 </option>
               ))}
             </select>
