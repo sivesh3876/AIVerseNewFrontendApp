@@ -48,6 +48,32 @@ export const fetchUseCaseById = async (solutionId) => {
   return result.data;
 };
 
+const toFormText = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  return value == null ? "" : String(value);
+};
+
+const toOtherDocumentsRetain = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((url) => String(url).trim()).filter(Boolean).join(",");
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean)
+      .join(",");
+  }
+  return "";
+};
+
+const appendOtherDocumentsRetain = (formData, solution) => {
+  formData.append(
+    "OtherDocumentsRetain",
+    toOtherDocumentsRetain(solution?.OtherDocuments),
+  );
+};
+
 export const updateUseCaseStatus = async (solution, isActive) => {
   const formData = new FormData();
   const publishValue = isActive ? "Yes" : "No";
@@ -76,6 +102,7 @@ export const updateUseCaseStatus = async (solution, isActive) => {
   formData.append("Publish", publishValue);
   formData.append("PublicationStatus", isActive ? "Published" : "Draft");
   formData.append("IsSolutionActive", isActive ? "true" : "false");
+  appendOtherDocumentsRetain(formData, solution);
 
   const response = await fetch(buildApiPath("update-usecase"), {
     method: "POST",
@@ -95,11 +122,6 @@ export const updateUseCaseStatus = async (solution, isActive) => {
       PublicationStatus: isActive ? "Published" : "Draft",
     }
   );
-};
-
-const toFormText = (value) => {
-  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
-  return value == null ? "" : String(value);
 };
 
 const appendSolutionBaseFields = (formData, solution) => {
@@ -136,6 +158,7 @@ const appendSolutionBaseFields = (formData, solution) => {
     "IsSolutionActive",
     isPublished || solution.IsSolutionActive === true ? "true" : "false",
   );
+  appendOtherDocumentsRetain(formData, solution);
 };
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
 import {
+  mapApiSolutionToCapability,
   mapFormToCapability,
   persistSubmittedCapability,
   serializeCapabilityForNavigation,
@@ -10,7 +11,9 @@ import {
 import {
   claimFeaturedCardPosition,
   getFeaturedPositionOccupancy,
+  fetchUseCaseById,
 } from "../../services/usecasesService";
+import { getDisplayFileNameFromUrl } from "../../utils/solutionDocuments";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -380,15 +383,6 @@ const FileDropzone = ({
   );
 };
 
-const attachmentFileName = (url) => {
-  try {
-    const segment = url.split("/").pop() || url;
-    return decodeURIComponent(segment.split("?")[0]);
-  } catch {
-    return url;
-  }
-};
-
 const ExistingAttachmentRow = ({ href, label, onRemove }) => (
   <div className="add_ai_solution__existing-file-row">
     <a
@@ -417,6 +411,28 @@ const emptyExistingFiles = () => ({
   SalesDeskDoc: null,
   OtherDocuments: [],
   DemoRecordedVideoLink: null,
+});
+
+const normalizeOtherDocumentUrls = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((url) => String(url).trim()).filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const mapSolutionToExistingFiles = (solution = {}) => ({
+  SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
+  LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
+  ArchitectureDiagram: solution.ArchitectureDiagram || null,
+  SalesDeskDoc: solution.SalesDeskDoc || null,
+  OtherDocuments: normalizeOtherDocumentUrls(solution.OtherDocuments),
+  DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
 });
 
 const AddNewAISolution = () => {
@@ -586,16 +602,7 @@ const AddNewAISolution = () => {
               (solution.IsSolutionActive === false ? "No" : "Yes"),
           });
 
-          const loadedExisting = {
-            SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
-            LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
-            ArchitectureDiagram: solution.ArchitectureDiagram || null,
-            SalesDeskDoc: solution.SalesDeskDoc || null,
-            OtherDocuments: Array.isArray(solution.OtherDocuments)
-              ? solution.OtherDocuments
-              : [],
-            DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
-          };
+          const loadedExisting = mapSolutionToExistingFiles(solution);
           setExistingFiles(loadedExisting);
           setInitialExistingFiles(loadedExisting);
         } else {
@@ -782,25 +789,6 @@ const AddNewAISolution = () => {
     DemoRecordedVideo: null,
   });
 
-  const mapSolutionToExistingFiles = (solution = {}) => {
-    const otherDocuments = solution.OtherDocuments;
-    return {
-      SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
-      LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
-      ArchitectureDiagram: solution.ArchitectureDiagram || null,
-      SalesDeskDoc: solution.SalesDeskDoc || null,
-      OtherDocuments: Array.isArray(otherDocuments)
-        ? otherDocuments
-        : typeof otherDocuments === "string" && otherDocuments.trim()
-          ? otherDocuments
-              .split(",")
-              .map((url) => url.trim())
-              .filter(Boolean)
-          : [],
-      DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
-    };
-  };
-
   const resetFormFields = () => {
     setForm(initialFormState);
     setFiles(emptyPendingFiles());
@@ -926,6 +914,15 @@ const AddNewAISolution = () => {
           existingFiles.OtherDocuments.join(","),
         );
 
+        const hadInitialOtherDocs =
+          (initialExistingFiles?.OtherDocuments || []).length > 0;
+        if (
+          hadInitialOtherDocs &&
+          existingFiles.OtherDocuments.length === 0
+        ) {
+          formDataToSend.append("ClearOtherDocuments", "true");
+        }
+
         const appendClearIfRemoved = (
           initialKey,
           existingKey,
@@ -990,20 +987,42 @@ const AddNewAISolution = () => {
           result.data?.solution_id ??
           result.data?.ID ??
           (isEditMode ? editId : null);
-        const updatedSolution = result.data?.solution;
+        let updatedSolution = result.data?.solution || null;
 
-        if (isEditMode && updatedSolution) {
-          const syncedExisting = mapSolutionToExistingFiles(updatedSolution);
-          setExistingFiles(syncedExisting);
-          setInitialExistingFiles(syncedExisting);
+        if (isEditMode && !updatedSolution && solutionId) {
+          try {
+            updatedSolution = await fetchUseCaseById(solutionId);
+          } catch {
+            updatedSolution = null;
+          }
+        }
+
+        if (isEditMode) {
+          if (updatedSolution) {
+            const syncedExisting = mapSolutionToExistingFiles(updatedSolution);
+            setExistingFiles(syncedExisting);
+            setInitialExistingFiles(syncedExisting);
+          } else {
+            const retainedExisting = {
+              ...existingFiles,
+              OtherDocuments: [...existingFiles.OtherDocuments],
+            };
+            setExistingFiles(retainedExisting);
+            setInitialExistingFiles(retainedExisting);
+          }
           setFiles(emptyPendingFiles());
         }
 
-        const submittedSolution = mapFormToCapability(form, {
-          solutionId,
-          evangelistDirectory: aiEvangelists,
-          solutionOwners,
-        });
+        const submittedSolution = updatedSolution
+          ? mapApiSolutionToCapability(updatedSolution, {
+              evangelistDirectory: aiEvangelists,
+              solutionOwners,
+            })
+          : mapFormToCapability(form, {
+              solutionId,
+              evangelistDirectory: aiEvangelists,
+              solutionOwners,
+            });
         const serializedSolution =
           serializeCapabilityForNavigation(submittedSolution);
         const isPublishedSolution = form.Publish === "Yes";
@@ -1593,7 +1612,7 @@ const AddNewAISolution = () => {
                 <ExistingAttachmentRow
                   key={url}
                   href={url}
-                  label={attachmentFileName(url)}
+                  label={getDisplayFileNameFromUrl(url)}
                   onRemove={() => removeExistingOtherDocument(url)}
                 />
               ))}
