@@ -1,7 +1,8 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DocumentIcon } from "../CustomerCommunicationManagement/CapabilityIcons";
 import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
+import { fetchUseCaseById } from "../../services/usecasesService";
 import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
 import {
   HOME_SOLUTION_ICONS,
@@ -61,25 +62,65 @@ export const ONBOARDING_ACCELERATOR = {
   url: "https://customer-onboarding-front-hqhpgmfvg5aeacfs.canadacentral-01.azurewebsites.net/",
 };
 
+const WMS_ONBOARDING_SOLUTION_ID = 48;
 const WMS_ONBOARDING_SOLUTION_PATH =
   "/explore-solutions?service=enterprise-application&solution=api-48";
+
+const resolveWmsRecordedDemoLink = (solution = {}) => {
+  const recordedVideoLink = String(solution.DemoRecordedVideoLink || "").trim();
+  const demoLink = String(solution.DemoLink || "").trim();
+  return recordedVideoLink || demoLink || "";
+};
 
 export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
   const navigate = useNavigate();
   const descriptionRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null);
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
-  const descriptionText = ONBOARDING_ACCELERATOR.description;
+  const [recordedDemoLink, setRecordedDemoLink] = useState("");
+  const [salesDeskDoc, setSalesDeskDoc] = useState("");
+  const [descriptionText, setDescriptionText] = useState(
+    ONBOARDING_ACCELERATOR.description,
+  );
   const orderLabel = `#${String(index).padStart(2, "0")}`;
+  const hasRecordedDemo = Boolean(recordedDemoLink);
+  const hasSalesDesk = Boolean(salesDeskDoc);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWmsMedia = async () => {
+      try {
+        const solution = await fetchUseCaseById(WMS_ONBOARDING_SOLUTION_ID);
+        if (!isMounted || !solution) return;
+        setRecordedDemoLink(resolveWmsRecordedDemoLink(solution));
+        setSalesDeskDoc(String(solution.SalesDeskDoc || "").trim());
+        const aboutText = String(solution.SolutionContext || "").trim();
+        if (aboutText) {
+          setDescriptionText(aboutText);
+        }
+      } catch {
+        if (isMounted) {
+          setRecordedDemoLink("");
+          setSalesDeskDoc("");
+        }
+      }
+    };
+
+    loadWmsMedia();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleViewSolution = (event) => {
     event?.stopPropagation();
     navigate(WMS_ONBOARDING_SOLUTION_PATH);
   };
 
-  const handleSalesPitch = (event) => {
+  const handleSalesPitchWithoutPdf = (event) => {
     event?.stopPropagation();
-    navigate(WMS_ONBOARDING_SOLUTION_PATH);
   };
 
   const measureDescriptionClamp = useCallback(() => {
@@ -111,9 +152,21 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
       observer.disconnect();
       window.removeEventListener("resize", measureDescriptionClamp);
     };
-  }, [activePanel, compact, measureDescriptionClamp]);
+  }, [activePanel, compact, measureDescriptionClamp, descriptionText]);
 
   const showReadMore = descriptionText.length > 110 || isDescriptionClamped;
+
+  const salesPitchLabel = compact ? (
+    "Sales Pitch"
+  ) : (
+    <>
+      <DocumentIcon />
+      <span className="ai_capabilities__btn-text">
+        Sales Pitch
+        <ArrowIcon />
+      </span>
+    </>
+  );
 
   const onboardingActions = (
     <div className="ai_capabilities__actions">
@@ -135,43 +188,47 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
         )}
       </button>
 
-      <a
-        href={ONBOARDING_ACCELERATOR.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="ai_capabilities__btn ai_capabilities__btn--demo"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {compact ? (
-          "Watch Demo"
-        ) : (
-          <>
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Watch Demo
-              <ArrowIcon />
-            </span>
-          </>
-        )}
-      </a>
+      {hasRecordedDemo ? (
+        <a
+          href={recordedDemoLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {compact ? (
+            "Watch Demo"
+          ) : (
+            <>
+              <PlaySmallIcon />
+              <span className="ai_capabilities__btn-text">
+                Watch Demo
+                <ArrowIcon />
+              </span>
+            </>
+          )}
+        </a>
+      ) : null}
 
-      <button
-        type="button"
-        className="ai_capabilities__btn ai_capabilities__btn--demo"
-        onClick={handleSalesPitch}
-      >
-        {compact ? (
-          "Sales Pitch"
-        ) : (
-          <>
-            <DocumentIcon />
-            <span className="ai_capabilities__btn-text">
-              Sales Pitch
-              <ArrowIcon />
-            </span>
-          </>
-        )}
-      </button>
+      {hasSalesDesk ? (
+        <a
+          href={salesDeskDoc}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {salesPitchLabel}
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+          onClick={handleSalesPitchWithoutPdf}
+        >
+          {salesPitchLabel}
+        </button>
+      )}
     </div>
   );
 
@@ -243,6 +300,9 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
           <div className="ai_capabilities__panel-main">
             {activePanel === "description" ? (
               <div className="ai_capabilities__description-expanded">
+                <h4 className="ai_capabilities__about-heading">
+                  About this solution
+                </h4>
                 <p>{descriptionText}</p>
                 <button
                   type="button"
