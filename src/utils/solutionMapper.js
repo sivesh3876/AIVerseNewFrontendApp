@@ -630,8 +630,13 @@ export const mapApiSolutionToCapability = (
     architectureDiagram: solution.ArchitectureDiagram || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
-      ? solution.OtherDocuments
-      : [],
+      ? solution.OtherDocuments.filter(Boolean)
+      : typeof solution.OtherDocuments === "string" &&
+          solution.OtherDocuments.trim()
+        ? solution.OtherDocuments.split(",")
+            .map((url) => url.trim())
+            .filter(Boolean)
+        : [],
     documents: buildDocumentsFromApiSolution(solution),
   };
 };
