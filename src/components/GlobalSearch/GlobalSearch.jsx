@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isSolrSearchEnabled, searchSolr } from "../../services/solrSearch";
 import {
   buildSearchNavigationTarget,
   loadSolutionSearchEntries,
@@ -19,6 +20,8 @@ const GlobalSearch = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [solutionEntries, setSolutionEntries] = useState([]);
+  const [solrResults, setSolrResults] = useState(null);
+  const useSolr = isSolrSearchEnabled();
 
   useEffect(() => {
     let isMounted = true;
@@ -38,13 +41,49 @@ const GlobalSearch = ({
     };
   }, []);
 
-  const searchResults = useMemo(
+  useEffect(() => {
+    if (!useSolr) {
+      setSolrResults(null);
+      return undefined;
+    }
+
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSolrResults([]);
+      return undefined;
+    }
+
+    let isMounted = true;
+    const timer = window.setTimeout(() => {
+      searchSolr(trimmed, 10)
+        .then((results) => {
+          if (isMounted) {
+            setSolrResults(results);
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            setSolrResults(null);
+          }
+        });
+    }, 180);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery, useSolr]);
+
+  const localResults = useMemo(
     () =>
       isFocused || searchQuery
         ? searchSite(searchQuery, 10, solutionEntries)
         : [],
     [isFocused, searchQuery, solutionEntries],
   );
+
+  const searchResults =
+    useSolr && Array.isArray(solrResults) ? solrResults : localResults;
 
   const goToSearchResult = (path) => {
     setSearchQuery("");
@@ -57,7 +96,9 @@ const GlobalSearch = ({
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
 
-    goToSearchResult(buildSearchNavigationTarget(trimmed, solutionEntries));
+    const fallbackPath = buildSearchNavigationTarget(trimmed, solutionEntries);
+    const nextPath = searchResults[0]?.path || fallbackPath;
+    goToSearchResult(nextPath);
   };
 
   const showResults = searchQuery.trim().length > 0;
@@ -132,7 +173,7 @@ const GlobalSearch = ({
         >
           {searchResults.map((result) => (
             <li
-              key={`${result.type}-${result.title}-${result.path}`}
+              key={`${result.type}-${result.id || result.title}-${result.path}`}
               role="option"
             >
               <button
