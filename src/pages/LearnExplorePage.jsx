@@ -20,14 +20,14 @@ const LearnExplorePage = () => {
       ? getTrackById(trackId)
       : null;
 
-  const breadcrumbLabel = resource?.title ?? track?.label ?? "Learn & Explore";
+  const breadcrumbLabel = resource?.title ?? track?.label ?? "Blogs";
 
   return (
     <>
       <Breadcrumb
         items={[
           { label: "AI Verse", to: "/" },
-          { label: "Learn & Explore", to: "/learn-explore" },
+          { label: "Blogs", to: "/learn-explore" },
           { label: breadcrumbLabel },
         ]}
       />

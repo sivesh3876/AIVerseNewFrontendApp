@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isSolrSearchEnabled, searchSolr } from "../../services/solrSearch";
 import {
   buildSearchNavigationTarget,
   loadSolutionSearchEntries,
@@ -12,11 +13,15 @@ const GlobalSearch = ({
   variant = "hero",
   placeholder = "Search capabilities, services, industries...",
   className = "",
+  formId,
+  hideSubmit = false,
 }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [solutionEntries, setSolutionEntries] = useState([]);
+  const [solrResults, setSolrResults] = useState(null);
+  const useSolr = isSolrSearchEnabled();
 
   useEffect(() => {
     let isMounted = true;
@@ -36,13 +41,49 @@ const GlobalSearch = ({
     };
   }, []);
 
-  const searchResults = useMemo(
+  useEffect(() => {
+    if (!useSolr) {
+      setSolrResults(null);
+      return undefined;
+    }
+
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSolrResults([]);
+      return undefined;
+    }
+
+    let isMounted = true;
+    const timer = window.setTimeout(() => {
+      searchSolr(trimmed, 10)
+        .then((results) => {
+          if (isMounted) {
+            setSolrResults(results);
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            setSolrResults(null);
+          }
+        });
+    }, 180);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery, useSolr]);
+
+  const localResults = useMemo(
     () =>
       isFocused || searchQuery
         ? searchSite(searchQuery, 10, solutionEntries)
         : [],
     [isFocused, searchQuery, solutionEntries],
   );
+
+  const searchResults =
+    useSolr && Array.isArray(solrResults) ? solrResults : localResults;
 
   const goToSearchResult = (path) => {
     setSearchQuery("");
@@ -55,10 +96,13 @@ const GlobalSearch = ({
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
 
-    goToSearchResult(buildSearchNavigationTarget(trimmed, solutionEntries));
+    const fallbackPath = buildSearchNavigationTarget(trimmed, solutionEntries);
+    const nextPath = searchResults[0]?.path || fallbackPath;
+    goToSearchResult(nextPath);
   };
 
   const showResults = searchQuery.trim().length > 0;
+  const isHeroCard = variant === "hero-card";
   const rootClassName = [
     "global-search",
     `global-search--${variant}`,
@@ -70,23 +114,33 @@ const GlobalSearch = ({
 
   return (
     <div className={rootClassName}>
-      <form className="global-search__form" onSubmit={handleSearchSubmit}>
+      <form
+        id={formId}
+        className="global-search__form"
+        onSubmit={handleSearchSubmit}
+      >
         <span className="global-search__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="11"
-              cy="11"
-              r="7"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-            <path
-              d="M20 20l-3.5-3.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          {isHeroCard ? (
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.5l1.55 4.73h5.02l-4.06 2.95 1.55 4.73L12 12.2l-4.06 2.71 1.55-4.73-4.06-2.95h5.02L12 2.5Z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M20 20l-3.5-3.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
         </span>
 
         <input
@@ -104,9 +158,11 @@ const GlobalSearch = ({
           aria-controls="global-search-results"
         />
 
-        <button type="submit" className="global-search__submit">
-          Search
-        </button>
+        {!hideSubmit ? (
+          <button type="submit" className="global-search__submit">
+            Search
+          </button>
+        ) : null}
       </form>
 
       {showResults && searchResults.length > 0 && (
@@ -117,7 +173,7 @@ const GlobalSearch = ({
         >
           {searchResults.map((result) => (
             <li
-              key={`${result.type}-${result.title}-${result.path}`}
+              key={`${result.type}-${result.id || result.title}-${result.path}`}
               role="option"
             >
               <button

@@ -87,11 +87,19 @@ const CallbackScheduleModal = ({ open, onClose }) => {
     return Object.keys(next).length === 0;
   };
 
-  const handleClose = () => {
+  const resetForm = () => {
     setForm(INITIAL_FORM);
     setErrors({});
     setSuccessMessage("");
+  };
+
+  const handleClose = () => {
+    resetForm();
     onClose?.();
+  };
+
+  const handleCancel = () => {
+    resetForm();
   };
 
   const handleSubmit = async (event) => {
@@ -164,12 +172,8 @@ const CallbackScheduleModal = ({ open, onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="callback-schedule-title"
-      onClick={handleClose}
     >
-      <div
-        className="callback_schedule_modal"
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="callback_schedule_modal">
         <button
           type="button"
           className="callback_schedule_modal__close"
@@ -361,7 +365,7 @@ const CallbackScheduleModal = ({ open, onClose }) => {
               <button
                 type="button"
                 className="callback_schedule_modal__cancel"
-                onClick={handleClose}
+                onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel

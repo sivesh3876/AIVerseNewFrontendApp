@@ -2,22 +2,37 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getBlogStatusTransitions } from "../../utils/adminBlogStorage";
 
+const getStatusClass = (status) => {
+  const normalized = String(status || "").toLowerCase();
+  return normalized === "archived" ? "archive" : normalized;
+};
+
 const StatusIcon = ({ status }) => (
   <span
-    className={`admin_blog_status_dropdown__icon admin_blog_status_dropdown__icon--${String(
-      status,
-    ).toLowerCase()}`}
+    className={`admin_blog_status_dropdown__icon admin_blog_status_dropdown__icon--${getStatusClass(status)}`}
     aria-hidden="true"
   />
 );
 
-const AdminBlogStatusDropdown = ({ value = "Published", onChange, disabled = false }) => {
+const AdminBlogStatusDropdown = ({
+  value = "Published",
+  onChange,
+  disabled = false,
+  statuses,
+  getStatusTransitions = getBlogStatusTransitions,
+}) => {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const current = value || "Published";
-  const options = useMemo(() => getBlogStatusTransitions(current), [current]);
+  const options = useMemo(
+    () =>
+      Array.isArray(statuses) && statuses.length > 0
+        ? statuses
+        : getStatusTransitions(current),
+    [current, getStatusTransitions, statuses],
+  );
 
   const updateMenuPosition = () => {
     if (!triggerRef.current) return;
@@ -99,7 +114,7 @@ const AdminBlogStatusDropdown = ({ value = "Published", onChange, disabled = fal
               type="button"
               role="option"
               aria-selected={status === current}
-              className={`admin_demo_status_dropdown__option admin_demo_status_dropdown__option--${status.toLowerCase()} admin_blog_status_dropdown__option${
+              className={`admin_demo_status_dropdown__option admin_demo_status_dropdown__option--${getStatusClass(status)} admin_blog_status_dropdown__option${
                 status === current ? " is-selected" : ""
               }`}
               onPointerDown={(event) => {
@@ -123,7 +138,7 @@ const AdminBlogStatusDropdown = ({ value = "Published", onChange, disabled = fal
         <button
           ref={triggerRef}
           type="button"
-          className={`admin_demo_table__status admin_demo_table__status--${current.toLowerCase()} admin_demo_status_dropdown__trigger admin_blog_status_dropdown__trigger`}
+          className={`admin_demo_table__status admin_demo_table__status--${getStatusClass(current)} admin_demo_status_dropdown__trigger admin_blog_status_dropdown__trigger`}
           onClick={(event) => {
             event.stopPropagation();
             if (disabled) return;

@@ -25,11 +25,11 @@ export default function AssessmentFlow({
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const lastShownError = useRef("");
   useEffect(() => {
-  if (error && error !== lastShownError.current) {
-    lastShownError.current = error;
-    setShowValidationPopup(true);
-  }
-}, [error]);
+    if (error && error !== lastShownError.current) {
+      lastShownError.current = error;
+      setShowValidationPopup(true);
+    }
+  }, [error]);
   if (!questions[questionIndex]) {
     return (
       <div className="welcome-page">
@@ -44,6 +44,10 @@ export default function AssessmentFlow({
     );
   }
 
+  const answeredQuestions = answers.filter(
+    (answer) => answer !== undefined
+  ).length;
+
   return (
     <div className="welcome-page assessment-flow">
 
@@ -57,7 +61,7 @@ export default function AssessmentFlow({
             <div className="welcome-badge">AI VERSE • AI READINESS ASSESSMENT</div>
             <h1>
               {(() => {
-                const dimensionName = assessmentData[currentDimension].name;
+                const dimensionName = assessmentData[currentDimension].title;
                 const parts = dimensionName.split(" ");
                 const firstWord = parts[0];
                 const restWords = parts.slice(1).join(" ");
@@ -78,7 +82,7 @@ export default function AssessmentFlow({
             </p>
 
             <div className="assessment-stats">
-              <div className="assessment-stat"><strong>{questionIndex + 1}/{totalQuestions}</strong><span>Questions</span></div>
+              <div className="assessment-stat"><strong>{answeredQuestions}/{totalQuestions}</strong><span>Questions</span></div>
               <div className="stat-divider" />
               <div className="assessment-stat"><strong>{currentDimension + 1}/{totalDimensions}</strong><span>Dimensions</span></div>
               <div className="stat-divider" />
@@ -124,7 +128,7 @@ export default function AssessmentFlow({
                 <div className="assessment-dimension-header">
                   <div>
                     <p className="section-label">DIMENSION</p>
-                    <h2>{dimension.name}</h2>
+                    <h2>{dimension.title}</h2>
                   </div>
                   <span className="dimension-question-count">{dimension.questions.length} questions</span>
                 </div>

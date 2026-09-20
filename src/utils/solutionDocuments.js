@@ -86,17 +86,80 @@ const getFileNameFromUrl = (url = "") => {
   }
 };
 
+/**
+ * Strip backend unique blob prefixes so UI shows the original upload name.
+ * Storage keeps: other-doc-1-{ts}-{uuid}-{original}.pdf
+ * Display shows: {original}.pdf
+ */
+const UNIQUE_BLOB_NAME_RE =
+  /^(?:other-doc-\d+|demo-video|solution-details|lld|architecture-diagram|sales-desk)-\d+-[a-f0-9]{8}-(.+)$/i;
+
+const MANGLED_OTHER_DOC_LABEL_RE =
+  /^other\s*doc\s*\d+\s+\d+\s+[a-f0-9]{8}\b/i;
+
+export const stripUniqueBlobFileName = (fileName = "") => {
+  const segment = String(fileName).trim();
+  if (!segment) return segment;
+  const match = segment.match(UNIQUE_BLOB_NAME_RE);
+  return match?.[1] || segment;
+};
+
+export const getDisplayFileNameFromUrl = (url = "") =>
+  stripUniqueBlobFileName(getFileNameFromUrl(url));
+
+export const toHumanDocumentLabel = (fileName = "") =>
+  String(fileName)
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
+
+const shouldRebuildDocumentLabel = (label = "", fileName = "") => {
+  const labelText = String(label).trim();
+  const rawFileName = String(fileName).trim();
+  return (
+    UNIQUE_BLOB_NAME_RE.test(rawFileName) ||
+    MANGLED_OTHER_DOC_LABEL_RE.test(labelText) ||
+    UNIQUE_BLOB_NAME_RE.test(labelText.replace(/\s+/g, "-"))
+  );
+};
+
+const sanitizeCapabilityDocument = (document) => {
+  if (!document?.url) return document;
+
+  const displayFileName =
+    getDisplayFileNameFromUrl(document.url) ||
+    stripUniqueBlobFileName(document.fileName || "");
+
+  const next = {
+    ...document,
+    fileName: displayFileName || document.fileName,
+  };
+
+  if (
+    shouldRebuildDocumentLabel(document.label, document.fileName) ||
+    shouldRebuildDocumentLabel(document.label, displayFileName)
+  ) {
+    next.label = toHumanDocumentLabel(displayFileName) || document.label;
+  }
+
+  return next;
+};
+
 const normalizeDocument = ({ id, type, label, url, fileName }) => {
   if (!url) return null;
 
-  const resolvedType = DOCUMENT_TYPE_META[type] ? type : inferTypeFromText(`${label} ${fileName || url}`);
+  const resolvedFileName =
+    stripUniqueBlobFileName(fileName) || getDisplayFileNameFromUrl(url);
+  const resolvedType = DOCUMENT_TYPE_META[type]
+    ? type
+    : inferTypeFromText(`${label} ${resolvedFileName || url}`);
   const meta = DOCUMENT_TYPE_META[resolvedType] || DOCUMENT_TYPE_META.other;
 
   return {
-    id: id || `${resolvedType}-${fileName || label}`,
+    id: id || `${resolvedType}-${resolvedFileName || label}`,
     type: resolvedType,
     label: label || meta.label,
-    fileName: fileName || getFileNameFromUrl(url),
+    fileName: resolvedFileName,
     url,
     description: meta.description,
     accent: meta.accent,
@@ -174,12 +237,12 @@ export const buildSolutionDocuments = ({
   }
 
   otherDocuments.forEach((url, index) => {
-    const fileName = getFileNameFromUrl(url);
+    const fileName = getDisplayFileNameFromUrl(url);
     resolved.push(
       normalizeDocument({
         id: `other-doc-${index}`,
         type: inferTypeFromText(fileName),
-        label: fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        label: toHumanDocumentLabel(fileName),
         url,
         fileName,
       }),
@@ -208,14 +271,19 @@ export const buildDocumentsFromApiSolution = (solution = {}) =>
     architectureDiagram: solution.ArchitectureDiagram,
     salesDeskDoc: solution.SalesDeskDoc,
     otherDocuments: Array.isArray(solution.OtherDocuments)
-      ? solution.OtherDocuments
-      : [],
+      ? solution.OtherDocuments.filter(Boolean)
+      : typeof solution.OtherDocuments === "string" &&
+          solution.OtherDocuments.trim()
+        ? solution.OtherDocuments.split(",")
+            .map((url) => url.trim())
+            .filter(Boolean)
+        : [],
   });
 
 export const buildDocumentsFromCapability = (capability = {}) => {
   if (Array.isArray(capability.documents) && capability.documents.length > 0) {
     if (capability.documents.every((document) => document?.url && document?.label)) {
-      return capability.documents;
+      return capability.documents.map(sanitizeCapabilityDocument);
     }
   }
 

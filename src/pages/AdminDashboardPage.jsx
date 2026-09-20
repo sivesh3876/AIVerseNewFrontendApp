@@ -1,6 +1,8 @@
 import {
   AdminDashboard,
   AdminBlogs,
+  AdminSuccessStories,
+  AdminSuccessStoryForm,
   AdminCertifications,
   AdminCertificationDetail,
   AdminCertifiedProfessionalsPage,
@@ -16,6 +18,8 @@ export default AdminDashboardPage;
 export {
   AdminLayout,
   AdminBlogs,
+  AdminSuccessStories,
+  AdminSuccessStoryForm,
   AdminCertifications,
   AdminCertificationDetail,
   AdminCertifiedProfessionalsPage,

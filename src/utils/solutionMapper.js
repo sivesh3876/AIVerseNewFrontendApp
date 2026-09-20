@@ -407,6 +407,8 @@ const truncateText = (value, maxLength = 110) => {
   return `${text.slice(0, maxLength).trim()}…`;
 };
 
+export const FEATURED_CARD_POSITION_MAX = 9;
+
 export const getSolutionOrderNumber = (solution = {}) => {
   const raw =
     solution.OrderNumber ??
@@ -467,12 +469,19 @@ export const isSolutionMarkedInactive = (solution = {}) => {
 export const isPublicSolutionVisible = (solution = {}) =>
   !isSolutionMarkedInactive(solution);
 
-export const selectTopOrderedSolutions = (solutions = [], limit = 8) =>
+export const selectTopOrderedSolutions = (
+  solutions = [],
+  limit = FEATURED_CARD_POSITION_MAX,
+) =>
   [...solutions]
     .filter(isPublicSolutionVisible)
     .filter((solution) => {
       const order = getSolutionOrderNumber(solution);
-      return Number.isFinite(order) && order >= 1 && order <= 8;
+      return (
+        Number.isFinite(order) &&
+        order >= 1 &&
+        order <= FEATURED_CARD_POSITION_MAX
+      );
     })
     .sort((left, right) => {
       const leftOrder = getSolutionOrderNumber(left);
@@ -621,8 +630,13 @@ export const mapApiSolutionToCapability = (
     architectureDiagram: solution.ArchitectureDiagram || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
-      ? solution.OtherDocuments
-      : [],
+      ? solution.OtherDocuments.filter(Boolean)
+      : typeof solution.OtherDocuments === "string" &&
+          solution.OtherDocuments.trim()
+        ? solution.OtherDocuments.split(",")
+            .map((url) => url.trim())
+            .filter(Boolean)
+        : [],
     documents: buildDocumentsFromApiSolution(solution),
   };
 };

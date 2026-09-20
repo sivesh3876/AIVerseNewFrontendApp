@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
-import { mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation, buildExploreSolutionPath } from "../../utils/solutionMapper";
+import {
+  mapApiSolutionToCapability,
+  mapFormToCapability,
+  persistSubmittedCapability,
+  serializeCapabilityForNavigation,
+  buildExploreSolutionPath,
+} from "../../utils/solutionMapper";
 import {
   claimFeaturedCardPosition,
   getFeaturedPositionOccupancy,
+  fetchUseCaseById,
 } from "../../services/usecasesService";
+import { getDisplayFileNameFromUrl } from "../../utils/solutionDocuments";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -63,16 +71,31 @@ const parseAiFoundation = (value = "") => {
 };
 
 const sanitizeEvangelists = (evangelists = []) =>
-  evangelists.filter(
-    (name) => name && name.trim() && name !== "Undefined",
-  );
+  evangelists.filter((name) => name && name.trim() && name !== "Undefined");
 
-const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
+  "AgenticAutomation",
+  "CustomerCommunicationManagement",
+  "CustomerExperienceCRM",
+  "DataAnalytics",
+  "DigitalEngineering",
+  "DigitalExperience",
+  "Education",
+  "Insurance",
+  "Logistics",
+]);
+
+const BUSINESS_DOMAIN_DISPLAY_NAMES = {
+  CustomerExperienceCRM: "Enterprise Application",
+  DataAnalytics: "Data Management",
+};
 
 const normalizeCardPosition = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return "";
-  if (parsed < 1 || parsed > 8) return "";
+  if (parsed < 1 || parsed > 9) return "";
   return String(parsed);
 };
 
@@ -109,6 +132,109 @@ const isPdfFile = (file) => {
   return file.type === "application/pdf" || fileName.endsWith(".pdf");
 };
 
+/**
+ * Custom select that always opens the menu below the trigger.
+ * Native <select> cannot force open direction in the browser.
+ */
+const FormSelectDropdown = ({
+  id,
+  value = "",
+  options = [],
+  placeholder = "Select…",
+  disabled = false,
+  onChange,
+}) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  const selectedOption =
+    value === "" || value == null
+      ? null
+      : options.find((option) => String(option.value) === String(value)) ||
+        null;
+  const displayLabel = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const handleSelect = (optionValue) => {
+    onChange?.(optionValue);
+    setOpen(false);
+  };
+
+  return (
+    <div
+      className={`add_ai_solution__form-select${open ? " is-open" : ""}${
+        disabled ? " is-disabled" : ""
+      }`}
+      ref={rootRef}
+    >
+      <button
+        type="button"
+        id={id}
+        className={`add_ai_solution__form-select-trigger${
+          selectedOption ? "" : " is-placeholder"
+        }`}
+        onClick={() => {
+          if (!disabled) setOpen((previous) => !previous);
+        }}
+        disabled={disabled}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-controls={id ? `${id}-listbox` : undefined}
+      >
+        <span className="add_ai_solution__form-select-label">{displayLabel}</span>
+      </button>
+
+      {open && !disabled && (
+        <ul
+          id={id ? `${id}-listbox` : undefined}
+          className="add_ai_solution__form-select-menu"
+          role="listbox"
+        >
+          {options.map((option) => {
+            const isSelected = String(option.value) === String(value);
+            return (
+              <li key={`${option.value}-${option.label}`} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  className={`add_ai_solution__form-select-option${
+                    isSelected ? " is-selected" : ""
+                  }`}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const FileDropzone = ({
   id,
   label,
@@ -138,7 +264,9 @@ const FileDropzone = ({
       const incoming = Array.from(selectedFiles);
       const existing = fileList;
       const seen = new Set(
-        existing.map((file) => `${file.name}|${file.size}|${file.lastModified}`),
+        existing.map(
+          (file) => `${file.name}|${file.size}|${file.lastModified}`,
+        ),
       );
       const merged = [...existing];
 
@@ -231,7 +359,10 @@ const FileDropzone = ({
       {fileList.length > 0 && (
         <div className="add_ai_solution__file-list">
           {fileList.map((file, index) => (
-            <div className="add_ai_solution__file-item" key={`${file.name}-${index}`}>
+            <div
+              className="add_ai_solution__file-item"
+              key={`${file.name}-${index}`}
+            >
               <div className="add_ai_solution__file-item-info">
                 <span>{file.name}</span>
                 <span className="add_ai_solution__file-item-size">
@@ -252,6 +383,58 @@ const FileDropzone = ({
   );
 };
 
+const ExistingAttachmentRow = ({ href, label, onRemove }) => (
+  <div className="add_ai_solution__existing-file-row">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="add_ai_solution__existing-file-link"
+    >
+      {label}
+    </a>
+    <button
+      type="button"
+      className="add_ai_solution__existing-file-remove"
+      onClick={onRemove}
+      aria-label={`Remove ${label}`}
+    >
+      ×
+    </button>
+  </div>
+);
+
+const emptyExistingFiles = () => ({
+  SolutionDetailsDoc: null,
+  LowLevelDesignDoc: null,
+  ArchitectureDiagram: null,
+  SalesDeskDoc: null,
+  OtherDocuments: [],
+  DemoRecordedVideoLink: null,
+});
+
+const normalizeOtherDocumentUrls = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((url) => String(url).trim()).filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const mapSolutionToExistingFiles = (solution = {}) => ({
+  SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
+  LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
+  ArchitectureDiagram: solution.ArchitectureDiagram || null,
+  SalesDeskDoc: solution.SalesDeskDoc || null,
+  OtherDocuments: normalizeOtherDocumentUrls(solution.OtherDocuments),
+  DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
+});
+
 const AddNewAISolution = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -267,14 +450,8 @@ const AddNewAISolution = () => {
     OtherDocuments: [],
     DemoRecordedVideo: null,
   });
-  const [existingFiles, setExistingFiles] = useState({
-    SolutionDetailsDoc: null,
-    LowLevelDesignDoc: null,
-    ArchitectureDiagram: null,
-    SalesDeskDoc: null,
-    OtherDocuments: [],
-    DemoRecordedVideoLink: null,
-  });
+  const [existingFiles, setExistingFiles] = useState(emptyExistingFiles);
+  const [initialExistingFiles, setInitialExistingFiles] = useState(null);
   const [businessDomains, setBusinessDomains] = useState([]);
   const [solutionOwners, setSolutionOwners] = useState([]);
   const [aiEvangelists, setAiEvangelists] = useState([]);
@@ -295,6 +472,17 @@ const AddNewAISolution = () => {
     }
   };
 
+  const clearExistingAttachment = (field) => {
+    setExistingFiles((prev) => ({ ...prev, [field]: null }));
+  };
+
+  const removeExistingOtherDocument = (url) => {
+    setExistingFiles((prev) => ({
+      ...prev,
+      OtherDocuments: prev.OtherDocuments.filter((item) => item !== url),
+    }));
+  };
+
   const fetchBusinessDomains = async () => {
     try {
       setLoadingDomains(true);
@@ -302,7 +490,10 @@ const AddNewAISolution = () => {
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
-        setBusinessDomains(result.data);
+        const domains = (result.data || []).filter((domain) =>
+          ALLOWED_BUSINESS_DOMAIN_CODES.has(domain.DomainCode),
+        );
+        setBusinessDomains(domains);
       } else {
         setSubmitStatus({
           type: "error",
@@ -374,7 +565,9 @@ const AddNewAISolution = () => {
     const fetchExisting = async () => {
       try {
         setLoadingExisting(true);
-        const response = await fetch(`${API_BASE_URL}/get-usecases?id=${editId}`);
+        const response = await fetch(
+          `${API_BASE_URL}/get-usecases?id=${editId}`,
+        );
         const result = await response.json();
 
         if (response.ok && result.status === "success" && result.data) {
@@ -409,16 +602,9 @@ const AddNewAISolution = () => {
               (solution.IsSolutionActive === false ? "No" : "Yes"),
           });
 
-          setExistingFiles({
-            SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
-            LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
-            ArchitectureDiagram: solution.ArchitectureDiagram || null,
-            SalesDeskDoc: solution.SalesDeskDoc || null,
-            OtherDocuments: Array.isArray(solution.OtherDocuments)
-              ? solution.OtherDocuments
-              : [],
-            DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
-          });
+          const loadedExisting = mapSolutionToExistingFiles(solution);
+          setExistingFiles(loadedExisting);
+          setInitialExistingFiles(loadedExisting);
         } else {
           setSubmitStatus({
             type: "error",
@@ -522,11 +708,13 @@ const AddNewAISolution = () => {
     }
 
     if (form.RepositoryUrl.trim() && !isValidUrl(form.RepositoryUrl)) {
-      newErrors.RepositoryUrl = "Enter a valid repository URL (e.g. https://github.com/your-repo)";
+      newErrors.RepositoryUrl =
+        "Enter a valid repository URL (e.g. https://github.com/your-repo)";
     }
 
     if (form.DemoLink.trim() && !isValidUrl(form.DemoLink)) {
-      newErrors.DemoLink = "Enter a valid demo URL starting with http:// or https://";
+      newErrors.DemoLink =
+        "Enter a valid demo URL starting with http:// or https://";
     }
 
     if (
@@ -535,23 +723,38 @@ const AddNewAISolution = () => {
       !existingFiles.DemoRecordedVideoLink
     ) {
       newErrors.DemoLink = "Either Demo Link or Demo Video is required";
-      newErrors.DemoRecordedVideo = "Either Demo Link or Demo Video is required";
+      newErrors.DemoRecordedVideo =
+        "Either Demo Link or Demo Video is required";
     }
 
-    if (files.DemoRecordedVideo && files.DemoRecordedVideo.size > 98 * 1024 * 1024) {
+    if (
+      files.DemoRecordedVideo &&
+      files.DemoRecordedVideo.size > 98 * 1024 * 1024
+    ) {
       newErrors.DemoRecordedVideo = "Video file size should not exceed 98MB";
     }
 
-    if (files.SolutionDetailsDoc && files.SolutionDetailsDoc.size > 50 * 1024 * 1024) {
-      newErrors.SolutionDetailsDoc = "Document file size should not exceed 50MB";
+    if (
+      files.SolutionDetailsDoc &&
+      files.SolutionDetailsDoc.size > 50 * 1024 * 1024
+    ) {
+      newErrors.SolutionDetailsDoc =
+        "Document file size should not exceed 50MB";
     }
 
-    if (files.LowLevelDesignDoc && files.LowLevelDesignDoc.size > 50 * 1024 * 1024) {
+    if (
+      files.LowLevelDesignDoc &&
+      files.LowLevelDesignDoc.size > 50 * 1024 * 1024
+    ) {
       newErrors.LowLevelDesignDoc = "LLD file size should not exceed 50MB";
     }
 
-    if (files.ArchitectureDiagram && files.ArchitectureDiagram.size > 50 * 1024 * 1024) {
-      newErrors.ArchitectureDiagram = "Architecture diagram file size should not exceed 50MB";
+    if (
+      files.ArchitectureDiagram &&
+      files.ArchitectureDiagram.size > 50 * 1024 * 1024
+    ) {
+      newErrors.ArchitectureDiagram =
+        "Architecture diagram file size should not exceed 50MB";
     }
 
     if (files.SalesDeskDoc && !isPdfFile(files.SalesDeskDoc)) {
@@ -559,7 +762,8 @@ const AddNewAISolution = () => {
     }
 
     if (files.SalesDeskDoc && files.SalesDeskDoc.size > 50 * 1024 * 1024) {
-      newErrors.SalesDeskDoc = "Sales Pitch PDF file size should not exceed 50MB";
+      newErrors.SalesDeskDoc =
+        "Sales Pitch PDF file size should not exceed 50MB";
     }
 
     const otherDocsCombined = (files.OtherDocuments || []).reduce(
@@ -576,16 +780,20 @@ const AddNewAISolution = () => {
     return newErrors;
   };
 
+  const emptyPendingFiles = () => ({
+    SolutionDetailsDoc: null,
+    LowLevelDesignDoc: null,
+    ArchitectureDiagram: null,
+    SalesDeskDoc: null,
+    OtherDocuments: [],
+    DemoRecordedVideo: null,
+  });
+
   const resetFormFields = () => {
     setForm(initialFormState);
-    setFiles({
-      SolutionDetailsDoc: null,
-      LowLevelDesignDoc: null,
-      ArchitectureDiagram: null,
-      SalesDeskDoc: null,
-      OtherDocuments: [],
-      DemoRecordedVideo: null,
-    });
+    setFiles(emptyPendingFiles());
+    setExistingFiles(emptyExistingFiles());
+    setInitialExistingFiles(null);
     setErrors({});
     setEvangelistSearch("");
   };
@@ -648,7 +856,10 @@ const AddNewAISolution = () => {
             "PublicationStatus",
             isPublished ? "Published" : "Draft",
           );
-          formDataToSend.append("IsSolutionActive", isPublished ? "true" : "false");
+          formDataToSend.append(
+            "IsSolutionActive",
+            isPublished ? "true" : "false",
+          );
           return;
         }
 
@@ -697,6 +908,61 @@ const AddNewAISolution = () => {
         });
       }
 
+      if (isEditMode) {
+        formDataToSend.append(
+          "OtherDocumentsRetain",
+          existingFiles.OtherDocuments.join(","),
+        );
+
+        const hadInitialOtherDocs =
+          (initialExistingFiles?.OtherDocuments || []).length > 0;
+        if (
+          hadInitialOtherDocs &&
+          existingFiles.OtherDocuments.length === 0
+        ) {
+          formDataToSend.append("ClearOtherDocuments", "true");
+        }
+
+        const appendClearIfRemoved = (
+          initialKey,
+          existingKey,
+          clearFieldName,
+        ) => {
+          if (
+            initialExistingFiles?.[initialKey] &&
+            !existingFiles[existingKey]
+          ) {
+            formDataToSend.append(clearFieldName, "true");
+          }
+        };
+
+        appendClearIfRemoved(
+          "SolutionDetailsDoc",
+          "SolutionDetailsDoc",
+          "ClearSolutionDetailsDoc",
+        );
+        appendClearIfRemoved(
+          "SalesDeskDoc",
+          "SalesDeskDoc",
+          "ClearSalesDeskDoc",
+        );
+        appendClearIfRemoved(
+          "LowLevelDesignDoc",
+          "LowLevelDesignDoc",
+          "ClearLowLevelDesignDoc",
+        );
+        appendClearIfRemoved(
+          "ArchitectureDiagram",
+          "ArchitectureDiagram",
+          "ClearArchitectureDiagram",
+        );
+        appendClearIfRemoved(
+          "DemoRecordedVideoLink",
+          "DemoRecordedVideoLink",
+          "ClearDemoRecordedVideo",
+        );
+      }
+
       const endpoint = isEditMode ? "update-usecase" : "save-usecase";
       const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: "POST",
@@ -721,12 +987,44 @@ const AddNewAISolution = () => {
           result.data?.solution_id ??
           result.data?.ID ??
           (isEditMode ? editId : null);
-        const submittedSolution = mapFormToCapability(form, {
-          solutionId,
-          evangelistDirectory: aiEvangelists,
-          solutionOwners,
-        });
-        const serializedSolution = serializeCapabilityForNavigation(submittedSolution);
+        let updatedSolution = result.data?.solution || null;
+
+        if (isEditMode && !updatedSolution && solutionId) {
+          try {
+            updatedSolution = await fetchUseCaseById(solutionId);
+          } catch {
+            updatedSolution = null;
+          }
+        }
+
+        if (isEditMode) {
+          if (updatedSolution) {
+            const syncedExisting = mapSolutionToExistingFiles(updatedSolution);
+            setExistingFiles(syncedExisting);
+            setInitialExistingFiles(syncedExisting);
+          } else {
+            const retainedExisting = {
+              ...existingFiles,
+              OtherDocuments: [...existingFiles.OtherDocuments],
+            };
+            setExistingFiles(retainedExisting);
+            setInitialExistingFiles(retainedExisting);
+          }
+          setFiles(emptyPendingFiles());
+        }
+
+        const submittedSolution = updatedSolution
+          ? mapApiSolutionToCapability(updatedSolution, {
+              evangelistDirectory: aiEvangelists,
+              solutionOwners,
+            })
+          : mapFormToCapability(form, {
+              solutionId,
+              evangelistDirectory: aiEvangelists,
+              solutionOwners,
+            });
+        const serializedSolution =
+          serializeCapabilityForNavigation(submittedSolution);
         const isPublishedSolution = form.Publish === "Yes";
         if (isPublishedSolution) {
           persistSubmittedCapability(serializedSolution);
@@ -760,7 +1058,9 @@ const AddNewAISolution = () => {
           type: "error",
           message:
             result.message ||
-            (isEditMode ? "Failed to update solution" : "Failed to save solution"),
+            (isEditMode
+              ? "Failed to update solution"
+              : "Failed to save solution"),
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -776,11 +1076,16 @@ const AddNewAISolution = () => {
   };
 
   const filteredEvangelists = aiEvangelists.filter((evangelist) =>
-    evangelist.Name.toLowerCase().startsWith(evangelistSearch.trim().toLowerCase()),
+    evangelist.Name.toLowerCase().startsWith(
+      evangelistSearch.trim().toLowerCase(),
+    ),
   );
 
   const totalUploadSize =
-    (files.OtherDocuments || []).reduce((sum, file) => sum + (file?.size || 0), 0) +
+    (files.OtherDocuments || []).reduce(
+      (sum, file) => sum + (file?.size || 0),
+      0,
+    ) +
     (files.SolutionDetailsDoc?.size || 0) +
     (files.LowLevelDesignDoc?.size || 0) +
     (files.ArchitectureDiagram?.size || 0) +
@@ -810,11 +1115,18 @@ const AddNewAISolution = () => {
       </header>
 
       {submitStatus && (
-        <div className={`add_ai_solution__status add_ai_solution__status--${submitStatus.type}`}>
-          <strong>{submitStatus.type === "success" ? "Success" : "Error"}</strong>
+        <div
+          className={`add_ai_solution__status add_ai_solution__status--${submitStatus.type}`}
+        >
+          <strong>
+            {submitStatus.type === "success" ? "Success" : "Error"}
+          </strong>
           <p>{submitStatus.message}</p>
           {submitStatus.type === "success" && (
-            <Link to="/explore-solutions" className="add_ai_solution__status-link">
+            <Link
+              to="/explore-solutions"
+              className="add_ai_solution__status-link"
+            >
               View saved solutions
             </Link>
           )}
@@ -843,7 +1155,9 @@ const AddNewAISolution = () => {
             onChange={(event) => updateField("Title", event.target.value)}
             required
           />
-          {errors.Title && <p className="add_ai_solution__error">{errors.Title}</p>}
+          {errors.Title && (
+            <p className="add_ai_solution__error">{errors.Title}</p>
+          )}
         </div>
 
         <div className="add_ai_solution__row">
@@ -851,22 +1165,25 @@ const AddNewAISolution = () => {
             <label htmlFor="BusinessDomain">
               Business Domain <span className="required">*</span>
             </label>
-            <select
+            <FormSelectDropdown
               id="BusinessDomain"
               value={form.BusinessDomain}
-              onChange={(event) => updateField("BusinessDomain", event.target.value)}
               disabled={loadingDomains}
-              required
-            >
-              <option value="">
-                {loadingDomains ? "Loading domains..." : "Select a business domain"}
-              </option>
-              {businessDomains.map((domain) => (
-                <option key={domain.DomainCode} value={domain.DomainCode}>
-                  {domain.DomainName}
-                </option>
-              ))}
-            </select>
+              placeholder={
+                loadingDomains
+                  ? "Loading domains..."
+                  : "Select Business Domain"
+              }
+              options={businessDomains.map((domain) => ({
+                value: domain.DomainCode,
+                label:
+                  BUSINESS_DOMAIN_DISPLAY_NAMES[domain.DomainCode] ||
+                  domain.DomainName,
+              }))}
+              onChange={(nextValue) =>
+                updateField("BusinessDomain", nextValue)
+              }
+            />
             {errors.BusinessDomain && (
               <p className="add_ai_solution__error">{errors.BusinessDomain}</p>
             )}
@@ -874,74 +1191,57 @@ const AddNewAISolution = () => {
 
           <div className="add_ai_solution__field">
             <label htmlFor="OwnershipDetails">COE Name</label>
-            <select
+            <FormSelectDropdown
               id="OwnershipDetails"
               value={form.OwnershipDetails}
-              onChange={(event) => updateField("OwnershipDetails", event.target.value)}
               disabled={loadingOwners}
-            >
-              <option value="">
-                {loadingOwners ? "Loading COE options..." : "Select COE"}
-              </option>
-              {solutionOwners.map((owner) => (
-                <option
-                  key={owner.Email}
-                  value={`${owner.Name} (${owner.Email})`}
-                >
-                  {owner.Name} ({owner.Email})
-                </option>
-              ))}
-            </select>
+              placeholder={
+                loadingOwners ? "Loading COE options..." : "Select COE"
+              }
+              options={solutionOwners.map((owner) => ({
+                value: `${owner.Name} (${owner.Email})`,
+                label: `${owner.Name} (${owner.Email})`,
+              }))}
+              onChange={(nextValue) =>
+                updateField("OwnershipDetails", nextValue)
+              }
+            />
           </div>
         </div>
 
-        <div className="add_ai_solution__field add_ai_solution__field--publish">
-          <label htmlFor="Publish">Publish</label>
-          <select
-            id="Publish"
-            value={form.Publish}
-            onChange={(event) => updateField("Publish", event.target.value)}
-          >
-            <option value="Yes">Yes - show on Explore Solutions</option>
-            <option value="No">No - keep inactive</option>
-          </select>
-          <p className="add_ai_solution__field-hint">
-            Published solutions stay Active and appear as cards under their
-            selected enterprise service.
-          </p>
-        </div>
+        <div className="add_ai_solution__row">
+          <div className="add_ai_solution__field add_ai_solution__field--publish">
+            <label htmlFor="Publish">Publish</label>
+            <select
+              id="Publish"
+              value={form.Publish}
+              onChange={(event) => updateField("Publish", event.target.value)}
+            >
+              <option value="Yes">Yes - show on Explore Solutions</option>
+              <option value="No">No - keep inactive</option>
+            </select>
+            <p className="add_ai_solution__field-hint">
+              Published solutions stay Active and appear as cards under their
+              selected enterprise service.
+            </p>
+          </div>
 
-        <div className="add_ai_solution__field">
-          <label htmlFor="OrderNumber">Card Position</label>
-          <select
-            id="OrderNumber"
-            value={form.OrderNumber}
-            onChange={(event) => updateField("OrderNumber", event.target.value)}
-          >
-            <option value="">No position</option>
-            {CARD_POSITION_OPTIONS.map((position) => {
-              const occupant = positionOccupancy[position];
-              const isOwnSlot =
-                isEditMode &&
-                occupant &&
-                String(occupant.id) === String(editId);
-              let label = `Position ${position}`;
-              if (occupant && !isOwnSlot) {
-                label = `Position ${position} — ${occupant.title} (will replace)`;
-              } else if (occupant && isOwnSlot) {
-                label = `Position ${position} — current`;
-              }
-
-              return (
-                <option key={position} value={String(position)}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-          <p className="add_ai_solution__field-hint">
-            {`Sets the slot (1–8) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
-          </p>
+          <div className="add_ai_solution__field">
+            <label htmlFor="OrderNumber">Card Position</label>
+            <FormSelectDropdown
+              id="OrderNumber"
+              value={form.OrderNumber}
+              placeholder="Select position"
+              options={CARD_POSITION_OPTIONS.map((position) => ({
+                value: String(position),
+                label: `Position ${position}`,
+              }))}
+              onChange={(nextValue) => updateField("OrderNumber", nextValue)}
+            />
+            <p className="add_ai_solution__field-hint">
+              {`Sets the slot (1–9) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
+            </p>
+          </div>
         </div>
 
         <div className="add_ai_solution__field">
@@ -1011,7 +1311,9 @@ const AddNewAISolution = () => {
             placeholder="Describe the business problem, target users, and expected outcomes."
             value={form.SolutionContext}
             maxLength={CHAR_LIMITS.SolutionContext}
-            onChange={(event) => updateField("SolutionContext", event.target.value)}
+            onChange={(event) =>
+              updateField("SolutionContext", event.target.value)
+            }
             required
           />
           {errors.SolutionContext && (
@@ -1032,7 +1334,9 @@ const AddNewAISolution = () => {
             placeholder="e.g. GPT-4, LangChain, Azure OpenAI"
             value={form.TechHighlights}
             maxLength={CHAR_LIMITS.TechHighlights}
-            onChange={(event) => updateField("TechHighlights", event.target.value)}
+            onChange={(event) =>
+              updateField("TechHighlights", event.target.value)
+            }
             required
           />
           {errors.TechHighlights && (
@@ -1050,7 +1354,9 @@ const AddNewAISolution = () => {
               inputMode="url"
               placeholder="https://github.com/your-repo"
               value={form.RepositoryUrl}
-              onChange={(event) => updateField("RepositoryUrl", event.target.value)}
+              onChange={(event) =>
+                updateField("RepositoryUrl", event.target.value)
+              }
             />
           </div>
           {errors.RepositoryUrl && (
@@ -1066,10 +1372,7 @@ const AddNewAISolution = () => {
             className="add_ai_solution__evangelist-checkboxes"
           >
             {AI_FOUNDATION_OPTIONS.map((option) => (
-              <label
-                key={option}
-                className="add_ai_solution__checkbox-item"
-              >
+              <label key={option} className="add_ai_solution__checkbox-item">
                 <input
                   type="checkbox"
                   value={option}
@@ -1152,18 +1455,18 @@ const AddNewAISolution = () => {
           note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder, copy the shareable URL, and paste that URL into the Demo Link field."
         />
 
-        {isEditMode && !files.DemoRecordedVideo && existingFiles.DemoRecordedVideoLink && (
-          <p className="add_ai_solution__existing-file">
-            Current video:{" "}
-            <a
-              href={existingFiles.DemoRecordedVideoLink}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached demo video
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.DemoRecordedVideo &&
+          existingFiles.DemoRecordedVideoLink && (
+            <div className="add_ai_solution__existing-file">
+              <span>Current video:</span>
+              <ExistingAttachmentRow
+                href={existingFiles.DemoRecordedVideoLink}
+                label="View attached demo video"
+                onRemove={() => clearExistingAttachment("DemoRecordedVideoLink")}
+              />
+            </div>
+          )}
       </section>
 
       <section className="add_ai_solution__card">
@@ -1184,18 +1487,18 @@ const AddNewAISolution = () => {
           }
         />
 
-        {isEditMode && !files.SolutionDetailsDoc && existingFiles.SolutionDetailsDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current document:{" "}
-            <a
-              href={existingFiles.SolutionDetailsDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached document
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.SolutionDetailsDoc &&
+          existingFiles.SolutionDetailsDoc && (
+            <div className="add_ai_solution__existing-file">
+              <span>Current document:</span>
+              <ExistingAttachmentRow
+                href={existingFiles.SolutionDetailsDoc}
+                label="View attached document"
+                onRemove={() => clearExistingAttachment("SolutionDetailsDoc")}
+              />
+            </div>
+          )}
 
         <FileDropzone
           id="SalesDeskDoc"
@@ -1222,16 +1525,14 @@ const AddNewAISolution = () => {
         />
 
         {isEditMode && !files.SalesDeskDoc && existingFiles.SalesDeskDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current Sales Pitch document:{" "}
-            <a
+          <div className="add_ai_solution__existing-file">
+            <span>Current Sales Pitch document:</span>
+            <ExistingAttachmentRow
               href={existingFiles.SalesDeskDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached Sales Pitch PDF
-            </a>
-          </p>
+              label="View attached Sales Pitch PDF"
+              onRemove={() => clearExistingAttachment("SalesDeskDoc")}
+            />
+          </div>
         )}
 
         <div className="add_ai_solution__row">
@@ -1262,32 +1563,32 @@ const AddNewAISolution = () => {
           />
         </div>
 
-        {isEditMode && !files.LowLevelDesignDoc && existingFiles.LowLevelDesignDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current LLD:{" "}
-            <a
-              href={existingFiles.LowLevelDesignDoc}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View attached LLD
-            </a>
-          </p>
-        )}
+        {isEditMode &&
+          !files.LowLevelDesignDoc &&
+          existingFiles.LowLevelDesignDoc && (
+            <div className="add_ai_solution__existing-file">
+              <span>Current LLD:</span>
+              <ExistingAttachmentRow
+                href={existingFiles.LowLevelDesignDoc}
+                label="View attached LLD"
+                onRemove={() => clearExistingAttachment("LowLevelDesignDoc")}
+              />
+            </div>
+          )}
 
         {isEditMode &&
           !files.ArchitectureDiagram &&
           existingFiles.ArchitectureDiagram && (
-            <p className="add_ai_solution__existing-file">
-              Current diagram:{" "}
-              <a
+            <div className="add_ai_solution__existing-file">
+              <span>Current diagram:</span>
+              <ExistingAttachmentRow
                 href={existingFiles.ArchitectureDiagram}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View attached architecture diagram
-              </a>
-            </p>
+                label="View attached architecture diagram"
+                onRemove={() =>
+                  clearExistingAttachment("ArchitectureDiagram")
+                }
+              />
+            </div>
           )}
 
         <FileDropzone
@@ -1303,27 +1604,26 @@ const AddNewAISolution = () => {
           }
         />
 
-        {isEditMode &&
-          files.OtherDocuments.length === 0 &&
-          existingFiles.OtherDocuments.length > 0 && (
-            <div className="add_ai_solution__existing-file">
-              <span>Current additional documents:</span>
-              <ul>
-                {existingFiles.OtherDocuments.map((url) => (
-                  <li key={url}>
-                    <a href={url} target="_blank" rel="noopener noreferrer">
-                      {url.split("/").pop()}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+        {isEditMode && existingFiles.OtherDocuments.length > 0 && (
+          <div className="add_ai_solution__existing-file">
+            <span>Current additional documents:</span>
+            <div className="add_ai_solution__existing-file-list">
+              {existingFiles.OtherDocuments.map((url) => (
+                <ExistingAttachmentRow
+                  key={url}
+                  href={url}
+                  label={getDisplayFileNameFromUrl(url)}
+                  onRemove={() => removeExistingOtherDocument(url)}
+                />
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
         {totalUploadSize > 0 && (
           <p className="add_ai_solution__upload-size">
-            Total upload size: {(totalUploadSize / (1024 * 1024)).toFixed(2)} MB /{" "}
-            {(AZURE_DEFAULT_BODY_LIMIT / (1024 * 1024)).toFixed(0)} MB
+            Total upload size: {(totalUploadSize / (1024 * 1024)).toFixed(2)} MB
+            / {(AZURE_DEFAULT_BODY_LIMIT / (1024 * 1024)).toFixed(0)} MB
             {totalUploadSize >= AZURE_BODY_LIMIT_WARN_THRESHOLD &&
               totalUploadSize < AZURE_DEFAULT_BODY_LIMIT &&
               " — approaching Azure request body limit"}

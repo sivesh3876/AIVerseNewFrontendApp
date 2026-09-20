@@ -1,11 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ASSIGNEE_OPTIONS,
   COUNTRY_OPTIONS,
   INDUSTRY_OPTIONS,
   PIPELINE_STAGES,
 } from "./placeholders";
-import { loadTeamMembers } from "./followUpUtils";
+import { getStageLabel } from "./PipelineStage";
+import {
+  fetchSolutionOwnerMembers,
+  loadTeamMembers,
+  saveTeamMember,
+} from "./followUpUtils";
 
 export const EMPTY_LEAD_FILTERS = {
   stage: "all",
@@ -23,10 +28,33 @@ const ContactRequestFilterPanel = ({
   onReset,
   onClose,
 }) => {
-  const assigneeOptions = useMemo(() => {
-    const stored = loadTeamMembers();
-    return [...new Set([...ASSIGNEE_OPTIONS, ...stored])];
+  const [ownerNames, setOwnerNames] = useState([]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    let isMounted = true;
+    fetchSolutionOwnerMembers().then((owners) => {
+      if (!isMounted) return;
+      owners.forEach((owner) => {
+        if (owner.email) {
+          saveTeamMember(owner.name, owner.email);
+        }
+      });
+      setOwnerNames(owners.map((owner) => owner.name));
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [open]);
+
+  const assigneeOptions = useMemo(() => {
+    const stored = loadTeamMembers().map((member) => member.name);
+    return [
+      ...new Set([...ASSIGNEE_OPTIONS, ...ownerNames, ...stored]),
+    ].sort((a, b) => a.localeCompare(b));
+  }, [open, ownerNames]);
 
   if (!open) return null;
 
@@ -78,7 +106,7 @@ const ContactRequestFilterPanel = ({
               <option value="all">All stages</option>
               {PIPELINE_STAGES.map((stage) => (
                 <option key={stage} value={stage}>
-                  {stage}
+                  {getStageLabel(stage)}
                 </option>
               ))}
             </select>

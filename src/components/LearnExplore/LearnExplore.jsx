@@ -133,7 +133,7 @@ const LearnExplore = () => {
 
       <main className="learn_explore__main">
         <header className="learn_explore__header">
-          <h1>Learn &amp; Explore</h1>
+          <h1>Blogs</h1>
           <p>Explore the solutions</p>
         </header>
 
