@@ -86,6 +86,28 @@ const getFileNameFromUrl = (url = "") => {
   }
 };
 
+const OFFICE_VIEWER_EXT =
+  /\.(docx?|pptx?|xlsx?)(\?|#|$)/i;
+
+/** Browser-viewable URL for View actions (Office files via Office Online). */
+export const getDocumentViewUrl = (url = "") => {
+  const value = String(url || "").trim();
+  if (!value) return "";
+
+  let path = value;
+  try {
+    path = new URL(value, window.location.origin).pathname;
+  } catch {
+    path = value.split("?")[0].split("#")[0];
+  }
+
+  if (OFFICE_VIEWER_EXT.test(path) || OFFICE_VIEWER_EXT.test(value)) {
+    return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(value)}`;
+  }
+
+  return value;
+};
+
 /**
  * Strip backend unique blob prefixes so UI shows the original upload name.
  * Storage keeps: other-doc-1-{ts}-{uuid}-{original}.pdf

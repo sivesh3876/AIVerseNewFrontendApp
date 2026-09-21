@@ -318,10 +318,22 @@ const parseEmailFromValue = (value) => {
   return match ? match[1].trim() : "";
 };
 
+const RECORDED_DEMO_IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i;
+
+const isUsableRecordedDemoLink = (url) => {
+  const value = String(url || "").trim();
+  if (!value) return false;
+
+  const lower = value.toLowerCase();
+  if (lower.includes("upcoming")) return false;
+  if (RECORDED_DEMO_IMAGE_EXT.test(lower)) return false;
+
+  return true;
+};
+
 const resolveRecordedDemoLink = (solution = {}) => {
   const recordedVideoLink = (solution.DemoRecordedVideoLink || "").trim();
-  const demoLink = (solution.DemoLink || "").trim();
-  return recordedVideoLink || demoLink;
+  return isUsableRecordedDemoLink(recordedVideoLink) ? recordedVideoLink : "";
 };
 
 const TECH_STACK_NAME_KEYS = [
@@ -524,6 +536,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
+    demoLink: toText(solution.DemoLink).trim() || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
     detailUrl,
     capabilityForDemo: {
