@@ -22,9 +22,13 @@
 .espire-chat-root {
   font-family: var(--espire-chat-font);
   position: fixed;
-  right: 24px;
+  right: 16px;
   bottom: 24px;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: max-content;
   color: var(--espire-chat-text);
 }
 
@@ -36,6 +40,7 @@
 /* Launcher */
 .espire-chat-launcher {
   align-items: center;
+  align-self: flex-end;
   background: var(--espire-chat-ribbon);
   border: 0;
   border-radius: 999px;
@@ -44,6 +49,7 @@
   cursor: pointer;
   display: inline-flex;
   gap: 10px;
+  margin-left: auto;
   padding: 14px 22px;
   font-family: inherit;
   font-size: 15px;
@@ -552,17 +558,18 @@
 @media (max-width: 640px) {
   .espire-chat-root {
     bottom: 12px;
-    left: 12px;
+    left: auto;
     right: 12px;
   }
 
   .espire-chat-panel {
     height: min(640px, calc(100vh - 96px));
     margin-bottom: 12px;
-    width: 100%;
+    width: min(410px, calc(100vw - 24px));
   }
 
   .espire-chat-launcher {
-    float: right;
+    float: none;
+    margin-left: auto;
   }
 }

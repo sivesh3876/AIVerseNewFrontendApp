@@ -27,8 +27,8 @@ const HeroBannerSlider = () => {
 
       <div className="hero_content">
         <h1>
-        Explore Espire's live AI capabilities across{" "}
-          <span className="hero_content__accent">Your Industry</span>
+        Explore Espire's live AI capabilities across your{" "}
+          <span className="hero_content__accent">Industry</span>
         </h1>
       </div>
       <div className="hero_desc">
@@ -49,16 +49,11 @@ const HeroBannerSlider = () => {
           <HeroJourneySteps
             onCreateAccount={() => openRegisterModal("Hero Registration")}
           />
-
-          <p className="hero_cta_card__disclaimer">
-            *Content is generated with AI assistance*
-          </p>
         </div>
       </div>
 
       <div className="hero_capabilities">
         <div className="hero_capabilities__header">
-          {/* <h2>Live AI use cases — try them now</h2> */}
           <p>Click any card to launch a live demo in seconds</p>
           <button
             type="button"
