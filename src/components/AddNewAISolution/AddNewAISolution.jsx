@@ -718,16 +718,6 @@ const AddNewAISolution = () => {
     }
 
     if (
-      !form.DemoLink.trim() &&
-      !files.DemoRecordedVideo &&
-      !existingFiles.DemoRecordedVideoLink
-    ) {
-      newErrors.DemoLink = "Either Demo Link or Demo Video is required";
-      newErrors.DemoRecordedVideo =
-        "Either Demo Link or Demo Video is required";
-    }
-
-    if (
       files.DemoRecordedVideo &&
       files.DemoRecordedVideo.size > 98 * 1024 * 1024
     ) {
@@ -1412,7 +1402,7 @@ const AddNewAISolution = () => {
       <section className="add_ai_solution__card">
         <h2>
           <PlayIcon />
-          Demo and Media (At least one required)
+          Demo and Media
         </h2>
 
         <div className="add_ai_solution__field">

@@ -116,6 +116,14 @@
         text-align: center;
     }
 
+    &__cta-row {
+        display        : flex;
+        flex-wrap      : wrap;
+        align-items    : center;
+        justify-content: center;
+        gap             : 14px;
+    }
+
     &__cta {
         display        : inline-flex;
         align-items    : center;
@@ -133,6 +141,14 @@
         &:hover {
             background: #d97a1f;
             transform : translateY(-1px);
+        }
+
+        &--primary {
+            background: #3A8D9D;
+
+            &:hover {
+                background: #327d8c;
+            }
         }
     }
 }

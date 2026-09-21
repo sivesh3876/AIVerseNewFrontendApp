@@ -474,9 +474,8 @@ const SuccessStoriesHub = () => {
                   const metricLabel = story.statLabel || story.metricLabel;
 
                   return (
-                    <Link
+                    <article
                       key={story.id || slug}
-                      to={`/success-stories?story=${encodeURIComponent(slug)}`}
                       className="success_stories_hub__card"
                     >
                       {image && (
@@ -514,11 +513,14 @@ const SuccessStoriesHub = () => {
                             )}
                           </time>
                         )}
-                        <span className="success_stories_hub__card-link">
+                        <Link
+                          to={`/success-stories?story=${encodeURIComponent(slug)}`}
+                          className="success_stories_hub__card-link"
+                        >
                           Read Full Story &gt;
-                        </span>
+                        </Link>
                       </div>
-                    </Link>
+                    </article>
                   );
                 })}
               </div>
