@@ -170,8 +170,7 @@ const SuccessStories = () => {
                   const slug = story.slug || story.id;
 
                   return (
-                    <Link
-                      to={`/success-stories?story=${encodeURIComponent(slug)}`}
+                    <article
                       className="success_stories__card"
                       key={story.id || slug}
                       style={
@@ -202,11 +201,14 @@ const SuccessStories = () => {
                         </div>
                       )}
 
-                      <span className="success_stories__link">
+                      <Link
+                        to={`/success-stories?story=${encodeURIComponent(slug)}`}
+                        className="success_stories__link"
+                      >
                         Read Case Study
                         <ChevronIcon />
-                      </span>
-                    </Link>
+                      </Link>
+                    </article>
                   );
                 })}
               </div>

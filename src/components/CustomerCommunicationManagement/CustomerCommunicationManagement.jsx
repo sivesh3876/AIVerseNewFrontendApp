@@ -653,7 +653,10 @@ const CustomerCommunicationManagement = () => {
       ? activeIndustryMeta?.iconBg || activeService.navIconBg
       : undefined;
   const bannerTitle =
-    detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
+    detailSolution?.title ||
+    activeIndustryMeta?.title ||
+    activeIndustryDomain?.DomainName ||
+    activeService.label;
   const bannerSubtitle =
     detailSolution?.shortDescription ||
     activeIndustryDomain?.Description ||
@@ -931,7 +934,11 @@ const CustomerCommunicationManagement = () => {
                           <IndustryIcon />
                         </span>
                       )}
-                      <span className="ccm_dashboard__nav-label">{domain.DomainName}</span>
+                      <span className="ccm_dashboard__nav-label">
+                        {industryMeta?.navTitle ||
+                          industryMeta?.title ||
+                          domain.DomainName}
+                      </span>
                       {isActive && (
                         <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
                           &rsaquo;

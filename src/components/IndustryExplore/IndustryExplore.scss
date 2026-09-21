@@ -113,44 +113,20 @@
     }
 
     &__banner {
-        position       : relative;
-        display        : flex;
-        flex-direction : column;
-        justify-content: center;
-        margin-bottom  : 28px;
-        border-radius  : 14px;
-        overflow       : hidden;
-        box-shadow     : 0 8px 24px rgba(13, 30, 50, 0.08);
-        min-height     : 280px;
-    }
-
-    &__banner-image {
-        position  : absolute;
-        inset     : 0;
-        background: center / cover no-repeat;
-    }
-
-    &__banner-overlay {
-        position  : absolute;
-        inset     : 0;
-        background: linear-gradient(
-            135deg,
-            rgba(13, 30, 50, 0.92) 0%,
-            rgba(26, 74, 142, 0.78) 100%
-        );
-    }
-
-    &__banner-content {
-        position: relative;
-        z-index : 1;
-        color   : #fff;
+        margin-bottom: 28px;
+        border-radius: 14px;
+        background   : #fff;
+        box-shadow   : 0 8px 24px rgba(13, 30, 50, 0.08);
+        overflow     : hidden;
     }
 
     &__banner-header {
         display    : flex;
         align-items: center;
         gap        : 18px;
-        padding    : 28px 32px 20px;
+        padding    : 28px 32px;
+        background : linear-gradient(90deg, #1a4a8e 0%, #0d1e32 100%);
+        color      : #fff;
     }
 
     &__banner-icon {
@@ -161,7 +137,7 @@
         height         : 56px;
         border-radius  : 14px;
         flex-shrink    : 0;
-        box-shadow     : 0 0 24px rgba(0, 0, 0, 0.2);
+        box-shadow     : 0 0 24px rgba(58, 141, 157, 0.35);
 
         svg {
             width : 28px;
@@ -170,18 +146,23 @@
     }
 
     &__banner-copy {
+        min-width: 0;
+
         h1 {
             margin     : 0 0 8px;
             font-size  : 28px;
             font-weight: 700;
             line-height: 1.2;
+            color      : #fff;
         }
 
         p {
-            margin     : 0;
-            font-size  : 15px;
-            line-height: 1.6;
-            color      : #cbd5e1;
+            margin      : 0;
+            font-size   : 15px;
+            line-height : 1.6;
+            color       : #94a3b8;
+            text-align  : justify;
+            text-justify: inter-word;
         }
     }
 

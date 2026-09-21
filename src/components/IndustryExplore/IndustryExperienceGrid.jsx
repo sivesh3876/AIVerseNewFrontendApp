@@ -3,7 +3,10 @@ import {
   experiencePillars,
   getIndustryExperienceMeta,
 } from "./industryExperiencesData";
-import { getIndustryDomainCode } from "./industrySolutionsData";
+import {
+  getIndustryById,
+  getIndustryDomainCode,
+} from "./industrySolutionsData";
 import "./IndustryExperienceGrid.scss";
 
 const PillarIcon = ({ pillarId }) => {
@@ -44,9 +47,22 @@ const CardIcon = () => (
 
 const PILLAR_IDS = ["cx", "ex", "bx"];
 
+const getExploreSolutionLabel = (industryId) => {
+  if (industryId === "insurance") {
+    return "Explore BFSI Solution";
+  }
+  if (industryId === "logistics") {
+    return "Explore Logistics Solution";
+  }
+  return "Explore Education Solution";
+};
+
 const IndustryExperienceGrid = ({ industryId }) => {
   const meta = getIndustryExperienceMeta(industryId);
+  const industry = getIndustryById(industryId);
   const domainCode = getIndustryDomainCode(industryId);
+  const exploreSolutionPath = `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industry?.id || industryId}`;
+  const exploreSolutionLabel = getExploreSolutionLabel(industryId);
   const maxRows = Math.max(
     ...PILLAR_IDS.map((pillarId) => meta.pillars[pillarId]?.length ?? 0),
   );
@@ -124,9 +140,17 @@ const IndustryExperienceGrid = ({ industryId }) => {
       </div>
 
       <div className="industry_experience__footer">
-        <Link to="/success-stories" className="industry_experience__cta">
-          Explore Case Studies
-        </Link>
+        <div className="industry_experience__cta-row">
+          <Link to="/success-stories" className="industry_experience__cta">
+            Explore Case Studies
+          </Link>
+          <Link
+            to={exploreSolutionPath}
+            className="industry_experience__cta industry_experience__cta--primary"
+          >
+            {exploreSolutionLabel}
+          </Link>
+        </div>
       </div>
     </section>
   );
