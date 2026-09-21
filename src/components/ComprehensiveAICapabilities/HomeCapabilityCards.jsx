@@ -72,7 +72,11 @@ const resolveWmsRecordedDemoLink = (solution = {}) => {
   return recordedVideoLink || demoLink || "";
 };
 
-export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
+export const OnboardingAcceleratorCard = ({
+  compact = false,
+  index = 1,
+  showLiveDemo = true,
+}) => {
   const navigate = useNavigate();
   const descriptionRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null);
@@ -168,8 +172,8 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
     </>
   );
 
-  const onboardingActions = (
-    <div className="ai_capabilities__actions">
+  const onboardingCtaButtons = (
+    <>
       <button
         type="button"
         className="ai_capabilities__btn ai_capabilities__btn--primary"
@@ -229,7 +233,32 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
           {salesPitchLabel}
         </button>
       )}
+    </>
+  );
+
+  const onboardingActions = showLiveDemo ? (
+    <div className="ai_capabilities__actions-stack">
+      <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--live"
+        disabled
+      >
+        {compact ? (
+          "Live Demo"
+        ) : (
+          <>
+            <PlaySmallIcon />
+            <span className="ai_capabilities__btn-text">
+              Live Demo
+              <ArrowIcon />
+            </span>
+          </>
+        )}
+      </button>
     </div>
+  ) : (
+    <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
   );
 
   if (compact) {
@@ -462,6 +491,7 @@ const FullSolutionCard = ({
   onRequestDemo,
   cardRef,
   isHighlighted,
+  showLiveDemo = true,
 }) => {
   const navigate = useNavigate();
   const internalCardRef = useRef(null);
@@ -554,6 +584,83 @@ const FullSolutionCard = ({
   };
 
   const showReadMore = descriptionText.length > 110 || isDescriptionClamped;
+
+  const solutionCtaButtons = (
+    <>
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--primary"
+        onClick={handleNavigate}
+      >
+        <EyeSmallIcon />
+        <span className="ai_capabilities__btn-text">
+          View Solution
+          <ArrowIcon />
+        </span>
+      </button>
+
+      {hasRecordedDemo ? (
+        <a
+          href={solution.recordedDemoLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+        >
+          <PlaySmallIcon />
+          <span className="ai_capabilities__btn-text">
+            Watch Demo
+            <ArrowIcon />
+          </span>
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+          onClick={() => onRequestDemo(solution.capabilityForDemo)}
+        >
+          <PlaySmallIcon />
+          <span className="ai_capabilities__btn-text">
+            Watch Demo
+            <ArrowIcon />
+          </span>
+        </button>
+      )}
+
+      {hasSalesDesk ? (
+        <a
+          href={salesDeskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+        >
+          <DocumentIcon />
+          <span className="ai_capabilities__btn-text">
+            Sales Pitch
+            <ArrowIcon />
+          </span>
+        </a>
+      ) : null}
+    </>
+  );
+
+  const solutionActions = showLiveDemo ? (
+    <div className="ai_capabilities__actions-stack">
+      <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--live"
+        disabled
+      >
+        <PlaySmallIcon />
+        <span className="ai_capabilities__btn-text">
+          Live Demo
+          <ArrowIcon />
+        </span>
+      </button>
+    </div>
+  ) : (
+    <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
+  );
 
   return (
     <article
@@ -651,61 +758,7 @@ const FullSolutionCard = ({
         </div>
       </div>
 
-      <div className="ai_capabilities__actions">
-        <button
-          type="button"
-          className="ai_capabilities__btn ai_capabilities__btn--primary"
-          onClick={handleNavigate}
-        >
-          <EyeSmallIcon />
-          <span className="ai_capabilities__btn-text">
-            View Solution
-            <ArrowIcon />
-          </span>
-        </button>
-
-        {hasRecordedDemo ? (
-          <a
-            href={solution.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Watch Demo
-              <ArrowIcon />
-            </span>
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-            onClick={() => onRequestDemo(solution.capabilityForDemo)}
-          >
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Watch Demo
-              <ArrowIcon />
-            </span>
-          </button>
-        )}
-
-        {hasSalesDesk ? (
-          <a
-            href={salesDeskUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            <DocumentIcon />
-            <span className="ai_capabilities__btn-text">
-              Sales Pitch
-              <ArrowIcon />
-            </span>
-          </a>
-        ) : null}
-      </div>
+      {solutionActions}
     </article>
   );
 };
@@ -717,6 +770,7 @@ export const SolutionCard = ({
   cardRef,
   isHighlighted,
   compact = false,
+  showLiveDemo = true,
 }) => {
   if (compact) {
     return (
@@ -737,6 +791,7 @@ export const SolutionCard = ({
       onRequestDemo={onRequestDemo}
       cardRef={cardRef}
       isHighlighted={isHighlighted}
+      showLiveDemo={showLiveDemo}
     />
   );
 };
