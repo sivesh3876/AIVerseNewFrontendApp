@@ -27,8 +27,8 @@ const HeroBannerSlider = () => {
 
       <div className="hero_content">
         <h1>
-          See what AI can do for your{" "}
-          <span className="hero_content__accent">Industry</span> - right now
+        Explore Espire's live AI capabilities across{" "}
+          <span className="hero_content__accent">Your Industry</span>
         </h1>
       </div>
       <div className="hero_desc">
@@ -58,7 +58,7 @@ const HeroBannerSlider = () => {
 
       <div className="hero_capabilities">
         <div className="hero_capabilities__header">
-          <h2>Live AI use cases — try them now</h2>
+          {/* <h2>Live AI use cases — try them now</h2> */}
           <p>Click any card to launch a live demo in seconds</p>
           <button
             type="button"
