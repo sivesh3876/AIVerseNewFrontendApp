@@ -13,6 +13,7 @@ import {
   getFeaturedPositionOccupancy,
   fetchUseCaseById,
 } from "../../services/usecasesService";
+import { getApiBaseUrl } from "../../services/apiConfig";
 import { getDisplayFileNameFromUrl } from "../../utils/solutionDocuments";
 import {
   DocumentIcon,
@@ -24,9 +25,7 @@ import {
   UploadIcon,
 } from "./FormIcons";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
+const API_BASE_URL = getApiBaseUrl();
 
 const DEMO_VIDEOS_SHAREPOINT_URL =
   "https://espireinfolab.sharepoint.com/:f:/r/sites/BETeam/Shared%20Documents/ESPIRE_AI%20Verse/Demo%20Videos?csf=1&web=1&e=xqbPma";
@@ -813,10 +812,14 @@ const AddNewAISolution = () => {
     try {
       const claimedPosition = normalizeCardPosition(form.OrderNumber);
       if (claimedPosition) {
-        await claimFeaturedCardPosition({
-          orderNumber: claimedPosition,
-          excludeSolutionId: isEditMode ? editId : null,
-        });
+        try {
+          await claimFeaturedCardPosition({
+            orderNumber: claimedPosition,
+            excludeSolutionId: isEditMode ? editId : null,
+          });
+        } catch (claimError) {
+          console.error("Failed to claim featured card position", claimError);
+        }
       }
 
       const formDataToSend = new FormData();
@@ -1003,25 +1006,38 @@ const AddNewAISolution = () => {
           setFiles(emptyPendingFiles());
         }
 
-        const submittedSolution = updatedSolution
-          ? mapApiSolutionToCapability(updatedSolution, {
-              evangelistDirectory: aiEvangelists,
-              solutionOwners,
-            })
-          : mapFormToCapability(form, {
-              solutionId,
-              evangelistDirectory: aiEvangelists,
-              solutionOwners,
-            });
-        const serializedSolution =
-          serializeCapabilityForNavigation(submittedSolution);
+        let serializedSolution = null;
         const isPublishedSolution = form.Publish === "Yes";
-        if (isPublishedSolution) {
-          persistSubmittedCapability(serializedSolution);
+        try {
+          const submittedSolution = updatedSolution
+            ? mapApiSolutionToCapability(updatedSolution, {
+                evangelistDirectory: aiEvangelists,
+                solutionOwners,
+              })
+            : mapFormToCapability(form, {
+                solutionId,
+                evangelistDirectory: aiEvangelists,
+                solutionOwners,
+              });
+          serializedSolution =
+            serializeCapabilityForNavigation(submittedSolution);
+          if (isPublishedSolution && serializedSolution) {
+            persistSubmittedCapability(serializedSolution);
+          }
+        } catch (postSaveError) {
+          console.error("Solution saved, but post-save mapping failed", postSaveError);
         }
 
         if (!isEditMode) {
           resetFormFields();
+        }
+
+        if (location.pathname.startsWith("/admin")) {
+          navigate("/admin/solution-new-ai", {
+            replace: true,
+            state: { savedSolutionTitle: form.Title || "Solution" },
+          });
+          return;
         }
 
         if (!isPublishedSolution) {

@@ -5,6 +5,10 @@
     }
 }
 
+body.is-admin-shell .espire-chat-root {
+    display: none !important;
+}
+
 .admin_request_demos {
     &__header {
         margin-bottom: 24px;
