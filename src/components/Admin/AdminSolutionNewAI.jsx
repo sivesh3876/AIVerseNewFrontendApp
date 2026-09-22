@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { deleteUseCase, updateUseCaseStatus } from "../../services/usecasesService";
 import {
   exportAdminSolutionsToCsv,
@@ -60,6 +60,7 @@ const matchesSolutionRequest = (request, solution) => {
 };
 
 const AdminSolutionNewAI = () => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { solutions, setSolutions, loading, error, loadSolutions } =
     useAdminSolutions();
@@ -69,6 +70,8 @@ const AdminSolutionNewAI = () => {
   const editId = searchParams.get("id");
   const isFormView =
     searchParams.get("mode") === "add" || Boolean(editId);
+  const wasFormView = useRef(isFormView);
+  const [listNotice, setListNotice] = useState("");
 
   const [viewSolutionId, setViewSolutionId] = useState(null);
   const [enhancementSolutionId, setEnhancementSolutionId] = useState(null);
@@ -262,6 +265,17 @@ const AdminSolutionNewAI = () => {
     setEngagementTick((prev) => prev + 1);
   };
 
+  useEffect(() => {
+    if (wasFormView.current && !isFormView) {
+      handleRefresh();
+      const savedTitle = location.state?.savedSolutionTitle;
+      if (savedTitle) {
+        setListNotice(`Saved “${savedTitle}”. It should now appear in this list.`);
+      }
+    }
+    wasFormView.current = isFormView;
+  }, [isFormView, location.state]);
+
   const handleBackToList = () => {
     setSearchParams({});
     handleRefresh();
@@ -419,6 +433,11 @@ const AdminSolutionNewAI = () => {
       description="All AI solutions in one list with status and actions."
       error={error}
     >
+      {listNotice && (
+        <p className="admin_request_demos__subtitle" role="status">
+          {listNotice}
+        </p>
+      )}
       {!error && (
         <AdminSolutionNewAITableToolbar
           searchQuery={searchQuery}
