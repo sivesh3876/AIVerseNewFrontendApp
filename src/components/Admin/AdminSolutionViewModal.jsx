@@ -38,7 +38,7 @@ const DETAIL_FIELDS = [
   },
   {
     key: "DemoLink",
-    label: "Demo Link",
+    label: "Live Demo Link",
     isLink: true,
   },
   {

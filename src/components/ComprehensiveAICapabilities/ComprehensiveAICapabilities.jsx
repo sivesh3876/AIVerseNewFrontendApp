@@ -188,7 +188,7 @@ const ComprehensiveAICapabilities = () => {
         </header>
 
         <div className="ai_capabilities__grid">
-          <OnboardingAcceleratorCard index={1} showLiveDemo={false} />
+          <OnboardingAcceleratorCard index={1} />
 
           {loading &&
             Array.from({ length: HOME_SOLUTION_LIMIT }, (_, index) => (
@@ -205,7 +205,6 @@ const ComprehensiveAICapabilities = () => {
                 solution={solution}
                 index={index + 2}
                 onRequestDemo={setDemoTarget}
-                showLiveDemo={false}
                 cardRef={(element) => {
                   cardRefs.current[index + 1] = element;
                 }}
