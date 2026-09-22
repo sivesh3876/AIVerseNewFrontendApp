@@ -559,10 +559,15 @@
             border-color  : #dbe3ea;
             color         : #0d1e32;
 
-            &:hover {
+            &:hover:not(:disabled) {
                 background  : #f8fafc;
                 border-color: #3A8D9D;
                 color       : #0d1e32;
+            }
+
+            &:disabled {
+                opacity: 0.55;
+                cursor : not-allowed;
             }
         }
     }

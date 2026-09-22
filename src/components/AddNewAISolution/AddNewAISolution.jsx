@@ -713,8 +713,8 @@ const AddNewAISolution = () => {
     }
 
     if (form.DemoLink.trim() && !isValidUrl(form.DemoLink)) {
-      newErrors.DemoLink =
-        "Enter a valid demo URL starting with http:// or https://";
+          newErrors.DemoLink =
+            "Enter a valid live demo URL starting with http:// or https://";
     }
 
     if (
@@ -1406,7 +1406,7 @@ const AddNewAISolution = () => {
         </h2>
 
         <div className="add_ai_solution__field">
-          <label htmlFor="DemoLink">Demo Link</label>
+          <label htmlFor="DemoLink">Live Demo Link</label>
           <div className="add_ai_solution__input-icon">
             <LinkIcon />
             <input
@@ -1419,7 +1419,7 @@ const AddNewAISolution = () => {
             />
           </div>
           <p className="add_ai_solution__field-hint">
-            Provide a link to a live demo or hosted version
+            Add this URL to enable the Live Demo button on the solution card
           </p>
           {errors.DemoLink && (
             <p className="add_ai_solution__error">{errors.DemoLink}</p>
@@ -1442,7 +1442,7 @@ const AddNewAISolution = () => {
           onFilesChange={(file) =>
             setFiles((prev) => ({ ...prev, DemoRecordedVideo: file }))
           }
-          note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder, copy the shareable URL, and paste that URL into the Demo Link field."
+          note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder. Use Live Demo Link only for an interactive hosted demo URL."
         />
 
         {isEditMode &&

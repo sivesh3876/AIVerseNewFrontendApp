@@ -131,6 +131,8 @@ const SolutionDetailPanel = ({
   showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
+  const liveDemoLink = capability.demoLink;
+  const hasLiveDemo = Boolean(liveDemoLink);
   const salesDeskUrl = getSalesDeskDocumentUrl(capability);
   const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
@@ -280,6 +282,25 @@ const SolutionDetailPanel = ({
           <button type="button" className="ccm_dashboard__action-btn" disabled>
             Recorded Demo
             <VideoCameraIcon />
+          </button>
+        )}
+        {hasLiveDemo ? (
+          <a
+            href={liveDemoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ccm_dashboard__action-btn"
+          >
+            Live Demo
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="ccm_dashboard__action-btn"
+            disabled
+            title="Add a Live Demo Link in Admin to enable this button"
+          >
+            Live Demo
           </button>
         )}
         {hasSalesDesk ? (

@@ -8,6 +8,7 @@ import {
   HOME_SOLUTION_ICONS,
   OnboardingAcceleratorIcon,
 } from "./HomeSolutionCardIcons";
+import { resolveLiveDemoLink } from "../../utils/solutionMapper";
 
 const EyeSmallIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -66,10 +67,46 @@ const WMS_ONBOARDING_SOLUTION_ID = 48;
 const WMS_ONBOARDING_SOLUTION_PATH =
   "/explore-solutions?service=enterprise-application&solution=api-48";
 
-const resolveWmsRecordedDemoLink = (solution = {}) => {
-  const recordedVideoLink = String(solution.DemoRecordedVideoLink || "").trim();
-  const demoLink = String(solution.DemoLink || "").trim();
-  return recordedVideoLink || demoLink || "";
+const resolveWmsRecordedDemoLink = (solution = {}) =>
+  String(solution.DemoRecordedVideoLink || "").trim();
+
+const LiveDemoButton = ({ href, compact = false }) => {
+  const label = compact ? (
+    "Live Demo"
+  ) : (
+    <>
+      <PlaySmallIcon />
+      <span className="ai_capabilities__btn-text">
+        Live Demo
+        <ArrowIcon />
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="ai_capabilities__btn ai_capabilities__btn--live"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {label}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="ai_capabilities__btn ai_capabilities__btn--live"
+      disabled
+      title="Add a Live Demo Link in Admin to enable this button"
+    >
+      {label}
+    </button>
+  );
 };
 
 export const OnboardingAcceleratorCard = ({
@@ -82,6 +119,7 @@ export const OnboardingAcceleratorCard = ({
   const [activePanel, setActivePanel] = useState(null);
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
   const [recordedDemoLink, setRecordedDemoLink] = useState("");
+  const [liveDemoLink, setLiveDemoLink] = useState("");
   const [salesDeskDoc, setSalesDeskDoc] = useState("");
   const [descriptionText, setDescriptionText] = useState(
     ONBOARDING_ACCELERATOR.description,
@@ -98,6 +136,7 @@ export const OnboardingAcceleratorCard = ({
         const solution = await fetchUseCaseById(WMS_ONBOARDING_SOLUTION_ID);
         if (!isMounted || !solution) return;
         setRecordedDemoLink(resolveWmsRecordedDemoLink(solution));
+        setLiveDemoLink(resolveLiveDemoLink(solution));
         setSalesDeskDoc(String(solution.SalesDeskDoc || "").trim());
         const aboutText = String(solution.SolutionContext || "").trim();
         if (aboutText) {
@@ -106,6 +145,7 @@ export const OnboardingAcceleratorCard = ({
       } catch {
         if (isMounted) {
           setRecordedDemoLink("");
+          setLiveDemoLink("");
           setSalesDeskDoc("");
         }
       }
@@ -239,23 +279,7 @@ export const OnboardingAcceleratorCard = ({
   const onboardingActions = showLiveDemo ? (
     <div className="ai_capabilities__actions-stack">
       <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
-      <button
-        type="button"
-        className="ai_capabilities__btn ai_capabilities__btn--live"
-        disabled
-      >
-        {compact ? (
-          "Live Demo"
-        ) : (
-          <>
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Live Demo
-              <ArrowIcon />
-            </span>
-          </>
-        )}
-      </button>
+      <LiveDemoButton href={liveDemoLink} compact={compact} />
     </div>
   ) : (
     <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
@@ -404,7 +428,6 @@ export const SolutionCardSkeleton = ({ index, compact = false }) => (
 const CompactSolutionCard = ({
   solution,
   index,
-  onRequestDemo,
   cardRef,
   isHighlighted,
 }) => {
@@ -413,7 +436,7 @@ const CompactSolutionCard = ({
     HOME_SOLUTION_ICONS[
       Math.abs(Number(solution?.themeIndex) || 0) % HOME_SOLUTION_ICONS.length
     ] ?? HOME_SOLUTION_ICONS[0];
-  const hasRecordedDemo = Boolean(solution.recordedDemoLink);
+  const liveDemoLink = solution.demoLink;
 
   const handleNavigate = () => {
     if (solution.id) {
@@ -461,25 +484,7 @@ const CompactSolutionCard = ({
         >
           View Solution
         </button>
-
-        {hasRecordedDemo ? (
-          <a
-            href={solution.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            Live Demo
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-            onClick={() => onRequestDemo(solution.capabilityForDemo)}
-          >
-            Live Demo
-          </button>
-        )}
+        <LiveDemoButton href={liveDemoLink} compact />
       </div>
     </article>
   );
@@ -504,6 +509,7 @@ const FullSolutionCard = ({
       Math.abs(Number(solution?.themeIndex) || 0) % HOME_SOLUTION_ICONS.length
     ] ?? HOME_SOLUTION_ICONS[0];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
+  const liveDemoLink = solution.demoLink;
   const salesDeskUrl = solution.salesDeskDoc;
   const hasSalesDesk = Boolean(salesDeskUrl);
 
@@ -646,17 +652,7 @@ const FullSolutionCard = ({
   const solutionActions = showLiveDemo ? (
     <div className="ai_capabilities__actions-stack">
       <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
-      <button
-        type="button"
-        className="ai_capabilities__btn ai_capabilities__btn--live"
-        disabled
-      >
-        <PlaySmallIcon />
-        <span className="ai_capabilities__btn-text">
-          Live Demo
-          <ArrowIcon />
-        </span>
-      </button>
+      <LiveDemoButton href={liveDemoLink} />
     </div>
   ) : (
     <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
