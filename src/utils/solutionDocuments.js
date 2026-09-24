@@ -193,15 +193,89 @@ const normalizeDocument = ({ id, type, label, url, fileName }) => {
 export const excludeSalesDeskDocuments = (documents = []) =>
   documents.filter((doc) => doc.type !== "sales-desk");
 
+/** Trim and drop blank / placeholder Sales Pitch values. */
+export const normalizeSalesDeskDocUrl = (value) => {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return "";
+  const lower = trimmed.toLowerCase();
+  if (lower === "null" || lower === "undefined" || lower === "none") {
+    return "";
+  }
+  return trimmed;
+};
+
 export const getSalesDeskDocumentUrl = (source = {}) => {
-  if (source.salesDeskDoc) return source.salesDeskDoc;
-  if (source.SalesDeskDoc) return source.SalesDeskDoc;
+  const direct = normalizeSalesDeskDocUrl(
+    source.salesDeskDoc || source.SalesDeskDoc,
+  );
+  if (direct) return direct;
 
-  const documents = Array.isArray(source.documents)
-    ? source.documents
-    : buildDocumentsFromCapability(source);
+  let documents = Array.isArray(source.documents) ? source.documents : null;
+  if (!documents) {
+    const looksLikeApiSolution =
+      source.ID != null ||
+      source.SolutionDetailsDoc != null ||
+      source.LowLevelDesignDoc != null ||
+      source.ArchitectureDiagram != null ||
+      source.OtherDocuments != null;
+    documents = looksLikeApiSolution
+      ? buildDocumentsFromApiSolution(source)
+      : buildDocumentsFromCapability(source);
+  }
 
-  return documents.find((document) => document.type === "sales-desk")?.url || null;
+  return (
+    normalizeSalesDeskDocUrl(
+      documents.find((document) => document.type === "sales-desk")?.url,
+    ) || null
+  );
+};
+
+/** Make document URLs absolute so new-tab opens do not hit localhost wrongly. */
+export const resolveAbsoluteDocumentUrl = (url = "") => {
+  const value = normalizeSalesDeskDocUrl(url);
+  if (!value) return "";
+
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) {
+    if (typeof window !== "undefined" && window.location?.protocol) {
+      return `${window.location.protocol}${value}`;
+    }
+    return `https:${value}`;
+  }
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    try {
+      return new URL(value, window.location.origin).href;
+    } catch {
+      if (value.startsWith("/")) {
+        return `${window.location.origin}${value}`;
+      }
+    }
+  }
+
+  return value;
+};
+
+/** Final URL used by Sales Pitch CTAs (absolute + Office viewer when needed). */
+export const getSalesPitchOpenUrl = (source = {}) => {
+  const raw = getSalesDeskDocumentUrl(source);
+  if (!raw) return "";
+  return getDocumentViewUrl(resolveAbsoluteDocumentUrl(raw));
+};
+
+/** Open Sales Pitch in a new tab; returns true when a URL was opened. */
+export const openSalesPitchDocument = (sourceOrUrl, event) => {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+
+  const openUrl =
+    typeof sourceOrUrl === "string"
+      ? getDocumentViewUrl(resolveAbsoluteDocumentUrl(sourceOrUrl))
+      : getSalesPitchOpenUrl(sourceOrUrl || {});
+
+  if (!openUrl) return false;
+  window.open(openUrl, "_blank", "noopener,noreferrer");
+  return true;
 };
 
 export const buildSolutionDocuments = ({

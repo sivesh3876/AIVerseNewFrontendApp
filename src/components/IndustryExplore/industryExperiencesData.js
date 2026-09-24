@@ -331,7 +331,7 @@ export const industryExperiences = {
     },
   },
   insurance: {
-    pageTitle: "Industry : BFSI Banking, Financial, Services, and Insurance — AI Across Every Experience",
+    pageTitle: "Industry : Banking, Financial, Services, and Insurance — AI Across Every Experience",
     intro:
       "Insurers and MGAs are reimagining policy lifecycle operations with AI — from personalised policyholder engagement and agent productivity to compliant, data-driven underwriting and claims at scale.",
     pillars: {

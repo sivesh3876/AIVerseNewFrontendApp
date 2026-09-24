@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DocumentIcon } from "../CustomerCommunicationManagement/CapabilityIcons";
+import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import { fetchUseCaseById } from "../../services/usecasesService";
 import { incrementSolutionView } from "../../utils/solutionEngagementStorage";
@@ -8,7 +9,11 @@ import {
   HOME_SOLUTION_ICONS,
   OnboardingAcceleratorIcon,
 } from "./HomeSolutionCardIcons";
-import { resolveLiveDemoLink } from "../../utils/solutionMapper";
+import {
+  extractSolutionIdFromCapabilityId,
+  resolveLiveDemoLink,
+} from "../../utils/solutionMapper";
+import { getSalesPitchOpenUrl } from "../../utils/solutionDocuments";
 
 const EyeSmallIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -113,20 +118,57 @@ export const OnboardingAcceleratorCard = ({
   compact = false,
   index = 1,
   showLiveDemo = true,
+  showEngagement = false,
 }) => {
   const navigate = useNavigate();
+  const cardRef = useRef(null);
   const descriptionRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
   const [recordedDemoLink, setRecordedDemoLink] = useState("");
   const [liveDemoLink, setLiveDemoLink] = useState("");
   const [salesDeskDoc, setSalesDeskDoc] = useState("");
+  const [salesPitchLoading, setSalesPitchLoading] = useState(false);
   const [descriptionText, setDescriptionText] = useState(
     ONBOARDING_ACCELERATOR.description,
   );
   const orderLabel = `#${String(index).padStart(2, "0")}`;
   const hasRecordedDemo = Boolean(recordedDemoLink);
-  const hasSalesDesk = Boolean(salesDeskDoc);
+  const hasAbsoluteSalesPitch = /^https?:\/\//i.test(salesDeskDoc);
+
+  const handleOnboardingSalesPitchClick = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (salesPitchLoading) return;
+
+    const popup = window.open("about:blank", "_blank", "noopener=false");
+    setSalesPitchLoading(true);
+    try {
+      const solution = await fetchUseCaseById(WMS_ONBOARDING_SOLUTION_ID);
+      const url = getSalesPitchOpenUrl(solution);
+      if (url) {
+        if (popup && !popup.closed) {
+          popup.location.href = url;
+          try {
+            popup.opener = null;
+          } catch {
+            // Ignore cross-origin opener clears.
+          }
+        } else {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      } else if (popup && !popup.closed) {
+        popup.close();
+      }
+    } catch {
+      if (popup && !popup.closed) {
+        popup.close();
+      }
+    } finally {
+      setSalesPitchLoading(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -137,7 +179,7 @@ export const OnboardingAcceleratorCard = ({
         if (!isMounted || !solution) return;
         setRecordedDemoLink(resolveWmsRecordedDemoLink(solution));
         setLiveDemoLink(resolveLiveDemoLink(solution));
-        setSalesDeskDoc(String(solution.SalesDeskDoc || "").trim());
+        setSalesDeskDoc(getSalesPitchOpenUrl(solution));
         const aboutText = String(solution.SolutionContext || "").trim();
         if (aboutText) {
           setDescriptionText(aboutText);
@@ -161,10 +203,6 @@ export const OnboardingAcceleratorCard = ({
   const handleViewSolution = (event) => {
     event?.stopPropagation();
     navigate(WMS_ONBOARDING_SOLUTION_PATH);
-  };
-
-  const handleSalesPitchWithoutPdf = (event) => {
-    event?.stopPropagation();
   };
 
   const measureDescriptionClamp = useCallback(() => {
@@ -254,7 +292,7 @@ export const OnboardingAcceleratorCard = ({
         </a>
       ) : null}
 
-      {hasSalesDesk ? (
+      {hasAbsoluteSalesPitch ? (
         <a
           href={salesDeskDoc}
           target="_blank"
@@ -268,9 +306,15 @@ export const OnboardingAcceleratorCard = ({
         <button
           type="button"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
-          onClick={handleSalesPitchWithoutPdf}
+          disabled={salesPitchLoading}
+          title={
+            salesPitchLoading
+              ? "Loading sales pitch..."
+              : "Open sales pitch document"
+          }
+          onClick={handleOnboardingSalesPitchClick}
         >
-          {salesPitchLabel}
+          {salesPitchLoading ? "Loading…" : salesPitchLabel}
         </button>
       )}
     </>
@@ -308,7 +352,10 @@ export const OnboardingAcceleratorCard = ({
 
   return (
     <article
-      className={`ai_capabilities__card${activePanel ? " is-panel-open" : ""}`}
+      ref={cardRef}
+      className={`ai_capabilities__card${
+        activePanel || commentsOpen ? " is-panel-open" : ""
+      }${commentsOpen ? " is-comments-open" : ""}`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div className="ai_capabilities__card-body">
@@ -402,7 +449,26 @@ export const OnboardingAcceleratorCard = ({
         </div>
       </div>
 
-      {onboardingActions}
+      {(showEngagement || onboardingActions) ? (
+        <div className="ai_capabilities__card-footer">
+          {showEngagement ? (
+            <div className="ai_capabilities__engagement-wrap">
+              <SolutionEngagement
+                solutionId="api-48"
+                title={ONBOARDING_ACCELERATOR.title}
+                detailUrl={WMS_ONBOARDING_SOLUTION_PATH}
+                variant="home"
+                commentUi="card-overlay"
+                overlayRootRef={cardRef}
+                commentOpen={commentsOpen}
+                onCommentOpenChange={setCommentsOpen}
+                onActionClick={(event) => event.stopPropagation()}
+              />
+            </div>
+          ) : null}
+          {onboardingActions}
+        </div>
+      ) : null}
     </article>
   );
 };
@@ -497,12 +563,15 @@ const FullSolutionCard = ({
   cardRef,
   isHighlighted,
   showLiveDemo = true,
+  showEngagement = false,
 }) => {
   const navigate = useNavigate();
   const internalCardRef = useRef(null);
   const descriptionRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
+  const [salesPitchLoading, setSalesPitchLoading] = useState(false);
   const descriptionText = String(solution?.description ?? "").trim();
   const Icon =
     HOME_SOLUTION_ICONS[
@@ -510,8 +579,60 @@ const FullSolutionCard = ({
     ] ?? HOME_SOLUTION_ICONS[0];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
   const liveDemoLink = solution.demoLink;
-  const salesDeskUrl = solution.salesDeskDoc;
-  const hasSalesDesk = Boolean(salesDeskUrl);
+  const salesPitchUrl = getSalesPitchOpenUrl({
+    salesDeskDoc: solution.salesDeskDoc,
+    documents: solution.documents,
+  });
+  const solutionApiId = extractSolutionIdFromCapabilityId(solution.id);
+
+  const handleSalesPitchClick = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (salesPitchLoading) return;
+
+    const canFetch = Boolean(solutionApiId);
+    const listFallback =
+      salesPitchUrl && /^https?:\/\//i.test(salesPitchUrl) ? salesPitchUrl : "";
+
+    if (!canFetch && !listFallback) return;
+
+    // noopener=false keeps a Window reference so we can navigate after await
+    // (Chrome defaults _blank to noopener and returns null otherwise).
+    const popup = window.open("about:blank", "_blank", "noopener=false");
+    setSalesPitchLoading(true);
+
+    try {
+      let url = "";
+      if (canFetch) {
+        try {
+          const fullSolution = await fetchUseCaseById(solutionApiId);
+          url = getSalesPitchOpenUrl(fullSolution);
+        } catch {
+          // Fall back to list URL below.
+        }
+      }
+      if (!url) {
+        url = listFallback;
+      }
+
+      if (url) {
+        if (popup && !popup.closed) {
+          popup.location.href = url;
+          try {
+            popup.opener = null;
+          } catch {
+            // Ignore cross-origin opener clears.
+          }
+        } else {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      } else if (popup && !popup.closed) {
+        popup.close();
+      }
+    } finally {
+      setSalesPitchLoading(false);
+    }
+  };
 
   const assignCardRef = useCallback(
     (node) => {
@@ -632,20 +753,25 @@ const FullSolutionCard = ({
         </button>
       )}
 
-      {hasSalesDesk ? (
-        <a
-          href={salesDeskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ai_capabilities__btn ai_capabilities__btn--demo"
-        >
-          <DocumentIcon />
-          <span className="ai_capabilities__btn-text">
-            Sales Pitch
-            <ArrowIcon />
-          </span>
-        </a>
-      ) : null}
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--demo"
+        disabled={
+          salesPitchLoading || (!solutionApiId && !/^https?:\/\//i.test(salesPitchUrl))
+        }
+        title={
+          salesPitchLoading
+            ? "Loading sales pitch..."
+            : "Open sales pitch document"
+        }
+        onClick={handleSalesPitchClick}
+      >
+        <DocumentIcon />
+        <span className="ai_capabilities__btn-text">
+          {salesPitchLoading ? "Loading…" : "Sales Pitch"}
+          {!salesPitchLoading ? <ArrowIcon /> : null}
+        </span>
+      </button>
     </>
   );
 
@@ -663,7 +789,9 @@ const FullSolutionCard = ({
       ref={assignCardRef}
       className={`ai_capabilities__card${
         isHighlighted ? " is-foundation-highlight" : ""
-      }${activePanel ? " is-panel-open" : ""}`}
+      }${activePanel || commentsOpen ? " is-panel-open" : ""}${
+        commentsOpen ? " is-comments-open" : ""
+      }`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div className="ai_capabilities__card-body">
@@ -754,7 +882,26 @@ const FullSolutionCard = ({
         </div>
       </div>
 
-      {solutionActions}
+      {(showEngagement || solutionActions) ? (
+        <div className="ai_capabilities__card-footer">
+          {showEngagement ? (
+            <div className="ai_capabilities__engagement-wrap">
+              <SolutionEngagement
+                solutionId={solution.id}
+                title={solution.title}
+                detailUrl={solution.detailUrl}
+                variant="home"
+                commentUi="card-overlay"
+                overlayRootRef={internalCardRef}
+                commentOpen={commentsOpen}
+                onCommentOpenChange={setCommentsOpen}
+                onActionClick={(event) => event.stopPropagation()}
+              />
+            </div>
+          ) : null}
+          {solutionActions}
+        </div>
+      ) : null}
     </article>
   );
 };
@@ -767,6 +914,7 @@ export const SolutionCard = ({
   isHighlighted,
   compact = false,
   showLiveDemo = true,
+  showEngagement = false,
 }) => {
   if (compact) {
     return (
@@ -788,6 +936,7 @@ export const SolutionCard = ({
       cardRef={cardRef}
       isHighlighted={isHighlighted}
       showLiveDemo={showLiveDemo}
+      showEngagement={showEngagement}
     />
   );
 };

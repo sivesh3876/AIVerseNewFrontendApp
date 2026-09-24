@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ComprehensiveAICapabilities.scss";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
@@ -34,11 +34,40 @@ const ComprehensiveAICapabilities = () => {
   const [demoTarget, setDemoTarget] = useState(null);
   const [highlightedSolutionId, setHighlightedSolutionId] = useState(null);
 
+  const solutionsByPosition = useMemo(() => {
+    const byPosition = new Map();
+    solutions.forEach((solution) => {
+      const order = Number(solution.orderNumber);
+      if (
+        Number.isFinite(order) &&
+        order >= 1 &&
+        order <= HOME_SOLUTION_LIMIT &&
+        !byPosition.has(order)
+      ) {
+        byPosition.set(order, solution);
+      }
+    });
+    return byPosition;
+  }, [solutions]);
+
+  const featuredSlots = useMemo(() => {
+    const slots = [];
+    for (let position = 1; position <= HOME_SOLUTION_LIMIT; position += 1) {
+      const solution = solutionsByPosition.get(position);
+      if (solution) {
+        slots.push({ type: "solution", position, solution });
+      } else if (position === 1) {
+        slots.push({ type: "onboarding", position });
+      }
+    }
+    return slots;
+  }, [solutionsByPosition]);
+
   const clearHighlight = useCallback(() => {
     if (highlightTimeoutRef.current) {
       window.clearTimeout(highlightTimeoutRef.current);
-      highlightTimeoutRef.current = null;
     }
+    highlightTimeoutRef.current = null;
     setHighlightedSolutionId(null);
   }, []);
 
@@ -53,10 +82,10 @@ const ComprehensiveAICapabilities = () => {
       const match = findHomeSolutionForFoundation(solutions, foundationId);
 
       if (match) {
-        const matchIndex = solutions.findIndex(
-          (solution) => solution.id === match.id,
-        );
-        const cardElement = cardRefs.current[matchIndex + 1];
+        const position = Number(match.orderNumber);
+        const cardElement = Number.isFinite(position)
+          ? cardRefs.current[position]
+          : null;
 
         setHighlightedSolutionId(match.id);
 
@@ -188,29 +217,42 @@ const ComprehensiveAICapabilities = () => {
         </header>
 
         <div className="ai_capabilities__grid">
-          <OnboardingAcceleratorCard index={1} />
-
           {loading &&
             Array.from({ length: HOME_SOLUTION_LIMIT }, (_, index) => (
               <SolutionCardSkeleton
                 key={`skeleton-${index}`}
-                index={index + 2}
+                index={index + 1}
               />
             ))}
 
           {!loading &&
-            solutions.map((solution, index) => (
-              <SolutionCard
-                key={solution.id}
-                solution={solution}
-                index={index + 2}
-                onRequestDemo={setDemoTarget}
-                cardRef={(element) => {
-                  cardRefs.current[index + 1] = element;
-                }}
-                isHighlighted={highlightedSolutionId === solution.id}
-              />
-            ))}
+            featuredSlots.map((slot) => {
+              if (slot.type === "onboarding") {
+                return (
+                  <OnboardingAcceleratorCard
+                    key="onboarding-accelerator"
+                    index={slot.position}
+                    showLiveDemo={false}
+                    showEngagement
+                  />
+                );
+              }
+
+              return (
+                <SolutionCard
+                  key={slot.solution.id}
+                  solution={slot.solution}
+                  index={slot.position}
+                  onRequestDemo={setDemoTarget}
+                  showLiveDemo={false}
+                  showEngagement
+                  cardRef={(element) => {
+                    cardRefs.current[slot.position] = element;
+                  }}
+                  isHighlighted={highlightedSolutionId === slot.solution.id}
+                />
+              );
+            })}
         </div>
 
         {!loading && fetchError && (
@@ -219,7 +261,7 @@ const ComprehensiveAICapabilities = () => {
           </p>
         )}
 
-        {!loading && !fetchError && solutions.length === 0 && (
+        {!loading && !fetchError && featuredSlots.length === 0 && (
           <p className="ai_capabilities__status">
             Featured solutions will appear here once they are published.
           </p>
