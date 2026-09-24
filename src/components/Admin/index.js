@@ -10,3 +10,4 @@ export { default as AdminCertifiedProfessionalsPage } from "./AdminCertifiedProf
 export { default as AdminSolutionNewAI } from "./AdminSolutionNewAI";
 export { default as AdminRequestDemoSolutionInfo } from "./AdminRequestDemoSolutionInfo";
 export { default as ProtectedAdminRoute } from "./ProtectedAdminRoute";
+export { default as RequirePermission } from "./RequirePermission";

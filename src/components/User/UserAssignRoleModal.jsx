@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
-import { USER_ROLES, getPermissionsForRole } from "../../services/userService";
+import { getPermissionLabel } from "../../services/roleService";
 
-const UserAssignRoleModal = ({ user, saving = false, onClose, onConfirm }) => {
-  const [role, setRole] = useState(USER_ROLES[USER_ROLES.length - 1]);
+const UserAssignRoleModal = ({
+  user,
+  roles = [],
+  saving = false,
+  onClose,
+  onConfirm,
+}) => {
+  const [role, setRole] = useState("");
 
   useEffect(() => {
     if (user) {
-      setRole(user.role || USER_ROLES[USER_ROLES.length - 1]);
+      setRole(user.role || roles[0]?.name || "");
     }
-  }, [user]);
+  }, [user, roles]);
 
   if (!user) return null;
 
-  const permissions = getPermissionsForRole(role);
+  const selectedRole = roles.find((option) => option.name === role);
+  const permissions = selectedRole?.permissions || [];
 
   return (
     <div
@@ -47,9 +54,9 @@ const UserAssignRoleModal = ({ user, saving = false, onClose, onConfirm }) => {
           <label className="admin_blog_form__field admin_blog_form__field--full">
             <span>Role</span>
             <select value={role} onChange={(event) => setRole(event.target.value)}>
-              {USER_ROLES.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {roles.map((option) => (
+                <option key={option.id ?? option.name} value={option.name}>
+                  {option.name}
                 </option>
               ))}
             </select>
@@ -67,7 +74,7 @@ const UserAssignRoleModal = ({ user, saving = false, onClose, onConfirm }) => {
               ) : (
                 permissions.map((permission) => (
                   <span key={permission} className="admin_user_permissions__chip">
-                    {permission}
+                    {getPermissionLabel(permission)}
                   </span>
                 ))
               )}
@@ -87,8 +94,8 @@ const UserAssignRoleModal = ({ user, saving = false, onClose, onConfirm }) => {
           <button
             type="button"
             className="admin_request_demos__btn admin_request_demos__btn--primary"
-            onClick={() => onConfirm?.(role)}
-            disabled={saving}
+            onClick={() => onConfirm?.(selectedRole)}
+            disabled={saving || !selectedRole}
           >
             {saving ? "Saving…" : "Assign Role"}
           </button>

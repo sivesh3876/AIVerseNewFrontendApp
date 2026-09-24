@@ -1,35 +1,6 @@
 const ADMIN_SESSION_KEY = "aiVerseAdminSession";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
-const parseAdminEmails = (value = "") =>
-  String(value)
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-
-const getAdminCredentials = () => {
-  const emailsRaw =
-    import.meta.env.VITE_ADMIN_EMAILS ||
-    import.meta.env.VITE_ADMIN_EMAIL ||
-    "sakshi@espire.com,admin@aiverse.com";
-
-  return {
-    emails: parseAdminEmails(emailsRaw),
-    password: String(import.meta.env.VITE_ADMIN_PASSWORD || "Reset@ma456").trim(),
-  };
-};
-
-export const validateAdminCredentials = (email, password) => {
-  const credentials = getAdminCredentials();
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const normalizedPassword = String(password || "").trim();
-
-  return (
-    credentials.emails.includes(normalizedEmail) &&
-    normalizedPassword === credentials.password
-  );
-};
-
 const readSession = () => {
   try {
     const raw = sessionStorage.getItem(ADMIN_SESSION_KEY);
@@ -41,7 +12,7 @@ const readSession = () => {
 
 export const getAdminSession = () => {
   const session = readSession();
-  if (!session?.email || !session?.expiresAt) {
+  if (!session?.email || !session?.token || !session?.expiresAt) {
     return null;
   }
 
@@ -50,40 +21,62 @@ export const getAdminSession = () => {
     return null;
   }
 
-  // Older sessions may not have token/name — refresh them in place.
-  if (!session.token || !session.name) {
-    return createAdminSession(session.email);
-  }
-
-  return session;
+  return {
+    ...session,
+    permissions: Array.isArray(session.permissions) ? session.permissions : [],
+  };
 };
 
 export const isAdminAuthenticated = () => Boolean(getAdminSession());
 
-export const createAdminSession = (email) => {
-  const normalizedEmail = String(email).trim().toLowerCase();
-  const localName = normalizedEmail.split("@")[0] || "Admin";
-  const displayName = localName
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
+export const createAdminSessionFromLogin = (result = {}) => {
+  const payload = result.data && typeof result.data === "object"
+    ? result.data
+    : result;
+  const user = payload.user || {};
+  const permissions = Array.isArray(payload.permissions)
+    ? payload.permissions
+    : Array.isArray(user.permissions)
+      ? user.permissions
+      : [];
+  const parsedExpiresAt = Number(payload.expiresAt) ||
+    Date.parse(payload.expiresAt || "");
   const session = {
-    email: normalizedEmail,
-    name: displayName || "Admin",
-    token: `aiverse.${btoa(unescape(encodeURIComponent(`${normalizedEmail}:${Date.now()}`)))}.${Math.random()
-      .toString(36)
-      .slice(2, 10)}`,
-    loggedInAt: Date.now(),
-    expiresAt: Date.now() + SESSION_DURATION_MS,
+    email: String(user.email || payload.email || "").trim().toLowerCase(),
+    name: user.fullName || user.name || payload.name || "Admin",
+    token: payload.token || "",
+    role: payload.role || user.role || user.roleName || "",
+    roleId: user.roleId ?? payload.roleId ?? null,
+    permissions,
+    userId: user.id ?? user.apiId ?? payload.userId ?? null,
+    loggedInAt: Number(payload.loggedInAt) || Date.now(),
+    expiresAt: parsedExpiresAt || Date.now() + SESSION_DURATION_MS,
   };
+
+  if (!session.email || !session.token) {
+    throw new Error("The login response did not include a valid admin session.");
+  }
 
   sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
   return session;
 };
 
 export const getAdminAuthToken = () => getAdminSession()?.token || "";
+
+const normalizeRequiredPermissions = (permissionId) =>
+  (Array.isArray(permissionId) ? permissionId : [permissionId]).filter(Boolean);
+
+export const hasPermission = (permissionId, session = getAdminSession()) => {
+  const required = normalizeRequiredPermissions(permissionId);
+  return required.length > 0 &&
+    required.every((permission) => session?.permissions?.includes(permission));
+};
+
+export const hasAnyPermission = (permissionId, session = getAdminSession()) => {
+  const required = normalizeRequiredPermissions(permissionId);
+  return required.length > 0 &&
+    required.some((permission) => session?.permissions?.includes(permission));
+};
 
 export const clearAdminSession = () => {
   sessionStorage.removeItem(ADMIN_SESSION_KEY);

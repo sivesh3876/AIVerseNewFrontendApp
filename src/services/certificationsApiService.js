@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const parseJson = async (response) => {
   try {
@@ -14,6 +15,7 @@ export const fetchCertifications = async ({ includeUnpublished = false } = {}) =
       "get-certifications",
       includeUnpublished ? { include_unpublished: "true" } : {},
     ),
+    { headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
   if (!response.ok || result.status !== "success" || !Array.isArray(result.data)) {
@@ -25,7 +27,7 @@ export const fetchCertifications = async ({ includeUnpublished = false } = {}) =
 export const createCertification = async (payload = {}) => {
   const response = await fetch(buildApiPath("save-certification"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -38,7 +40,7 @@ export const createCertification = async (payload = {}) => {
 export const updateCertification = async (payload = {}) => {
   const response = await fetch(buildApiPath("update-certification"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -51,7 +53,7 @@ export const updateCertification = async (payload = {}) => {
 export const deleteCertification = async (certificationId) => {
   const response = await fetch(
     buildApiPath("delete-certification", { id: certificationId }),
-    { method: "DELETE" },
+    { method: "DELETE", headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
   if (!response.ok || result.status !== "success") {
@@ -77,7 +79,7 @@ export const fetchCertifiedProfessionals = async ({ certificationId } = {}) => {
 export const createCertifiedProfessional = async (payload = {}) => {
   const response = await fetch(buildApiPath("save-certified-professional"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -90,7 +92,7 @@ export const createCertifiedProfessional = async (payload = {}) => {
 export const updateCertifiedProfessional = async (payload = {}) => {
   const response = await fetch(buildApiPath("update-certified-professional"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -103,7 +105,7 @@ export const updateCertifiedProfessional = async (payload = {}) => {
 export const deleteCertifiedProfessional = async (professionalId) => {
   const response = await fetch(
     buildApiPath("delete-certified-professional", { id: professionalId }),
-    { method: "DELETE" },
+    { method: "DELETE", headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
   if (!response.ok || result.status !== "success") {
