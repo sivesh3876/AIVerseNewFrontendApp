@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapabilityCard";
 import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
@@ -27,7 +26,6 @@ import {
 } from "../../data/solutionsData";
 import {
   enrichCapabilityContacts,
-  extractSolutionIdFromCapabilityId,
   filterOutDeletedSolutions,
   buildExploreSolutionPath,
   getServiceIdForDomain,
@@ -35,24 +33,20 @@ import {
   isIndustryBusinessDomain,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
-  markSolutionAsDeleted,
   mergeSubmittedCapabilities,
   persistSubmittedCapability,
   prunePersistedCapabilitiesSyncedWithApi,
   isPublicSolutionVisible,
-  removePersistedSubmittedCapability,
   resolveCapabilityIcon,
-  shouldDeleteCapabilityFromApi,
 } from "../../utils/solutionMapper";
 import {
   buildDocumentsFromCapability,
   excludeSalesDeskDocuments,
-  getSalesDeskDocumentUrl,
+  getSalesPitchOpenUrl,
+  openSalesPitchDocument,
 } from "../../utils/solutionDocuments";
 import { useScrollToSection } from "../../utils/pageScroll";
-import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
-  deleteUseCase,
   fetchAllUseCases,
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
@@ -124,17 +118,11 @@ const SolutionDetailPanel = ({
   detailSolution,
   documents,
   onBack,
-  onEdit,
-  onDelete,
   onRequestDemo,
-  isDeleting = false,
-  showAdminActions = false,
 }) => {
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const liveDemoLink = capability.demoLink;
-  const hasLiveDemo = Boolean(liveDemoLink);
-  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
-  const hasSalesDesk = Boolean(salesDeskUrl);
+  const salesPitchUrl = getSalesPitchOpenUrl(capability);
+  const hasSalesDesk = Boolean(salesPitchUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
   const attachmentDocuments = excludeSalesDeskDocuments(documents);
   const businessDomain =
@@ -151,30 +139,6 @@ const SolutionDetailPanel = ({
         <button type="button" className="ccm_dashboard__back-link" onClick={onBack}>
           &larr; Back to solutions
         </button>
-
-        {showAdminActions && (
-          <div className="ccm_dashboard__content-actions">
-            <button
-              type="button"
-              className="ccm_dashboard__control-btn ccm_dashboard__control-btn--edit"
-              onClick={() => onEdit?.(capability)}
-              aria-label={`Edit ${capability.title}`}
-              title="Edit"
-            >
-              <EditIcon />
-            </button>
-            <button
-              type="button"
-              className="ccm_dashboard__control-btn ccm_dashboard__control-btn--delete"
-              onClick={() => onDelete?.(capability)}
-              disabled={isDeleting}
-              aria-label={`Delete ${capability.title}`}
-              title="Delete"
-            >
-              <TrashIcon />
-            </button>
-          </div>
-        )}
       </div>
 
       <h2>About this solution</h2>
@@ -279,42 +243,34 @@ const SolutionDetailPanel = ({
             <VideoCameraIcon />
           </a>
         ) : (
-          <button type="button" className="ccm_dashboard__action-btn" disabled>
+          <button
+            type="button"
+            className="ccm_dashboard__action-btn"
+            disabled
+            title="No recorded demo available"
+          >
             Recorded Demo
             <VideoCameraIcon />
           </button>
         )}
-        {hasLiveDemo ? (
+        {hasSalesDesk ? (
           <a
-            href={liveDemoLink}
+            href={salesPitchUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="ccm_dashboard__action-btn"
+            onClick={(event) => openSalesPitchDocument(salesPitchUrl, event)}
           >
-            Live Demo
+            Sales Pitch
+            <DocumentIcon />
           </a>
         ) : (
           <button
             type="button"
             className="ccm_dashboard__action-btn"
             disabled
-            title="Add a Live Demo Link in Admin to enable this button"
+            title="No sales pitch document available"
           >
-            Live Demo
-          </button>
-        )}
-        {hasSalesDesk ? (
-          <a
-            href={salesDeskUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ccm_dashboard__action-btn"
-          >
-            Sales Pitch
-            <DocumentIcon />
-          </a>
-        ) : (
-          <button type="button" className="ccm_dashboard__action-btn">
             Sales Pitch
             <DocumentIcon />
           </button>
@@ -337,7 +293,6 @@ const SolutionDetailPanel = ({
 const CustomerCommunicationManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
   const solutionQueryId = searchParams.get("solution");
@@ -364,8 +319,6 @@ const CustomerCommunicationManagement = () => {
   const [aiEvangelists, setAiEvangelists] = useState([]);
   const [solutionOwners, setSolutionOwners] = useState([]);
   const [businessDomains, setBusinessDomains] = useState([]);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deletingCapabilityId, setDeletingCapabilityId] = useState(null);
   const [demoRequestTarget, setDemoRequestTarget] = useState(null);
   const fetchRequestIdRef = useRef(0);
 
@@ -540,59 +493,8 @@ const CustomerCommunicationManagement = () => {
     };
   }, []);
 
-  const handleEditCapability = (capability) => {
-    const solutionId = extractSolutionIdFromCapabilityId(capability.id);
-    if (!solutionId) return;
-    navigate(`/get-started?id=${solutionId}`);
-  };
-
-  const handleDeleteCapability = (capability) => {
-    setDeleteTarget(capability);
-  };
-
   const handleRequestDemo = (capability) => {
     setDemoRequestTarget(capability);
-  };
-
-  const cancelDeleteCapability = () => {
-    if (deletingCapabilityId) return;
-    setDeleteTarget(null);
-  };
-
-  const confirmDeleteCapability = async () => {
-    if (!deleteTarget) return;
-
-    const capability = deleteTarget;
-    const solutionId = extractSolutionIdFromCapabilityId(capability.id);
-    const deleteFromApi = shouldDeleteCapabilityFromApi(capability, apiCapabilities);
-
-    setDeletingCapabilityId(capability.id);
-
-    if (deleteFromApi && solutionId) {
-      markSolutionAsDeleted(solutionId);
-    }
-
-    removePersistedSubmittedCapability(capability.id);
-    setApiSolutions((prev) =>
-      prev.filter((item) => `api-${item.ID}` !== capability.id),
-    );
-    setPendingCapabilities((prev) =>
-      prev.filter((item) => item.id !== capability.id),
-    );
-    setDeleteTarget(null);
-    setDeletingCapabilityId(null);
-
-    if (solutionQueryId === capability.id) {
-      handleBackToSolutions();
-    }
-
-    if (deleteFromApi && solutionId) {
-      try {
-        await deleteUseCase(solutionId);
-      } catch (error) {
-        console.warn("Server delete failed; solution remains hidden on this browser.", error);
-      }
-    }
   };
 
   const handleServiceChange = (index) => {
@@ -1029,15 +931,7 @@ const CustomerCommunicationManagement = () => {
                 detailSolution={detailSolution}
                 documents={detailDocuments}
                 onBack={handleBackToSolutions}
-                onEdit={detailSolution.isApiSolution ? handleEditCapability : undefined}
-                onDelete={
-                  detailSolution.isApiSolution ? handleDeleteCapability : undefined
-                }
                 onRequestDemo={handleRequestDemo}
-                isDeleting={deletingCapabilityId === detailPrimaryCapability.id}
-                showAdminActions={
-                  isAdminAuthenticated && Boolean(detailSolution.isApiSolution)
-                }
               />
             )}
           </>
@@ -1086,12 +980,8 @@ const CustomerCommunicationManagement = () => {
                     (capability.id === `api-${highlightId}` ||
                       capability.id === `api-pending-${highlightId}`)
                   }
-                  showAdminActions={isAdminAuthenticated}
-                  onEdit={handleEditCapability}
-                  onDelete={handleDeleteCapability}
                   onRequestDemo={handleRequestDemo}
                   onNavigate={handleCapabilityNavigate}
-                  isDeleting={deletingCapabilityId === capability.id}
                 />
               ))}
             </div>
@@ -1119,45 +1009,6 @@ const CustomerCommunicationManagement = () => {
           capability={demoRequestTarget}
           onClose={() => setDemoRequestTarget(null)}
         />
-      )}
-
-      {deleteTarget && (
-        <div
-          className="ccm_dashboard__delete-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ccm-delete-title"
-          onClick={cancelDeleteCapability}
-        >
-          <div
-            className="ccm_dashboard__delete-modal"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 id="ccm-delete-title">Delete Solution</h3>
-            <p>
-              Are you sure you want to delete{" "}
-              <strong>{deleteTarget.title}</strong>?
-            </p>
-            <div className="ccm_dashboard__delete-actions">
-              <button
-                type="button"
-                className="ccm_dashboard__delete-btn ccm_dashboard__delete-btn--secondary"
-                onClick={cancelDeleteCapability}
-                disabled={Boolean(deletingCapabilityId)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="ccm_dashboard__delete-btn ccm_dashboard__delete-btn--danger"
-                onClick={confirmDeleteCapability}
-                disabled={Boolean(deletingCapabilityId)}
-              >
-                {deletingCapabilityId ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

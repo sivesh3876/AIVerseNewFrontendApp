@@ -12,6 +12,7 @@ import {
 } from "../components/IndustryExplore/industrySolutionsData";
 import {
   buildDocumentsFromApiSolution,
+  getSalesDeskDocumentUrl,
 } from "./solutionDocuments";
 import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
 
@@ -432,16 +433,25 @@ const truncateText = (value, maxLength = 110) => {
 };
 
 export const FEATURED_CARD_POSITION_MAX = 9;
+export const HERO_CARD_POSITION_MAX = 4;
 
+/** Featured Solutions slot (OrderNumber only — do not fall back to DisplayOrder). */
 export const getSolutionOrderNumber = (solution = {}) => {
   const raw =
     solution.OrderNumber ??
     solution.orderNumber ??
-    solution.OrderNo ??
-    solution.DisplayOrder;
+    solution.OrderNo;
 
   const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+/** Hero top-4 slot (DisplayOrder only). */
+export const getSolutionDisplayOrder = (solution = {}) => {
+  const raw = solution.DisplayOrder ?? solution.displayOrder;
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
 const isExplicitlyInactiveFlag = (value) => {
@@ -517,16 +527,85 @@ export const selectTopOrderedSolutions = (
     })
     .slice(0, limit);
 
+export const selectTopHeroSolutions = (
+  solutions = [],
+  limit = HERO_CARD_POSITION_MAX,
+) => {
+  const visible = solutions.filter(isPublicSolutionVisible);
+  const bySlot = new Map();
+  const placedIds = new Set();
+
+  const tryPlace = (solution, order) => {
+    if (
+      !Number.isFinite(order) ||
+      order < 1 ||
+      order > HERO_CARD_POSITION_MAX ||
+      bySlot.has(order)
+    ) {
+      return;
+    }
+    const id = String(solution?.ID ?? solution?.id ?? "");
+    if (id && placedIds.has(id)) {
+      return;
+    }
+    bySlot.set(order, solution);
+    if (id) {
+      placedIds.add(id);
+    }
+  };
+
+  // Prefer explicit Top 4 (DisplayOrder) slots first.
+  visible.forEach((solution) => {
+    tryPlace(solution, getSolutionDisplayOrder(solution));
+  });
+
+  // Fall back to Card Position (OrderNumber) 1–4 for empty hero slots.
+  visible.forEach((solution) => {
+    tryPlace(solution, getSolutionOrderNumber(solution));
+  });
+
+  return [...bySlot.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([, solution]) => solution)
+    .slice(0, limit);
+};
+
+/** Resolved hero slot: DisplayOrder 1–4, else OrderNumber 1–4. */
+export const getSolutionHeroPosition = (solution = {}) => {
+  const displayOrder = getSolutionDisplayOrder(solution);
+  if (
+    Number.isFinite(displayOrder) &&
+    displayOrder >= 1 &&
+    displayOrder <= HERO_CARD_POSITION_MAX
+  ) {
+    return displayOrder;
+  }
+
+  const orderNumber = getSolutionOrderNumber(solution);
+  if (
+    Number.isFinite(orderNumber) &&
+    orderNumber >= 1 &&
+    orderNumber <= HERO_CARD_POSITION_MAX
+  ) {
+    return orderNumber;
+  }
+
+  return null;
+};
+
 export const mapApiSolutionToHomeCard = (solution) => {
   if (!solution) return null;
 
   const orderNumber = getSolutionOrderNumber(solution);
+  const displayOrder = getSolutionDisplayOrder(solution);
+  const heroPosition = getSolutionHeroPosition(solution);
   const serviceId = getServiceIdForDomain(solution.BusinessDomain);
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
   const industry = getIndustryByDomainCode(solution.BusinessDomain);
   const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
-  const iconSeed = orderNumber ?? Number(solution.ID) ?? 0;
+  const iconSeed =
+    orderNumber ?? displayOrder ?? heroPosition ?? Number(solution.ID) ?? 0;
   const detailUrl = buildExploreSolutionPath({
     businessDomain: solution.BusinessDomain,
     solutionId: solution.ID,
@@ -546,10 +625,13 @@ export const mapApiSolutionToHomeCard = (solution) => {
     techText: techStack.map((entry) => entry.name).join(" "),
     serviceId: serviceId || null,
     orderNumber,
+    displayOrder: heroPosition ?? displayOrder,
+    heroPosition,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
     demoLink: resolveLiveDemoLink(solution) || null,
-    salesDeskDoc: solution.SalesDeskDoc || null,
+    salesDeskDoc: getSalesDeskDocumentUrl(solution) || null,
+    documents: buildDocumentsFromApiSolution(solution),
     detailUrl,
     capabilityForDemo: {
       id: solutionApiId,
@@ -655,7 +737,7 @@ export const mapApiSolutionToCapability = (
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
-    salesDeskDoc: solution.SalesDeskDoc || null,
+    salesDeskDoc: getSalesDeskDocumentUrl(solution) || null,
     otherDocuments: Array.isArray(solution.OtherDocuments)
       ? solution.OtherDocuments.filter(Boolean)
       : typeof solution.OtherDocuments === "string" &&
