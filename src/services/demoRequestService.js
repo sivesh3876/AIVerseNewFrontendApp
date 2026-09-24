@@ -7,6 +7,7 @@ import {
 } from "../utils/demoRequestStorage";
 import { mapApiSolutionToCapability } from "../utils/solutionMapper";
 import { mergeEngagementIntoDemoRequest } from "../utils/solutionEngagementStorage";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
@@ -70,6 +71,7 @@ const parseDemoRequestsPayload = (result = {}) => {
 const fetchDemoRequestsFromEndpoint = async (endpoint) => {
   const response = await fetch(
     buildApiPath(endpoint, EMAIL_API_KEY ? { code: EMAIL_API_KEY } : {}),
+    { headers: getAdminAuthHeaders() },
   );
 
   if (!response.ok) {

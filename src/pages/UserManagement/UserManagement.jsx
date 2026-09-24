@@ -9,7 +9,6 @@ import UserDeleteModal from "../../components/User/UserDeleteModal";
 import UserAssignRoleModal from "../../components/User/UserAssignRoleModal";
 import {
   USER_DEPARTMENTS,
-  USER_ROLES,
   USER_STATUSES,
   assignUserRole,
   createUser,
@@ -19,6 +18,7 @@ import {
   setUserStatus,
   updateUser,
 } from "../../services/userService";
+import { fetchRoles } from "../../services/roleService";
 import { exportUsersToCsv, filterUsers } from "../../utils/userTableUtils";
 import "../../components/Admin/AdminLayout.scss";
 
@@ -28,6 +28,7 @@ const UserManagement = () => {
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -52,8 +53,16 @@ const UserManagement = () => {
     try {
       setLoading(true);
       setError("");
-      const data = await fetchUsers();
-      setUsers(data);
+      const [userData, roleData] = await Promise.all([
+        fetchUsers(),
+        fetchRoles(),
+      ]);
+      setUsers(userData);
+      setRoles(
+        [...roleData].sort((left, right) =>
+          String(left.name || "").localeCompare(String(right.name || "")),
+        ),
+      );
     } catch (loadError) {
       setError(loadError.message || "Failed to load users.");
     } finally {
@@ -64,6 +73,23 @@ const UserManagement = () => {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  const roleOptions = useMemo(
+    () =>
+      roles
+        .filter((role) => String(role.status || "Active").toLowerCase() === "active")
+        .map((role) => role.name)
+        .filter(Boolean),
+    [roles],
+  );
+
+  const assignableRoles = useMemo(
+    () =>
+      roles.filter(
+        (role) => String(role.status || "Active").toLowerCase() === "active",
+      ),
+    [roles],
+  );
 
   const filteredUsers = useMemo(
     () =>
@@ -141,10 +167,15 @@ const UserManagement = () => {
   const handleSaveUser = async (payload) => {
     try {
       setSaving(true);
+      const selectedRole = roles.find((role) => role.name === payload.role);
+      const rolePayload = {
+        ...payload,
+        roleId: selectedRole?.id ?? null,
+      };
       if (modalMode === "edit" && activeUser) {
-        await updateUser(activeUser.id, payload);
+        await updateUser(activeUser.id, rolePayload);
       } else {
-        await createUser(payload);
+        await createUser(rolePayload);
       }
       setModalMode(null);
       setActiveUser(null);
@@ -166,8 +197,14 @@ const UserManagement = () => {
         setModalMode("edit");
         break;
       case "reset-password":
-        await resetUserPassword(user.id);
-        window.alert(`A password reset link has been sent to ${user.email}.`);
+        {
+          const newPassword = window.prompt(
+            `Enter a new password for ${user.email}:`,
+          );
+          if (!newPassword) break;
+          await resetUserPassword(user.id, newPassword);
+          window.alert("Password reset successfully.");
+        }
         break;
       case "assign-role":
         setRoleTarget(user);
@@ -199,11 +236,15 @@ const UserManagement = () => {
     }
   };
 
-  const handleConfirmRole = async (role) => {
-    if (!roleTarget) return;
+  const handleConfirmRole = async (selectedRole) => {
+    if (!roleTarget || !selectedRole) return;
     try {
       setAssigningRole(true);
-      await assignUserRole(roleTarget.id, role);
+      await assignUserRole(
+        roleTarget.id,
+        selectedRole.name,
+        selectedRole.id,
+      );
       setRoleTarget(null);
       await loadUsers();
     } catch (roleError) {
@@ -231,7 +272,7 @@ const UserManagement = () => {
           onStatusFilterChange={setStatusFilter}
           createdDateFilter={createdDateFilter}
           onCreatedDateFilterChange={setCreatedDateFilter}
-          roleOptions={USER_ROLES}
+          roleOptions={roleOptions}
           departmentOptions={USER_DEPARTMENTS}
           statusOptions={USER_STATUSES}
           hasActiveFilters={hasActiveFilters}
@@ -268,6 +309,7 @@ const UserManagement = () => {
         <UserModal
           mode={modalMode}
           user={activeUser}
+          roleOptions={assignableRoles}
           saving={saving}
           onClose={handleCloseModal}
           onSave={handleSaveUser}
@@ -283,6 +325,7 @@ const UserManagement = () => {
 
       <UserAssignRoleModal
         user={roleTarget}
+        roles={assignableRoles}
         saving={assigningRole}
         onClose={() => !assigningRole && setRoleTarget(null)}
         onConfirm={handleConfirmRole}

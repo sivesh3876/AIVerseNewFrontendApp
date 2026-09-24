@@ -92,19 +92,46 @@ const PasswordField = ({
 // Single modal used for both "Add User" and "Edit User". In edit mode only the
 // business-editable fields (name, department, designation, role, status) are
 // shown, matching the requirement.
-const UserModal = ({ mode = "add", user, saving = false, onClose, onSave }) => {
+const UserModal = ({
+  mode = "add",
+  user,
+  roleOptions = USER_ROLES,
+  saving = false,
+  onClose,
+  onSave,
+}) => {
   const isEdit = mode === "edit";
   const [draft, setDraft] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
+  const normalizedRoles = useMemo(
+    () =>
+      (roleOptions || [])
+        .map((role) =>
+          typeof role === "string"
+            ? { id: null, name: role }
+            : { id: role.id ?? role.apiId ?? null, name: role.name || "" },
+        )
+        .filter((role) => role.name),
+    [roleOptions],
+  );
+
   useEffect(() => {
+    const defaultRole =
+      normalizedRoles.find((role) => role.name === "Marketing")?.name ||
+      normalizedRoles.find((role) => role.name === "Viewer")?.name ||
+      normalizedRoles[0]?.name ||
+      "";
     if (isEdit && user) {
-      setDraft(buildDraftFromUser(user));
+      setDraft({
+        ...buildDraftFromUser(user),
+        role: user.role || defaultRole,
+      });
     } else {
-      setDraft(EMPTY_FORM);
+      setDraft({ ...EMPTY_FORM, role: defaultRole });
     }
     setError("");
-  }, [isEdit, user]);
+  }, [isEdit, user, normalizedRoles]);
 
   const title = useMemo(() => {
     if (isEdit) return user?.fullName || "Edit user";
@@ -121,12 +148,17 @@ const UserModal = ({ mode = "add", user, saving = false, onClose, onSave }) => {
       return;
     }
 
+    const selectedRoleName = draft.role;
+    const matchedRoleId =
+      normalizedRoles.find((role) => role.name === selectedRoleName)?.id ?? null;
+
     if (isEdit) {
       onSave?.({
         fullName: draft.fullName.trim(),
         department: draft.department,
         designation: draft.designation.trim(),
-        role: draft.role,
+        role: selectedRoleName,
+        roleId: matchedRoleId,
         status: draft.status,
       });
       return;
@@ -154,8 +186,10 @@ const UserModal = ({ mode = "add", user, saving = false, onClose, onSave }) => {
       employeeId: draft.employeeId.trim(),
       department: draft.department,
       designation: draft.designation.trim(),
-      role: draft.role,
+      role: selectedRoleName,
+      roleId: matchedRoleId,
       status: draft.status,
+      password: draft.password,
     });
   };
 
@@ -276,9 +310,9 @@ const UserModal = ({ mode = "add", user, saving = false, onClose, onSave }) => {
                 value={draft.role}
                 onChange={(event) => handleChange("role", event.target.value)}
               >
-                {USER_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
+                {normalizedRoles.map((role) => (
+                  <option key={role.id ?? role.name} value={role.name}>
+                    {role.name}
                   </option>
                 ))}
               </select>

@@ -6,8 +6,8 @@ import {
   fetchUserActivityLog,
   fetchUserById,
   fetchUserLoginHistory,
-  getPermissionsForRole,
 } from "../../services/userService";
+import { fetchRoles, getPermissionLabel } from "../../services/roleService";
 import {
   formatUserDate,
   formatUserDateTime,
@@ -22,6 +22,7 @@ const UserDetails = () => {
   const [user, setUser] = useState(null);
   const [loginHistory, setLoginHistory] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -30,10 +31,11 @@ const UserDetails = () => {
 
     const load = async () => {
       setLoading(true);
-      const [record, history, activity] = await Promise.all([
+      const [record, history, activity, roleData] = await Promise.all([
         fetchUserById(userId),
         fetchUserLoginHistory(userId),
         fetchUserActivityLog(userId),
+        fetchRoles(),
       ]);
 
       if (!active) return;
@@ -44,6 +46,7 @@ const UserDetails = () => {
         setUser(record);
         setLoginHistory(history);
         setActivityLog(activity);
+        setRoles(roleData);
       }
       setLoading(false);
     };
@@ -55,8 +58,15 @@ const UserDetails = () => {
   }, [userId]);
 
   const permissions = useMemo(
-    () => (user ? getPermissionsForRole(user.role) : []),
-    [user],
+    () => {
+      if (!user) return [];
+      const assignedRole = roles.find(
+        (role) =>
+          String(role.id) === String(user.roleId) || role.name === user.role,
+      );
+      return assignedRole?.permissions || user.permissions || [];
+    },
+    [user, roles],
   );
 
   if (loading) {
@@ -165,7 +175,7 @@ const UserDetails = () => {
             ) : (
               permissions.map((permission) => (
                 <span key={permission} className="admin_user_permissions__chip">
-                  {permission}
+                  {getPermissionLabel(permission)}
                 </span>
               ))
             )}

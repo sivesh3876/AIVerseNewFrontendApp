@@ -1,5 +1,6 @@
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 import { formatLeadTypeLabel } from "../utils/contactRequestStorage";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
@@ -132,7 +133,9 @@ export const getContactRequestsFromApi = async () => {
     throw new Error("Contact requests API is not configured.");
   }
 
-  const response = await fetch(withApiKey("get-contact-requests"));
+  const response = await fetch(withApiKey("get-contact-requests"), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await parseJsonResponse(response);
 
   if (!response.ok || result.status !== "success") {
@@ -149,7 +152,7 @@ export const updateContactRequestStageOnApi = async ({ id, stage }) => {
 
   const response = await fetch(withApiKey("update-contact-request-stage"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ id, stage }),
   });
   const result = await parseJsonResponse(response);

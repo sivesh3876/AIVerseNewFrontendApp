@@ -1,5 +1,6 @@
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 import { formatFollowUpDateTime } from "../components/ContactRequest/followUpUtils";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
@@ -105,9 +106,7 @@ export const createFollowUpApi = async (lead, payload = {}) => {
 
   const response = await fetch(withApiKey(SCHEDULE_FOLLOW_UP_ENDPOINT), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
 
@@ -141,9 +140,7 @@ export const fetchFollowUpsApi = async (leadKey) => {
     withApiKey(GET_FOLLOW_UPS_ENDPOINT, { leadKey }),
     {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: getAdminAuthHeaders({ Accept: "application/json" }),
     },
   );
 

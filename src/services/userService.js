@@ -29,14 +29,15 @@ export const USER_ROLES = [
 ];
 
 export const USER_DEPARTMENTS = [
-  "Engineering",
-  "Product",
-  "Design",
-  "Marketing",
+  "COE",
+  "BU Head",
+  "Business Excellence",
+  "Associate Director",
+  "Delivery",
   "Sales",
+  "Marketing",
   "Human Resources",
   "Finance",
-  "Operations",
 ];
 
 export const USER_STATUSES = ["Active", "Inactive", "Pending"];
@@ -265,6 +266,9 @@ const mapApiUser = (user = {}) => ({
   department: user.department || "",
   designation: user.designation || "",
   role: user.role || "",
+  roleId: user.roleId ?? null,
+  permissions: Array.isArray(user.permissions) ? user.permissions : [],
+  hasPassword: Boolean(user.hasPassword),
   status: user.status || "Active",
   lastLogin: user.lastLogin || null,
   createdDate: user.createdDate || user.createdAt || new Date().toISOString(),
@@ -364,13 +368,11 @@ export const deleteUser = async (id) =>
 
 export const setUserStatus = async (id, status) => updateUser(id, { status });
 
-export const assignUserRole = async (id, role) => updateUser(id, { role });
+export const assignUserRole = async (id, role, roleId = null) =>
+  updateUser(id, { role, roleId });
 
-export const resetUserPassword = async (id) =>
-  tryApi(
-    async () => resetUserPasswordApi(id),
-    async () => delay({ id, success: true }),
-  );
+export const resetUserPassword = async (id, password) =>
+  resetUserPasswordApi({ id, password });
 
 export const fetchUserLoginHistory = async (id) => {
   const user = await fetchUserById(id);
