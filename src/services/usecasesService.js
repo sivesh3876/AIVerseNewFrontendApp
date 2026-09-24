@@ -1,6 +1,9 @@
 import {
   FEATURED_CARD_POSITION_MAX,
+  HERO_CARD_POSITION_MAX,
+  getSolutionDisplayOrder,
   getSolutionOrderNumber,
+  selectTopHeroSolutions,
   selectTopOrderedSolutions,
 } from "../utils/solutionMapper";
 import { applyInactiveSolutionOverrides } from "../utils/solutionStatusStorage";
@@ -29,6 +32,11 @@ export const fetchTopOrderedSolutions = async (
 ) => {
   const data = await fetchAllUseCases();
   return selectTopOrderedSolutions(data, limit);
+};
+
+export const fetchTopHeroSolutions = async (limit = HERO_CARD_POSITION_MAX) => {
+  const data = await fetchAllUseCases();
+  return selectTopHeroSolutions(data, limit);
 };
 
 export const fetchUseCaseById = async (solutionId) => {
@@ -161,8 +169,13 @@ const appendSolutionBaseFields = (formData, solution) => {
   appendOtherDocumentsRetain(formData, solution);
 };
 
+const toPersistedOrder = (value) => {
+  if (value == null || value === "") return "0";
+  return String(value);
+};
+
 /**
- * Writes OrderNumber / DisplayOrder without claiming (used when clearing occupants).
+ * Updates OrderNumber while preserving DisplayOrder (hero slot).
  */
 const persistUseCaseOrderNumber = async (solution, orderNumber) => {
   if (!solution?.ID) {
@@ -185,13 +198,11 @@ const persistUseCaseOrderNumber = async (solution, orderNumber) => {
     );
   }
 
-  // Backend ignores empty string for OrderNumber; 0 clears featured slot.
-  const normalized = parsed == null ? "0" : String(parsed);
-
+  const heroOrder = getSolutionDisplayOrder(solution);
   const formData = new FormData();
   appendSolutionBaseFields(formData, solution);
-  formData.append("OrderNumber", normalized);
-  formData.append("DisplayOrder", normalized);
+  formData.append("OrderNumber", toPersistedOrder(parsed));
+  formData.append("DisplayOrder", toPersistedOrder(heroOrder));
 
   const response = await fetch(buildApiPath("update-usecase"), {
     method: "POST",
@@ -207,6 +218,55 @@ const persistUseCaseOrderNumber = async (solution, orderNumber) => {
     result.data || {
       ...solution,
       OrderNumber: parsed,
+      DisplayOrder: heroOrder,
+    }
+  );
+};
+
+/**
+ * Updates DisplayOrder (hero top-4) while preserving OrderNumber (featured).
+ */
+const persistUseCaseDisplayOrder = async (solution, displayOrder) => {
+  if (!solution?.ID) {
+    throw new Error("Solution ID is required to update top 4 card position.");
+  }
+
+  const parsed =
+    displayOrder == null || displayOrder === ""
+      ? null
+      : Number(displayOrder);
+
+  if (
+    parsed != null &&
+    (!Number.isFinite(parsed) ||
+      parsed < 1 ||
+      parsed > HERO_CARD_POSITION_MAX)
+  ) {
+    throw new Error(
+      `Top 4 card position must be between 1 and ${HERO_CARD_POSITION_MAX}.`,
+    );
+  }
+
+  const featuredOrder = getSolutionOrderNumber(solution);
+  const formData = new FormData();
+  appendSolutionBaseFields(formData, solution);
+  formData.append("OrderNumber", toPersistedOrder(featuredOrder));
+  formData.append("DisplayOrder", toPersistedOrder(parsed));
+
+  const response = await fetch(buildApiPath("update-usecase"), {
+    method: "POST",
+    body: formData,
+  });
+  const result = await response.json();
+
+  if (!response.ok || result.status !== "success") {
+    throw new Error(result.message || "Failed to update top 4 card position.");
+  }
+
+  return (
+    result.data || {
+      ...solution,
+      OrderNumber: featuredOrder,
       DisplayOrder: parsed,
     }
   );
@@ -246,6 +306,46 @@ export const claimFeaturedCardPosition = async ({
   const cleared = [];
   for (const occupant of occupants) {
     await persistUseCaseOrderNumber(occupant, null);
+    cleared.push(occupant);
+  }
+
+  return cleared;
+};
+
+/**
+ * Clears any other solution currently holding this hero Top 4 slot (1–4).
+ */
+export const claimHeroCardPosition = async ({
+  displayOrder,
+  excludeSolutionId = null,
+} = {}) => {
+  const parsed = Number(displayOrder);
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < 1 ||
+    parsed > HERO_CARD_POSITION_MAX
+  ) {
+    return [];
+  }
+
+  const solutions = await fetchAllUseCases({ includeInactive: true });
+  const occupants = solutions.filter((solution) => {
+    const order = getSolutionDisplayOrder(solution);
+    if (order !== parsed) {
+      return false;
+    }
+    if (
+      excludeSolutionId != null &&
+      String(solution.ID) === String(excludeSolutionId)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const cleared = [];
+  for (const occupant of occupants) {
+    await persistUseCaseDisplayOrder(occupant, null);
     cleared.push(occupant);
   }
 
