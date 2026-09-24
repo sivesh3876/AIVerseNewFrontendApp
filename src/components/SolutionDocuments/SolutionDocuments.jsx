@@ -1,4 +1,5 @@
 import "./SolutionDocuments.scss";
+import { getDocumentViewUrl } from "../../utils/solutionDocuments";
 
 const DocumentIcon = ({ type }) => {
   if (type === "architecture-diagram") {
@@ -99,7 +100,7 @@ const SolutionDocuments = ({
           {documents.slice(0, 3).map((document) => (
             <a
               key={document.id}
-              href={document.url}
+              href={getDocumentViewUrl(document.url)}
               target="_blank"
               rel="noopener noreferrer"
               className="solution_documents__compact-chip"
@@ -160,7 +161,7 @@ const SolutionDocuments = ({
 
             <div className="solution_documents__actions">
               <a
-                href={document.url}
+                href={getDocumentViewUrl(document.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="solution_documents__action solution_documents__action--primary"

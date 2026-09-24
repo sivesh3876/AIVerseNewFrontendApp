@@ -180,9 +180,8 @@ const InsightsThoughtLeadership = ({
             const { animationDelay } = getCardAnimation(index);
 
             return (
-              <BlogResourceLink
-                resource={insight}
-                className="insights_leadership__card insights_leadership__card--link"
+              <article
+                className="insights_leadership__card"
                 key={insight.id}
                 style={{ animationDelay }}
               >
@@ -206,8 +205,13 @@ const InsightsThoughtLeadership = ({
                   {insight.date}
                 </time>
 
-                <span className="insights_leadership__card-link">Read More &gt;</span>
-              </BlogResourceLink>
+                <BlogResourceLink
+                  resource={insight}
+                  className="insights_leadership__card-link"
+                >
+                  Read More &gt;
+                </BlogResourceLink>
+              </article>
             );
           })}
         </div>
