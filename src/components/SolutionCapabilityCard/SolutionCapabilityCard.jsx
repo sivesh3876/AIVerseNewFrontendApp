@@ -1,4 +1,3 @@
-import { EditIcon, TrashIcon } from "../icons/FeatherIcons";
 import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
 import {
@@ -16,7 +15,8 @@ import {
 import {
   buildDocumentsFromCapability,
   excludeSalesDeskDocuments,
-  getSalesDeskDocumentUrl,
+  getSalesPitchOpenUrl,
+  openSalesPitchDocument,
 } from "../../utils/solutionDocuments";
 
 const getInitials = (name) =>
@@ -46,19 +46,13 @@ const parseAiFoundationItems = (client = "") =>
 const SolutionCapabilityCard = ({
   capability,
   isHighlighted = false,
-  onEdit,
-  onDelete,
   onRequestDemo,
   onNavigate,
-  isDeleting = false,
-  showAdminActions = false,
 }) => {
   const CardIcon = resolveCapabilityIcon(capability);
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
-  const liveDemoLink = capability.demoLink;
-  const hasLiveDemo = Boolean(liveDemoLink);
-  const salesDeskUrl = getSalesDeskDocumentUrl(capability);
-  const hasSalesDesk = Boolean(salesDeskUrl);
+  const salesPitchUrl = getSalesPitchOpenUrl(capability);
+  const hasSalesDesk = Boolean(salesPitchUrl);
   const isSubmitted = Boolean(capability.isApiSolution);
   const documents = excludeSalesDeskDocuments(
     buildDocumentsFromCapability(capability),
@@ -95,36 +89,6 @@ const SolutionCapabilityCard = ({
       role={onNavigate ? "button" : undefined}
       tabIndex={onNavigate ? 0 : undefined}
     >
-      {showAdminActions && isSubmitted && (
-        <div className="ccm_dashboard__capability-controls">
-          <button
-            type="button"
-            className="ccm_dashboard__control-btn ccm_dashboard__control-btn--edit"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit?.(capability);
-            }}
-            aria-label={`Edit ${capability.title}`}
-            title="Edit"
-          >
-            <EditIcon />
-          </button>
-          <button
-            type="button"
-            className="ccm_dashboard__control-btn ccm_dashboard__control-btn--delete"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete?.(capability);
-            }}
-            disabled={isDeleting}
-            aria-label={`Delete ${capability.title}`}
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      )}
-
       <div className="ccm_dashboard__capability-head">
         <span className="ccm_dashboard__capability-icon" aria-hidden="true">
           <CardIcon />
@@ -257,38 +221,24 @@ const SolutionCapabilityCard = ({
               <VideoCameraIcon />
             </a>
           ) : (
-            <button type="button" className="ccm_dashboard__action-btn" disabled>
-              Recorded Demo
-              <VideoCameraIcon />
-            </button>
-          )}
-          {hasLiveDemo ? (
-            <a
-              href={liveDemoLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ccm_dashboard__action-btn"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Live Demo
-            </a>
-          ) : (
             <button
               type="button"
               className="ccm_dashboard__action-btn"
               disabled
-              title="Add a Live Demo Link in Admin to enable this button"
+              title="No recorded demo available"
+              onClick={(event) => event.stopPropagation()}
             >
-              Live Demo
+              Recorded Demo
+              <VideoCameraIcon />
             </button>
           )}
           {hasSalesDesk ? (
             <a
-              href={salesDeskUrl}
+              href={salesPitchUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="ccm_dashboard__action-btn"
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => openSalesPitchDocument(salesPitchUrl, event)}
             >
               Sales Pitch
               <DocumentIcon />
@@ -297,6 +247,8 @@ const SolutionCapabilityCard = ({
             <button
               type="button"
               className="ccm_dashboard__action-btn"
+              disabled
+              title="No sales pitch document available"
               onClick={(event) => event.stopPropagation()}
             >
               Sales Pitch

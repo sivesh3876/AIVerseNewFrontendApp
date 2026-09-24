@@ -100,15 +100,34 @@
     gap: 6px;
     padding: 0 16px 12px;
     flex-wrap: nowrap;
+    position: relative;
 
     .solution_engagement__stat,
     .solution_engagement__btn {
       justify-content: center;
+      width: 100%;
       min-width: 0;
-      min-height: 32px;
-      padding: 5px 4px;
+      min-height: 36px;
+      padding: 6px 4px;
       gap: 4px;
       font-size: 11px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .solution_engagement__btn {
+      position: relative;
+      z-index: 1;
+      cursor: pointer;
+
+      > * {
+        pointer-events: none;
+      }
+    }
+
+    .solution_engagement__btn--share {
+      width: 100%;
+      min-width: 0;
     }
 
     .solution_engagement__stat strong,
@@ -121,6 +140,28 @@
 
     svg {
       flex-shrink: 0;
+    }
+
+    .solution_engagement__feedback {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(100% + 4px);
+      margin: 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: #0d1e32;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      z-index: 4;
+      pointer-events: none;
+
+      &.is-error {
+        background: #dc2626;
+        color: #fff;
+      }
     }
   }
 

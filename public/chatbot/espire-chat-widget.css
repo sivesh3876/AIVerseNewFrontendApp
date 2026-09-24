@@ -30,6 +30,8 @@
   align-items: flex-end;
   width: max-content;
   color: var(--espire-chat-text);
+  /* Root must not steal clicks: closed panel still occupies layout space. */
+  pointer-events: none;
 }
 
 .espire-chat-root *:focus-visible {
@@ -54,6 +56,7 @@
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
+  pointer-events: auto;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 

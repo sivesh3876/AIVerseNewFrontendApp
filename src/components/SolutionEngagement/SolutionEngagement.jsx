@@ -153,13 +153,16 @@ const SolutionEngagement = ({
   }, [applyEngagementState, isLoading, solutionId, title, trackView]);
 
   useEffect(() => {
-    if (!shareMessage) {
+    if (!shareMessage && !errorMessage) {
       return undefined;
     }
 
-    const timer = window.setTimeout(() => setShareMessage(""), 2400);
+    const timer = window.setTimeout(() => {
+      setShareMessage("");
+      setErrorMessage("");
+    }, 2400);
     return () => window.clearTimeout(timer);
-  }, [shareMessage]);
+  }, [shareMessage, errorMessage]);
 
   const stopCardNavigation = (event) => {
     event.stopPropagation();
@@ -208,9 +211,10 @@ const SolutionEngagement = ({
       const state = await loadSolutionEngagement(solutionId);
       applyEngagementState(state);
     } catch (shareError) {
-      if (shareError?.name !== "AbortError" && !isHomeVariant) {
-        setErrorMessage(shareError.message || "Unable to share this solution.");
+      if (shareError?.name === "AbortError") {
+        return;
       }
+      setErrorMessage(shareError.message || "Unable to share this solution.");
     }
   };
 
@@ -272,28 +276,27 @@ const SolutionEngagement = ({
 
         <button
           type="button"
-          className="solution_engagement__btn"
+          className="solution_engagement__btn solution_engagement__btn--share"
           onClick={handleShare}
           aria-label="Share"
           title="Share"
-          disabled={isLoading}
         >
           <FiShare2 aria-hidden="true" />
           {!isHomeVariant && <span>Share</span>}
           {renderCount(shareCount)}
         </button>
 
-        {shareMessage && !isHomeVariant && (
+        {shareMessage ? (
           <p className="solution_engagement__feedback" role="status">
             {shareMessage}
           </p>
-        )}
+        ) : null}
 
-        {errorMessage && !isHomeVariant && (
+        {errorMessage ? (
           <p className="solution_engagement__feedback is-error" role="alert">
             {errorMessage}
           </p>
-        )}
+        ) : null}
       </div>
 
       {isCommentOpen && isInlineComments && (

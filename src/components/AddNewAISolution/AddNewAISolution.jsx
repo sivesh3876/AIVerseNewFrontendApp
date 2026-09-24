@@ -10,6 +10,7 @@ import {
 } from "../../utils/solutionMapper";
 import {
   claimFeaturedCardPosition,
+  claimHeroCardPosition,
   getFeaturedPositionOccupancy,
   fetchUseCaseById,
 } from "../../services/usecasesService";
@@ -73,6 +74,7 @@ const sanitizeEvangelists = (evangelists = []) =>
   evangelists.filter((name) => name && name.trim() && name !== "Undefined");
 
 const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const TOP_4_POSITION_OPTIONS = [1, 2, 3, 4];
 
 const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
   "AgenticAutomation",
@@ -89,12 +91,20 @@ const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
 const BUSINESS_DOMAIN_DISPLAY_NAMES = {
   CustomerExperienceCRM: "Enterprise Application",
   DataAnalytics: "Data Management",
+  Insurance: "BFSI",
 };
 
 const normalizeCardPosition = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return "";
   if (parsed < 1 || parsed > 9) return "";
+  return String(parsed);
+};
+
+const normalizeHeroPosition = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "";
+  if (parsed < 1 || parsed > 4) return "";
   return String(parsed);
 };
 
@@ -109,6 +119,7 @@ const initialFormState = {
   AiFoundation: [],
   DemoLink: "",
   OrderNumber: "",
+  DisplayOrder: "",
   Publish: "Yes",
 };
 
@@ -591,9 +602,11 @@ const AddNewAISolution = () => {
             DemoLink: solution.DemoLink || "",
             OrderNumber: normalizeCardPosition(
               solution.OrderNumber ??
-                solution.DisplayOrder ??
                 solution.OrderNo ??
                 solution.orderNumber,
+            ),
+            DisplayOrder: normalizeHeroPosition(
+              solution.DisplayOrder ?? solution.displayOrder,
             ),
             Publish:
               solution.Publish ||
@@ -822,6 +835,18 @@ const AddNewAISolution = () => {
         }
       }
 
+      const claimedHeroPosition = normalizeHeroPosition(form.DisplayOrder);
+      if (claimedHeroPosition) {
+        try {
+          await claimHeroCardPosition({
+            displayOrder: claimedHeroPosition,
+            excludeSolutionId: isEditMode ? editId : null,
+          });
+        } catch (claimError) {
+          console.error("Failed to claim top 4 card position", claimError);
+        }
+      }
+
       const formDataToSend = new FormData();
 
       if (isEditMode) {
@@ -829,14 +854,7 @@ const AddNewAISolution = () => {
       }
 
       Object.keys(form).forEach((key) => {
-        if (key === "OrderNumber") {
-          const orderValue = normalizeCardPosition(form.OrderNumber);
-          // Backend ignores empty OrderNumber; send 0 to clear featured slot.
-          if (orderValue || isEditMode) {
-            const persisted = orderValue || "0";
-            formDataToSend.append("OrderNumber", persisted);
-            formDataToSend.append("DisplayOrder", persisted);
-          }
+        if (key === "OrderNumber" || key === "DisplayOrder") {
           return;
         }
 
@@ -874,6 +892,23 @@ const AddNewAISolution = () => {
 
         formDataToSend.append(key, form[key]);
       });
+
+      const orderValue = normalizeCardPosition(form.OrderNumber);
+      const heroValue = normalizeHeroPosition(form.DisplayOrder);
+
+      // Avoid sending OrderNumber=0 / DisplayOrder=0 together with the other
+      // field set — backend can wipe the hero or featured slot.
+      if (orderValue && heroValue) {
+        formDataToSend.append("OrderNumber", orderValue);
+        formDataToSend.append("DisplayOrder", heroValue);
+      } else if (orderValue) {
+        formDataToSend.append("OrderNumber", orderValue);
+      } else if (heroValue) {
+        formDataToSend.append("DisplayOrder", heroValue);
+      } else if (isEditMode) {
+        formDataToSend.append("OrderNumber", "0");
+        formDataToSend.append("DisplayOrder", "0");
+      }
 
       if (files.DemoRecordedVideo) {
         formDataToSend.append("DemoRecordedVideo", files.DemoRecordedVideo);
@@ -1245,7 +1280,24 @@ const AddNewAISolution = () => {
               onChange={(nextValue) => updateField("OrderNumber", nextValue)}
             />
             <p className="add_ai_solution__field-hint">
-              {`Sets the slot (1–9) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Choosing an occupied slot replaces that card.`}
+              {`Sets the slot (1–9) on home Featured Solutions — “Espire's AI capabilities, proven in action”. Position 1 defaults to Customer Onboarding Accelerator; assigning Position 1 to another solution replaces it. Choosing any occupied slot replaces that card.`}
+            </p>
+          </div>
+
+          <div className="add_ai_solution__field">
+            <label htmlFor="DisplayOrder">Top 4 card Position</label>
+            <FormSelectDropdown
+              id="DisplayOrder"
+              value={form.DisplayOrder}
+              placeholder="Select top 4 position"
+              options={TOP_4_POSITION_OPTIONS.map((position) => ({
+                value: String(position),
+                label: `Position ${position}`,
+              }))}
+              onChange={(nextValue) => updateField("DisplayOrder", nextValue)}
+            />
+            <p className="add_ai_solution__field-hint">
+              {`Sets the slot (1–4) on the home hero top cards. Position 1 defaults to Customer Onboarding Accelerator; assigning Position 1 to another solution replaces it. Choosing any occupied slot replaces that card.`}
             </p>
           </div>
         </div>

@@ -11,7 +11,7 @@ export const footerSections = [
     title: "Industries",
     links: [
       { label: "Education", to: "/industry-solutions?industry=education" },
-      { label: "BFSI Banking, Financial, Services, and Insurance", to: "/industry-solutions?industry=insurance" },
+      { label: "Banking, Financial, Services, and Insurance", to: "/industry-solutions?industry=insurance" },
       { label: "Logistics", to: "/industry-solutions?industry=logistics" },
     ],
   },
