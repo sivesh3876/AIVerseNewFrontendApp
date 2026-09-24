@@ -318,10 +318,34 @@ const parseEmailFromValue = (value) => {
   return match ? match[1].trim() : "";
 };
 
+const RECORDED_DEMO_IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|bmp)(\?|#|$)/i;
+
+const isUsableDemoUrl = (url) => {
+  const value = String(url || "").trim();
+  if (!value) return false;
+
+  const lower = value.toLowerCase();
+  if (lower.includes("upcoming")) return false;
+  if (RECORDED_DEMO_IMAGE_EXT.test(lower)) return false;
+
+  return true;
+};
+
+const normalizeHttpUrl = (url) => {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
+};
+
 const resolveRecordedDemoLink = (solution = {}) => {
   const recordedVideoLink = (solution.DemoRecordedVideoLink || "").trim();
-  const demoLink = (solution.DemoLink || "").trim();
-  return recordedVideoLink || demoLink;
+  return isUsableDemoUrl(recordedVideoLink) ? recordedVideoLink : "";
+};
+
+export const resolveLiveDemoLink = (solution = {}) => {
+  const raw = toText(solution.DemoLink || solution.demoLink).trim();
+  return isUsableDemoUrl(raw) ? normalizeHttpUrl(raw) : "";
 };
 
 const TECH_STACK_NAME_KEYS = [
@@ -524,6 +548,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
     orderNumber,
     themeIndex: Math.abs(iconSeed) % 8,
     recordedDemoLink: resolveRecordedDemoLink(solution) || null,
+    demoLink: resolveLiveDemoLink(solution) || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
     detailUrl,
     capabilityForDemo: {
@@ -597,6 +622,7 @@ export const mapApiSolutionToCapability = (
   const evangelists = parseEvangelists(solution.AiEvangelists, evangelistDirectory);
   const techStack = parseTechStack(getTechStackSource(solution));
   const recordedDemoLink = resolveRecordedDemoLink(solution);
+  const demoLink = resolveLiveDemoLink(solution);
 
   return {
     id: `api-${solution.ID}`,
@@ -622,6 +648,7 @@ export const mapApiSolutionToCapability = (
             },
           ],
     recordedDemoLink,
+    demoLink,
     businessDomain: solution.BusinessDomain,
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),

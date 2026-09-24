@@ -717,18 +717,8 @@ const AddNewAISolution = () => {
     }
 
     if (form.DemoLink.trim() && !isValidUrl(form.DemoLink)) {
-      newErrors.DemoLink =
-        "Enter a valid demo URL starting with http:// or https://";
-    }
-
-    if (
-      !form.DemoLink.trim() &&
-      !files.DemoRecordedVideo &&
-      !existingFiles.DemoRecordedVideoLink
-    ) {
-      newErrors.DemoLink = "Either Demo Link or Demo Video is required";
-      newErrors.DemoRecordedVideo =
-        "Either Demo Link or Demo Video is required";
+          newErrors.DemoLink =
+            "Enter a valid live demo URL starting with http:// or https://";
     }
 
     if (
@@ -827,10 +817,14 @@ const AddNewAISolution = () => {
     try {
       const claimedPosition = normalizeCardPosition(form.OrderNumber);
       if (claimedPosition) {
-        await claimFeaturedCardPosition({
-          orderNumber: claimedPosition,
-          excludeSolutionId: isEditMode ? editId : null,
-        });
+        try {
+          await claimFeaturedCardPosition({
+            orderNumber: claimedPosition,
+            excludeSolutionId: isEditMode ? editId : null,
+          });
+        } catch (claimError) {
+          console.error("Failed to claim featured card position", claimError);
+        }
       }
 
       const formDataToSend = new FormData();
@@ -1018,25 +1012,38 @@ const AddNewAISolution = () => {
           setFiles(emptyPendingFiles());
         }
 
-        const submittedSolution = updatedSolution
-          ? mapApiSolutionToCapability(updatedSolution, {
-              evangelistDirectory: aiEvangelists,
-              solutionOwners,
-            })
-          : mapFormToCapability(form, {
-              solutionId,
-              evangelistDirectory: aiEvangelists,
-              solutionOwners,
-            });
-        const serializedSolution =
-          serializeCapabilityForNavigation(submittedSolution);
+        let serializedSolution = null;
         const isPublishedSolution = form.Publish === "Yes";
-        if (isPublishedSolution) {
-          persistSubmittedCapability(serializedSolution);
+        try {
+          const submittedSolution = updatedSolution
+            ? mapApiSolutionToCapability(updatedSolution, {
+                evangelistDirectory: aiEvangelists,
+                solutionOwners,
+              })
+            : mapFormToCapability(form, {
+                solutionId,
+                evangelistDirectory: aiEvangelists,
+                solutionOwners,
+              });
+          serializedSolution =
+            serializeCapabilityForNavigation(submittedSolution);
+          if (isPublishedSolution && serializedSolution) {
+            persistSubmittedCapability(serializedSolution);
+          }
+        } catch (postSaveError) {
+          console.error("Solution saved, but post-save mapping failed", postSaveError);
         }
 
         if (!isEditMode) {
           resetFormFields();
+        }
+
+        if (location.pathname.startsWith("/admin")) {
+          navigate("/admin/solution-new-ai", {
+            replace: true,
+            state: { savedSolutionTitle: form.Title || "Solution" },
+          });
+          return;
         }
 
         if (!isPublishedSolution) {
@@ -1417,11 +1424,11 @@ const AddNewAISolution = () => {
       <section className="add_ai_solution__card">
         <h2>
           <PlayIcon />
-          Demo and Media (At least one required)
+          Demo and Media
         </h2>
 
         <div className="add_ai_solution__field">
-          <label htmlFor="DemoLink">Demo Link</label>
+          <label htmlFor="DemoLink">Live Demo Link</label>
           <div className="add_ai_solution__input-icon">
             <LinkIcon />
             <input
@@ -1434,7 +1441,7 @@ const AddNewAISolution = () => {
             />
           </div>
           <p className="add_ai_solution__field-hint">
-            Provide a link to a live demo or hosted version
+            Add this URL to enable the Live Demo button on the solution card
           </p>
           {errors.DemoLink && (
             <p className="add_ai_solution__error">{errors.DemoLink}</p>
@@ -1457,7 +1464,7 @@ const AddNewAISolution = () => {
           onFilesChange={(file) =>
             setFiles((prev) => ({ ...prev, DemoRecordedVideo: file }))
           }
-          note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder, copy the shareable URL, and paste that URL into the Demo Link field."
+          note="Note: If your demo video is larger than 50 MB, please upload it to the Demo Videos SharePoint folder. Use Live Demo Link only for an interactive hosted demo URL."
         />
 
         {isEditMode &&

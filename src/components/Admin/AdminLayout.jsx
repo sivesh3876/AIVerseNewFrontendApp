@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import logo from "../../assets/images/logo.svg";
 import "./AdminDashboard.scss";
@@ -67,6 +68,11 @@ const AdminLayout = () => {
     logout();
     navigate("/admin/login", { replace: true });
   };
+
+  useEffect(() => {
+    document.body.classList.add("is-admin-shell");
+    return () => document.body.classList.remove("is-admin-shell");
+  }, []);
 
   return (
     <div className="admin_dashboard">

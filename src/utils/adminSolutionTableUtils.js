@@ -116,7 +116,7 @@ const EXPORT_COLUMNS = [
     label: "Status",
     format: (_value, solution) => getSolutionStatusLabel(solution),
   },
-  { key: "DemoLink", label: "Demo Link" },
+  { key: "DemoLink", label: "Live Demo Link" },
   { key: "RepositoryUrl", label: "Repository URL" },
 ];
 

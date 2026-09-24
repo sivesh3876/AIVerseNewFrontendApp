@@ -8,6 +8,7 @@ import {
   HOME_SOLUTION_ICONS,
   OnboardingAcceleratorIcon,
 } from "./HomeSolutionCardIcons";
+import { resolveLiveDemoLink } from "../../utils/solutionMapper";
 
 const EyeSmallIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -66,18 +67,59 @@ const WMS_ONBOARDING_SOLUTION_ID = 48;
 const WMS_ONBOARDING_SOLUTION_PATH =
   "/explore-solutions?service=enterprise-application&solution=api-48";
 
-const resolveWmsRecordedDemoLink = (solution = {}) => {
-  const recordedVideoLink = String(solution.DemoRecordedVideoLink || "").trim();
-  const demoLink = String(solution.DemoLink || "").trim();
-  return recordedVideoLink || demoLink || "";
+const resolveWmsRecordedDemoLink = (solution = {}) =>
+  String(solution.DemoRecordedVideoLink || "").trim();
+
+const LiveDemoButton = ({ href, compact = false }) => {
+  const label = compact ? (
+    "Live Demo"
+  ) : (
+    <>
+      <PlaySmallIcon />
+      <span className="ai_capabilities__btn-text">
+        Live Demo
+        <ArrowIcon />
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="ai_capabilities__btn ai_capabilities__btn--live"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {label}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="ai_capabilities__btn ai_capabilities__btn--live"
+      disabled
+      title="Add a Live Demo Link in Admin to enable this button"
+    >
+      {label}
+    </button>
+  );
 };
 
-export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
+export const OnboardingAcceleratorCard = ({
+  compact = false,
+  index = 1,
+  showLiveDemo = true,
+}) => {
   const navigate = useNavigate();
   const descriptionRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null);
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
   const [recordedDemoLink, setRecordedDemoLink] = useState("");
+  const [liveDemoLink, setLiveDemoLink] = useState("");
   const [salesDeskDoc, setSalesDeskDoc] = useState("");
   const [descriptionText, setDescriptionText] = useState(
     ONBOARDING_ACCELERATOR.description,
@@ -94,6 +136,7 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
         const solution = await fetchUseCaseById(WMS_ONBOARDING_SOLUTION_ID);
         if (!isMounted || !solution) return;
         setRecordedDemoLink(resolveWmsRecordedDemoLink(solution));
+        setLiveDemoLink(resolveLiveDemoLink(solution));
         setSalesDeskDoc(String(solution.SalesDeskDoc || "").trim());
         const aboutText = String(solution.SolutionContext || "").trim();
         if (aboutText) {
@@ -102,6 +145,7 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
       } catch {
         if (isMounted) {
           setRecordedDemoLink("");
+          setLiveDemoLink("");
           setSalesDeskDoc("");
         }
       }
@@ -168,8 +212,8 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
     </>
   );
 
-  const onboardingActions = (
-    <div className="ai_capabilities__actions">
+  const onboardingCtaButtons = (
+    <>
       <button
         type="button"
         className="ai_capabilities__btn ai_capabilities__btn--primary"
@@ -229,7 +273,16 @@ export const OnboardingAcceleratorCard = ({ compact = false, index = 1 }) => {
           {salesPitchLabel}
         </button>
       )}
+    </>
+  );
+
+  const onboardingActions = showLiveDemo ? (
+    <div className="ai_capabilities__actions-stack">
+      <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
+      <LiveDemoButton href={liveDemoLink} compact={compact} />
     </div>
+  ) : (
+    <div className="ai_capabilities__actions">{onboardingCtaButtons}</div>
   );
 
   if (compact) {
@@ -375,7 +428,6 @@ export const SolutionCardSkeleton = ({ index, compact = false }) => (
 const CompactSolutionCard = ({
   solution,
   index,
-  onRequestDemo,
   cardRef,
   isHighlighted,
 }) => {
@@ -384,7 +436,7 @@ const CompactSolutionCard = ({
     HOME_SOLUTION_ICONS[
       Math.abs(Number(solution?.themeIndex) || 0) % HOME_SOLUTION_ICONS.length
     ] ?? HOME_SOLUTION_ICONS[0];
-  const hasRecordedDemo = Boolean(solution.recordedDemoLink);
+  const liveDemoLink = solution.demoLink;
 
   const handleNavigate = () => {
     if (solution.id) {
@@ -432,25 +484,7 @@ const CompactSolutionCard = ({
         >
           View Solution
         </button>
-
-        {hasRecordedDemo ? (
-          <a
-            href={solution.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            Live Demo
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-            onClick={() => onRequestDemo(solution.capabilityForDemo)}
-          >
-            Live Demo
-          </button>
-        )}
+        <LiveDemoButton href={liveDemoLink} compact />
       </div>
     </article>
   );
@@ -462,6 +496,7 @@ const FullSolutionCard = ({
   onRequestDemo,
   cardRef,
   isHighlighted,
+  showLiveDemo = true,
 }) => {
   const navigate = useNavigate();
   const internalCardRef = useRef(null);
@@ -474,6 +509,7 @@ const FullSolutionCard = ({
       Math.abs(Number(solution?.themeIndex) || 0) % HOME_SOLUTION_ICONS.length
     ] ?? HOME_SOLUTION_ICONS[0];
   const hasRecordedDemo = Boolean(solution.recordedDemoLink);
+  const liveDemoLink = solution.demoLink;
   const salesDeskUrl = solution.salesDeskDoc;
   const hasSalesDesk = Boolean(salesDeskUrl);
 
@@ -554,6 +590,73 @@ const FullSolutionCard = ({
   };
 
   const showReadMore = descriptionText.length > 110 || isDescriptionClamped;
+
+  const solutionCtaButtons = (
+    <>
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--primary"
+        onClick={handleNavigate}
+      >
+        <EyeSmallIcon />
+        <span className="ai_capabilities__btn-text">
+          View Solution
+          <ArrowIcon />
+        </span>
+      </button>
+
+      {hasRecordedDemo ? (
+        <a
+          href={solution.recordedDemoLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+        >
+          <PlaySmallIcon />
+          <span className="ai_capabilities__btn-text">
+            Watch Demo
+            <ArrowIcon />
+          </span>
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+          onClick={() => onRequestDemo(solution.capabilityForDemo)}
+        >
+          <PlaySmallIcon />
+          <span className="ai_capabilities__btn-text">
+            Watch Demo
+            <ArrowIcon />
+          </span>
+        </button>
+      )}
+
+      {hasSalesDesk ? (
+        <a
+          href={salesDeskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ai_capabilities__btn ai_capabilities__btn--demo"
+        >
+          <DocumentIcon />
+          <span className="ai_capabilities__btn-text">
+            Sales Pitch
+            <ArrowIcon />
+          </span>
+        </a>
+      ) : null}
+    </>
+  );
+
+  const solutionActions = showLiveDemo ? (
+    <div className="ai_capabilities__actions-stack">
+      <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
+      <LiveDemoButton href={liveDemoLink} />
+    </div>
+  ) : (
+    <div className="ai_capabilities__actions">{solutionCtaButtons}</div>
+  );
 
   return (
     <article
@@ -651,61 +754,7 @@ const FullSolutionCard = ({
         </div>
       </div>
 
-      <div className="ai_capabilities__actions">
-        <button
-          type="button"
-          className="ai_capabilities__btn ai_capabilities__btn--primary"
-          onClick={handleNavigate}
-        >
-          <EyeSmallIcon />
-          <span className="ai_capabilities__btn-text">
-            View Solution
-            <ArrowIcon />
-          </span>
-        </button>
-
-        {hasRecordedDemo ? (
-          <a
-            href={solution.recordedDemoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Watch Demo
-              <ArrowIcon />
-            </span>
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-            onClick={() => onRequestDemo(solution.capabilityForDemo)}
-          >
-            <PlaySmallIcon />
-            <span className="ai_capabilities__btn-text">
-              Watch Demo
-              <ArrowIcon />
-            </span>
-          </button>
-        )}
-
-        {hasSalesDesk ? (
-          <a
-            href={salesDeskUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ai_capabilities__btn ai_capabilities__btn--demo"
-          >
-            <DocumentIcon />
-            <span className="ai_capabilities__btn-text">
-              Sales Pitch
-              <ArrowIcon />
-            </span>
-          </a>
-        ) : null}
-      </div>
+      {solutionActions}
     </article>
   );
 };
@@ -717,6 +766,7 @@ export const SolutionCard = ({
   cardRef,
   isHighlighted,
   compact = false,
+  showLiveDemo = true,
 }) => {
   if (compact) {
     return (
@@ -737,6 +787,7 @@ export const SolutionCard = ({
       onRequestDemo={onRequestDemo}
       cardRef={cardRef}
       isHighlighted={isHighlighted}
+      showLiveDemo={showLiveDemo}
     />
   );
 };
