@@ -18,8 +18,8 @@ export const PUBLIC_CERTIFICATION_EVENTS = [
 
 export const refreshPublicCertificationData = async () => {
   const results = await Promise.allSettled([
-    // Full list kept in cache; Inactive filtered out via isPublicCertification.
-    refreshCertificationsFromApi({ includeUnpublished: true }),
+    // Public pages only need published/active records (no admin auth).
+    refreshCertificationsFromApi({ includeUnpublished: false }),
     refreshCertifiedProfessionalsFromApi(),
   ]);
 

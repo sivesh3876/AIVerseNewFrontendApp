@@ -392,10 +392,9 @@ const toApiCertificationPayload = (normalized, extra = {}) => ({
 export const refreshCertificationsFromApi = async ({
   includeUnpublished = true,
 } = {}) => {
-  // Always load the full set (including Inactive). Public pages filter with
-  // isPublicCertification so Inactive cards stay hidden without wiping status.
-  void includeUnpublished;
-  const data = await fetchCertifications({ includeUnpublished: true });
+  // Admin pages request includeUnpublished=true; public pages should pass false
+  // so unpublished/inactive records stay behind auth.
+  const data = await fetchCertifications({ includeUnpublished });
   apiCertificationsCache = data.map(normalizeApiCertification);
   window.dispatchEvent(new Event(CERTIFICATIONS_CHANGED_EVENT));
   return loadAdminCertifications();

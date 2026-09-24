@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const parseJson = async (response) => {
   try {
@@ -15,14 +16,18 @@ const assertSuccess = (response, result, fallbackMessage) => {
 };
 
 export const fetchUsersApi = async () => {
-  const response = await fetch(buildApiPath("get-users"));
+  const response = await fetch(buildApiPath("get-users"), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to fetch users.");
   return Array.isArray(result.data) ? result.data : [];
 };
 
 export const fetchUserByIdApi = async (userId) => {
-  const response = await fetch(buildApiPath("get-users", { id: userId }));
+  const response = await fetch(buildApiPath("get-users", { id: userId }), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to fetch user.");
   return result.data;
@@ -31,7 +36,7 @@ export const fetchUserByIdApi = async (userId) => {
 export const createUserApi = async (payload) => {
   const response = await fetch(buildApiPath("save-user"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -42,7 +47,7 @@ export const createUserApi = async (payload) => {
 export const updateUserApi = async (payload) => {
   const response = await fetch(buildApiPath("update-user"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -53,17 +58,18 @@ export const updateUserApi = async (payload) => {
 export const deleteUserApi = async (userId) => {
   const response = await fetch(buildApiPath("delete-user", { id: userId }), {
     method: "DELETE",
+    headers: getAdminAuthHeaders(),
   });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to delete user.");
   return result.data;
 };
 
-export const resetUserPasswordApi = async (userId) => {
+export const resetUserPasswordApi = async (payload) => {
   const response = await fetch(buildApiPath("reset-user-password"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: userId, userId }),
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to reset password.");

@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   clearAdminSession,
-  createAdminSession,
+  createAdminSessionFromLogin,
   getAdminSession,
-  validateAdminCredentials,
+  hasAnyPermission as sessionHasAnyPermission,
+  hasPermission as sessionHasPermission,
 } from "../utils/adminAuth";
+import { buildApiPath } from "../services/apiConfig";
 
 const AdminAuthContext = createContext(null);
 
@@ -12,27 +14,74 @@ export const AdminAuthProvider = ({ children }) => {
   const [session, setSession] = useState(() => getAdminSession());
 
   useEffect(() => {
-    const syncSession = () => {
-      setSession(getAdminSession());
+    let active = true;
+
+    const refreshSession = async () => {
+      const current = getAdminSession();
+      if (!current?.token) {
+        if (active) setSession(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(buildApiPath("portal-me"), {
+          headers: { Authorization: `Bearer ${current.token}` },
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== "success") {
+          if (response.status === 401) {
+            clearAdminSession();
+            if (active) setSession(null);
+          }
+          return;
+        }
+        const nextSession = createAdminSessionFromLogin({
+          ...(result.data || result),
+          token: current.token,
+          loggedInAt: current.loggedInAt,
+        });
+        if (active) setSession(nextSession);
+      } catch {
+        if (active) setSession(getAdminSession());
+      }
     };
 
+    const syncSession = () => setSession(getAdminSession());
+    refreshSession();
     window.addEventListener("storage", syncSession);
-    window.addEventListener("focus", syncSession);
+    window.addEventListener("focus", refreshSession);
 
     return () => {
+      active = false;
       window.removeEventListener("storage", syncSession);
-      window.removeEventListener("focus", syncSession);
+      window.removeEventListener("focus", refreshSession);
     };
   }, []);
 
-  const login = useCallback((email, password) => {
-    if (!validateAdminCredentials(email, password)) {
-      return { success: false, message: "Invalid email or password." };
-    }
+  const login = useCallback(async (email, password) => {
+    try {
+      const response = await fetch(buildApiPath("portal-login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== "success") {
+        return {
+          success: false,
+          message: result.message || "Invalid email or password.",
+        };
+      }
 
-    const nextSession = createAdminSession(email);
-    setSession(nextSession);
-    return { success: true };
+      const nextSession = createAdminSessionFromLogin(result);
+      setSession(nextSession);
+      return { success: true, session: nextSession };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Unable to sign in. Please try again.",
+      };
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -47,6 +96,11 @@ export const AdminAuthProvider = ({ children }) => {
       adminEmail: session?.email || "",
       adminName: session?.name || "",
       authToken: session?.token || "",
+      permissions: session?.permissions || [],
+      role: session?.role || "",
+      hasPermission: (permission) => sessionHasPermission(permission, session),
+      hasAnyPermission: (permission) =>
+        sessionHasAnyPermission(permission, session),
       login,
       logout,
     }),

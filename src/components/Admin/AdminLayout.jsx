@@ -5,51 +5,63 @@ import "./AdminDashboard.scss";
 import "./AdminLayout.scss";
 
 const adminNavItems = [
-  { label: "Dashboard", to: "/admin", end: true },
+  { label: "Dashboard", to: "/admin", end: true, permission: "dashboard.view" },
   {
     label: "Leads",
     to: "/admin/contact-requests",
     end: true,
+    permission: "leads.view",
   },
   {
     label: "Request Demo",
     to: "/admin/request-demos/solution-info",
     end: false,
+    permission: "demo.view",
   },
   {
     label: "Blogs",
     to: "/admin/blogs",
     end: true,
+    permission: "blogs.view",
   },
   {
     label: "Success Stories",
     to: "/admin/success-stories",
     end: false,
+    permission: "success_stories.view",
   },
   {
     label: "Learn & Explore",
     to: "/admin/learn-explore",
     end: false,
+    permission: "learn.view",
   },
   {
     label: "Solution New AI",
     to: "/admin/solution-new-ai",
     end: true,
+    permission: "solutions.view",
   },
   {
     label: "Role Management",
     to: "/admin/role-management",
     end: false,
+    permission: "roles.view",
   },
   {
     label: "User Management",
     to: "/admin/user-management",
     end: false,
+    permission: "users.view",
   },
 ];
 const AdminLayout = () => {
   const navigate = useNavigate();
-  const { adminEmail, logout } = useAdminAuth();
+  const { adminEmail, hasPermission, logout } = useAdminAuth();
+  // Only show modules the signed-in role actually grants (including Dashboard).
+  const visibleNavItems = adminNavItems.filter((item) =>
+    hasPermission(item.permission),
+  );
 
   const handleLogout = () => {
     logout();
@@ -68,7 +80,7 @@ const AdminLayout = () => {
         </div>
 
         <nav className="admin_dashboard__nav">
-          {adminNavItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
