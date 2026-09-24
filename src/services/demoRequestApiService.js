@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const EMAIL_API_KEY = import.meta.env.VITE_EMAIL_API_KEY || "";
 
@@ -24,7 +25,7 @@ export const updateDemoRequestApi = async (demoId, updates = {}) => {
 
   const response = await fetch(withApiKey("update-demo-request"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       id: numericId,
       ID: numericId,

@@ -70,6 +70,16 @@ export const PERMISSION_CATALOG = [
     ],
   },
   {
+    key: "success_stories",
+    module: "Success Stories",
+    permissions: [
+      { id: "success_stories.view", label: "View Success Stories" },
+      { id: "success_stories.create", label: "Create Success Stories" },
+      { id: "success_stories.edit", label: "Edit Success Stories" },
+      { id: "success_stories.delete", label: "Delete Success Stories" },
+    ],
+  },
+  {
     key: "learn",
     module: "Learn & Explore",
     permissions: [
@@ -84,7 +94,17 @@ export const PERMISSION_CATALOG = [
     module: "Request Demo",
     permissions: [
       { id: "demo.view", label: "View Requests" },
+      { id: "demo.edit", label: "Edit Requests" },
       { id: "demo.export", label: "Export Requests" },
+    ],
+  },
+  {
+    key: "leads",
+    module: "Leads",
+    permissions: [
+      { id: "leads.view", label: "View Leads" },
+      { id: "leads.edit", label: "Edit Leads" },
+      { id: "leads.export", label: "Export Leads" },
     ],
   },
   {
@@ -123,6 +143,9 @@ const CONTENT_MANAGER = [
   "blogs.view",
   "blogs.create",
   "blogs.edit",
+  "success_stories.view",
+  "success_stories.create",
+  "success_stories.edit",
   "learn.view",
   "learn.create",
   "learn.edit",
@@ -295,14 +318,10 @@ const tryApi = async (apiFn, fallbackFn) => {
   }
 };
 
-export const fetchRoles = async () =>
-  tryApi(
-    async () => {
-      const roles = await fetchRolesApi();
-      return roles.map(mapApiRole);
-    },
-    async () => delay(clone(ROLES)),
-  );
+export const fetchRoles = async () => {
+  const roles = await fetchRolesApi();
+  return roles.map(mapApiRole);
+};
 
 export const fetchRoleById = async (id) =>
   tryApi(

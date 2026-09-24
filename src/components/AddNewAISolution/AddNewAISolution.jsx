@@ -14,6 +14,8 @@ import {
   fetchUseCaseById,
 } from "../../services/usecasesService";
 import { getDisplayFileNameFromUrl } from "../../utils/solutionDocuments";
+import { buildApiPath } from "../../services/apiConfig";
+import { getAdminAuthHeaders } from "../../services/adminApiHeaders";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -23,10 +25,6 @@ import {
   SparkleIcon,
   UploadIcon,
 } from "./FormIcons";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
 
 const DEMO_VIDEOS_SHAREPOINT_URL =
   "https://espireinfolab.sharepoint.com/:f:/r/sites/BETeam/Shared%20Documents/ESPIRE_AI%20Verse/Demo%20Videos?csf=1&web=1&e=xqbPma";
@@ -486,7 +484,9 @@ const AddNewAISolution = () => {
   const fetchBusinessDomains = async () => {
     try {
       setLoadingDomains(true);
-      const response = await fetch(`${API_BASE_URL}/get-business-domains`);
+      const response = await fetch(buildApiPath("get-business-domains"), {
+        headers: getAdminAuthHeaders(),
+      });
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -513,7 +513,9 @@ const AddNewAISolution = () => {
   const fetchSolutionOwners = async () => {
     try {
       setLoadingOwners(true);
-      const response = await fetch(`${API_BASE_URL}/get-solution-owners`);
+      const response = await fetch(buildApiPath("get-solution-owners"), {
+        headers: getAdminAuthHeaders(),
+      });
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -529,7 +531,9 @@ const AddNewAISolution = () => {
   const fetchAIEvangelists = async () => {
     try {
       setLoadingEvangelists(true);
-      const response = await fetch(`${API_BASE_URL}/get-ai-evangelists`);
+      const response = await fetch(buildApiPath("get-ai-evangelists"), {
+        headers: getAdminAuthHeaders(),
+      });
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -565,9 +569,9 @@ const AddNewAISolution = () => {
     const fetchExisting = async () => {
       try {
         setLoadingExisting(true);
-        const response = await fetch(
-          `${API_BASE_URL}/get-usecases?id=${editId}`,
-        );
+        const response = await fetch(buildApiPath("get-usecases", { id: editId }), {
+          headers: getAdminAuthHeaders(),
+        });
         const result = await response.json();
 
         if (response.ok && result.status === "success" && result.data) {
@@ -964,8 +968,9 @@ const AddNewAISolution = () => {
       }
 
       const endpoint = isEditMode ? "update-usecase" : "save-usecase";
-      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+      const response = await fetch(buildApiPath(endpoint), {
         method: "POST",
+        headers: getAdminAuthHeaders(),
         body: formDataToSend,
       });
 

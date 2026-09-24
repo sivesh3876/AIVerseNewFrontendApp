@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const parseJson = async (response) => {
   try {
@@ -15,14 +16,18 @@ const assertSuccess = (response, result, fallbackMessage) => {
 };
 
 export const fetchRolesApi = async () => {
-  const response = await fetch(buildApiPath("get-roles"));
+  const response = await fetch(buildApiPath("get-roles"), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to fetch roles.");
   return Array.isArray(result.data) ? result.data : [];
 };
 
 export const fetchRoleByIdApi = async (roleId) => {
-  const response = await fetch(buildApiPath("get-roles", { id: roleId }));
+  const response = await fetch(buildApiPath("get-roles", { id: roleId }), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to fetch role.");
   return result.data;
@@ -31,7 +36,7 @@ export const fetchRoleByIdApi = async (roleId) => {
 export const createRoleApi = async (payload) => {
   const response = await fetch(buildApiPath("save-role"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -42,7 +47,7 @@ export const createRoleApi = async (payload) => {
 export const updateRoleApi = async (payload) => {
   const response = await fetch(buildApiPath("update-role"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -53,6 +58,7 @@ export const updateRoleApi = async (payload) => {
 export const deleteRoleApi = async (roleId) => {
   const response = await fetch(buildApiPath("delete-role", { id: roleId }), {
     method: "DELETE",
+    headers: getAdminAuthHeaders(),
   });
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to delete role.");
