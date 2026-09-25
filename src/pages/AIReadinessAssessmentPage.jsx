@@ -55,6 +55,7 @@ function AIReadinessAssessmentPage() {
   const [answers, setAnswers] = useState([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [backendResult, setBackendResult] = useState(null);
   const [error, setError] = useState("");
@@ -182,6 +183,7 @@ function AIReadinessAssessmentPage() {
 
   const handleSubmit = async () => {
     setError("");
+    setShowValidation(true);
 
     const unansweredQuestions = questions.filter(
       (_, index) => answers[index] === undefined
@@ -448,6 +450,7 @@ function AIReadinessAssessmentPage() {
       questionIndex={questionIndex}
       progress={progress}
       answers={answers}
+      showValidation={showValidation}
       error={error}
       submitting={submitting}
       maturityLevels={maturityLevels}
