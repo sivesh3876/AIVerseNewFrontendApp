@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import "../styles/ai-readiness/base.css";
 import "../styles/ai-readiness/assessment.css";
@@ -56,6 +56,7 @@ function AIReadinessAssessmentPage() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [backendResult, setBackendResult] = useState(null);
   const [error, setError] = useState("");
@@ -66,6 +67,69 @@ function AIReadinessAssessmentPage() {
   );
 
   const [showSummary, setShowSummary] = useState(false);
+
+  useEffect(() => {
+    // The first history entry for this assessment flow is the Welcome page.
+    window.history.replaceState(
+      { assessmentStep: "welcome" },
+      "",
+      window.location.href
+    );
+
+    const handlePopState = (event) => {
+      const step = event.state?.assessmentStep;
+
+      setShowIndustryModal(false);
+      setError("");
+
+      if (step === "welcome" || !step) {
+        // Questions -> Welcome
+        setStarted(false);
+        setShowSummary(false);
+        setSubmitted(false);
+        return;
+      }
+
+      if (step === "questions") {
+        // Summary -> Questions
+        setStarted(true);
+        setShowSummary(false);
+        setSubmitted(false);
+        return;
+      }
+
+      if (step === "summary") {
+        // Results/Dashboard -> Answer Review
+        setStarted(true);
+        setShowSummary(true);
+        setSubmitted(false);
+        return;
+      }
+
+      if (step === "results") {
+        // Restore Results/Dashboard if moving forward through history.
+        setStarted(true);
+        setShowSummary(false);
+        setSubmitted(true);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showSummary || submitted) {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+    }
+  }, [showSummary, submitted]);
 
   const overallScore = backendResult?.overallScore ?? 0;
 
@@ -134,6 +198,13 @@ function AIReadinessAssessmentPage() {
     setError("");
     setShowIndustryModal(false);
     setStarted(true);
+
+    // Add the assessment questions screen to browser history.
+    window.history.pushState(
+      { assessmentStep: "questions" },
+      "",
+      window.location.href
+    );
   };
 
   const cancelIndustrySelection = () => {
@@ -181,20 +252,29 @@ function AIReadinessAssessmentPage() {
     setStarted(false);
   };
 
+  const closeValidation = () => {
+    setShowValidation(false);
+  };
+
   const handleSubmit = async () => {
+    // Close any previous validation popup first.
+    setShowValidation(false);
     setError("");
-    setShowValidation(true);
 
     const unansweredQuestions = questions.filter(
       (_, index) => answers[index] === undefined
     );
 
     if (unansweredQuestions.length > 0) {
+      setValidationAttempted(true);
       setError(
         `Please answer all questions before submitting. ${unansweredQuestions.length
         } question${unansweredQuestions.length === 1 ? "" : "s"
         } remaining.`
       );
+
+      // Show the validation popup.
+      setShowValidation(true);
 
       return;
     }
@@ -252,6 +332,12 @@ function AIReadinessAssessmentPage() {
       setShowSummary(true);
       setSubmitted(true);
 
+      window.history.pushState(
+        { assessmentStep: "summary" },
+        "",
+        window.location.href
+      );
+
       localStorage.removeItem(PROGRESS_STORAGE_KEY);
       setHasSavedProgress(false);
     } catch (submissionError) {
@@ -277,6 +363,12 @@ function AIReadinessAssessmentPage() {
   const handleSummaryDashboard = () => {
     setShowSummary(false);
     setSubmitted(true);
+
+    window.history.pushState(
+      { assessmentStep: "results" },
+      "",
+      window.location.href
+    );
   };
 
   const confirmRetake = () => {
@@ -443,6 +535,7 @@ function AIReadinessAssessmentPage() {
       logo={logo}
       heroBackground={heroBackground}
       assessmentData={activeAssessmentData}
+      industry={selectedIndustry}
       questions={questions}
       totalQuestions={totalQuestions}
       totalDimensions={totalDimensions}
@@ -451,6 +544,7 @@ function AIReadinessAssessmentPage() {
       progress={progress}
       answers={answers}
       showValidation={showValidation}
+      validationAttempted={validationAttempted}
       error={error}
       submitting={submitting}
       maturityLevels={maturityLevels}
@@ -458,6 +552,7 @@ function AIReadinessAssessmentPage() {
       instructionsOpen={showInstructions}
       onOpenInstructions={() => setShowInstructions(true)}
       onCloseInstructions={() => setShowInstructions(false)}
+      onCloseValidation={closeValidation}
       onAnswer={updateAnswer}
       onSubmit={handleSubmit}
       onSaveExit={saveAndExit}
