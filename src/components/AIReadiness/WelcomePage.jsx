@@ -49,16 +49,26 @@ export default function WelcomePage({
               <div className="assessment-stat"><strong>1–5</strong><span>Rating Scale</span></div>
             </div>
 
-            <button type="button" className="start-assessment-button" onClick={onStart}>
-              Start AI Readiness Assessment
-              <span className="button-arrow">→</span>
-            </button>
-
-            {hasSavedProgress && (
-              <button type="button" className="resume-assessment-button" onClick={onResume}>
-                Resume Assessment
+            <div className="welcome-actions">
+              <button
+                type="button"
+                className="start-assessment-button"
+                onClick={onStart}
+              >
+                <span>Start AI Readiness Assessment</span>
+                <span className="button-arrow" aria-hidden="true">→</span>
               </button>
-            )}
+
+              {hasSavedProgress && (
+                <button
+                  type="button"
+                  className="resume-assessment-button"
+                  onClick={onResume}
+                >
+                  Resume Assessment
+                </button>
+              )}
+            </div>
           </div>
         </section>
 

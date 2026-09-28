@@ -258,3 +258,9 @@
         padding-left: 15px;
     }
 }
+
+.all-question-card--unanswered {
+    border: 2px solid #dc2626 !important;
+    border-radius: 16px;
+    background: #fff7f7;
+}
