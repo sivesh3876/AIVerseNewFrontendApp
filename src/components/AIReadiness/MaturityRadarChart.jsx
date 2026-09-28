@@ -85,7 +85,7 @@ export default function MaturityRadarChart({ dimensions }) {
           />
 
           {/* Radar outline */}
-          <polyline
+          <polygon
             points={radarPoints}
             className="radar-line"
           />

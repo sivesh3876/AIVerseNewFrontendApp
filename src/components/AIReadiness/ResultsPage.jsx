@@ -143,11 +143,31 @@ export default function ResultsPage({
           >
             Download Results
           </button>
-          <button type="button" className="retake-button" onClick={onRetake}>
-            Retake Assessment
-          </button>
-          <button type="button" className="start-over-button" onClick={onStartOver}>
-            Start Over
+
+          <div className="results-action-with-tooltip">
+            <button type="button" className="retake-button" onClick={onRetake}>
+              Retake Assessment
+            </button>
+            <div className="results-action-tooltip">
+              Go to the Assessment page
+            </div>
+          </div>
+          <div className="results-action-with-tooltip">
+            <button type="button" className="start-over-button" onClick={onStartOver}>
+              Start Over
+            </button>
+            <div className="results-action-tooltip">
+              Return to the Industry selection page
+            </div>
+          </div>
+          <button
+            type="button"
+            className="exit-assessment-button"
+            onClick={() => {
+              window.location.href = "/";
+            }}
+          >
+            Exit
           </button>
         </div>
       </div>

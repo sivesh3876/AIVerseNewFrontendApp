@@ -206,3 +206,29 @@
 .results-page .dimension-result .dimension-maturity-score {
     color: #ffffff;
 }
+
+/* ===================================
+   FIX DIMENSION QUESTION COUNT PILL
+=================================== */
+
+.results-page .dimension-header > div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.results-page .dimension-question-count {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content !important;
+    max-width: max-content;
+    align-self: flex-start;
+
+    margin-top: 8px;
+    padding: 6px 20px;
+
+    white-space: nowrap;
+    box-sizing: border-box;
+
+    border-radius: 999px;
+}

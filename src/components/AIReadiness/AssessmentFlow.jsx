@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
 import InstructionsModal from "./InstructionsModal";
 
 export default function AssessmentFlow({
   heroBackground,
   assessmentData,
+  industry,
   questions,
   totalQuestions,
   totalDimensions,
@@ -11,6 +11,8 @@ export default function AssessmentFlow({
   questionIndex,
   progress,
   answers,
+  showValidation,
+  validationAttempted,
   error,
   submitting,
   maturityLevels,
@@ -18,18 +20,11 @@ export default function AssessmentFlow({
   instructionsOpen,
   onOpenInstructions,
   onCloseInstructions,
+  onCloseValidation,
   onAnswer,
   onSubmit,
   onSaveExit,
 }) {
-  const [showValidationPopup, setShowValidationPopup] = useState(false);
-  const lastShownError = useRef("");
-  useEffect(() => {
-    if (error && error !== lastShownError.current) {
-      lastShownError.current = error;
-      setShowValidationPopup(true);
-    }
-  }, [error]);
   if (!questions[questionIndex]) {
     return (
       <div className="welcome-page">
@@ -47,6 +42,13 @@ export default function AssessmentFlow({
   const answeredQuestions = answers.filter(
     (answer) => answer !== undefined
   ).length;
+
+  const industryName = {
+    general: "General",
+    education: "Education",
+    insurance: "Insurance",
+    logistics: "Logistics",
+  }[industry] || industry;
 
   return (
     <div className="welcome-page assessment-flow">
@@ -114,6 +116,9 @@ export default function AssessmentFlow({
 
           <div className="section-heading">
             <p className="section-label">AI READINESS ASSESSMENT</p>
+            <div className="assessment-industry-label">
+              Industry: <strong>{industryName}</strong>
+            </div>
             <h2>Assessment Questions</h2>
             <p>Please answer all {totalQuestions} questions.</p>
           </div>
@@ -139,7 +144,9 @@ export default function AssessmentFlow({
                     const selectedAnswer = answers[index];
 
                     return (
-                      <div className="all-question-card" key={question.id}>
+                      <div
+                        key={question.id}
+                        className={`all-question-card ${validationAttempted && selectedAnswer === undefined ? "all-question-card--unanswered" : ""}`}>
                         <p className="question-number">Question {index + 1}</p>
                         <h3 className="question-text">{question.text}</h3>
 
@@ -182,7 +189,7 @@ export default function AssessmentFlow({
         </section>
       </main>
 
-      {showValidationPopup && error && (
+      {showValidation && error && (
         <div
           className="assessment-validation-overlay"
           role="alertdialog"
@@ -203,7 +210,7 @@ export default function AssessmentFlow({
             <button
               type="button"
               className="assessment-validation-button"
-              onClick={() => setShowValidationPopup(false)}
+              onClick={onCloseValidation}
             >
               OK
             </button>
