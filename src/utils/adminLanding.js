@@ -16,5 +16,6 @@ export const getAdminLandingPath = (permissions = []) => {
     (Array.isArray(permissions) ? permissions : []).map(String),
   );
   const match = LANDING_CANDIDATES.find((item) => granted.has(item.permission));
-  return match?.path || "/admin/login";
+  // null = no usable Admin landing (caller should show login / access error)
+  return match?.path || null;
 };

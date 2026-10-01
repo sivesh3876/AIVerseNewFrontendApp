@@ -38,7 +38,7 @@ const resolveSafeReturnUrl = (value) => {
 const AdminLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login, permissions } = useAdminAuth();
+  const { isAuthenticated, login, logout, permissions } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -53,7 +53,8 @@ const AdminLogin = () => {
     (location.state?.from && location.state.from !== "/admin"
       ? location.state.from
       : null) ||
-    fallbackLanding;
+    fallbackLanding ||
+    null;
 
   useEffect(() => {
     document.documentElement.style.overflow = "hidden";
@@ -65,7 +66,15 @@ const AdminLogin = () => {
     };
   }, []);
 
-  if (isAuthenticated) {
+  // Stale/authenticated session with no usable landing used to Navigate to
+  // /admin/login while already on login → blank white page.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (redirectPath && redirectPath !== "/admin/login") return;
+    logout();
+  }, [isAuthenticated, redirectPath, logout]);
+
+  if (isAuthenticated && redirectPath && redirectPath !== "/admin/login") {
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -92,6 +101,15 @@ const AdminLogin = () => {
           ? location.state.from
           : null) ||
         getAdminLandingPath(result.session?.permissions || []);
+
+      if (!landing || landing === "/admin/login") {
+        setError(
+          "Signed in, but this account has no Admin Portal permissions.",
+        );
+        logout();
+        return;
+      }
+
       navigate(landing, { replace: true });
     } catch (err) {
       setError(err?.message || "Sign in failed. Please try again.");
