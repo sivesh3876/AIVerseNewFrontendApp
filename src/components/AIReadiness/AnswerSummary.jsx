@@ -20,7 +20,7 @@ export default function AnswerSummary({
             <div className="summary-dimension" key={dimension.id}>
               <div className="summary-dimension-header">
                 <div>
-                  <p className="section-label">DIMENSION</p>
+                  <p className="assessment-dimension-title">{dimension.title}</p>
                   <h2>{dimension.name}</h2>
                 </div>
                 <span className="dimension-question-count">

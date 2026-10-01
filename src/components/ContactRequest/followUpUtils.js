@@ -1,4 +1,5 @@
 import { buildApiPath } from "../../services/apiConfig";
+import { getAdminAuthHeaders } from "../../services/adminApiHeaders";
 
 // Follow-up utilities and pipeline stage suggestions.
 
@@ -170,7 +171,7 @@ export const fetchSolutionOwnerMembers = async () => {
   try {
     const response = await fetch(buildApiPath("get-solution-owners"), {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: getAdminAuthHeaders({ Accept: "application/json" }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.status !== "success") {

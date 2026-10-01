@@ -4,7 +4,7 @@ import Navigation from "./components/Navigation";
 import Footer from "./components/Footer/Footer";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { RegistrationReminderProvider } from "./context/RegistrationReminderContext";
-import { ProtectedAdminRoute } from "./components/Admin";
+import { ProtectedAdminRoute, RequirePermission } from "./components/Admin";
 import HomePage from "./pages/HomePage";
 import GetStarted from "./pages/GetStarted";
 import ExploreSolutions from "./pages/ExploreSolutions";
@@ -161,40 +161,130 @@ const AppShell = () => {
             </ProtectedAdminRoute>
           }
         >
-          <Route index element={<AdminDashboardPage />} />
+          <Route
+            index
+            element={
+              <RequirePermission anyOf={["dashboard.view"]}>
+                <AdminDashboardPage />
+              </RequirePermission>
+            }
+          />
           <Route
             path="request-demos"
             element={<Navigate to="/admin/request-demos/solution-info" replace />}
           />
           <Route
             path="request-demos/solution-info"
-            element={<AdminRequestDemoSolutionInfo />}
+            element={
+              <RequirePermission anyOf={["demo.view"]}>
+                <AdminRequestDemoSolutionInfo />
+              </RequirePermission>
+            }
           />
-          <Route path="contact-requests" element={<ContactRequests />} />
-          <Route path="blogs" element={<AdminBlogs />} />
-          <Route path="success-stories" element={<AdminSuccessStories />} />
+          <Route
+            path="contact-requests"
+            element={
+              <RequirePermission anyOf={["leads.view"]}>
+                <ContactRequests />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="blogs"
+            element={
+              <RequirePermission anyOf={["blogs.view"]}>
+                <AdminBlogs />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="success-stories"
+            element={
+              <RequirePermission anyOf={["success_stories.view"]}>
+                <AdminSuccessStories />
+              </RequirePermission>
+            }
+          />
           <Route
             path="success-stories/new"
-            element={<AdminSuccessStoryForm />}
+            element={
+              <RequirePermission anyOf={["success_stories.create"]}>
+                <AdminSuccessStoryForm />
+              </RequirePermission>
+            }
           />
           <Route
             path="success-stories/:id/edit"
-            element={<AdminSuccessStoryForm />}
+            element={
+              <RequirePermission anyOf={["success_stories.edit"]}>
+                <AdminSuccessStoryForm />
+              </RequirePermission>
+            }
           />
-          <Route path="learn-explore" element={<AdminCertifications />} />
+          <Route
+            path="learn-explore"
+            element={
+              <RequirePermission anyOf={["learn.view"]}>
+                <AdminCertifications />
+              </RequirePermission>
+            }
+          />
           <Route
             path="learn-explore/:certificationId/certified-professionals"
-            element={<AdminCertifiedProfessionalsPage />}
+            element={
+              <RequirePermission anyOf={["learn.view"]}>
+                <AdminCertifiedProfessionalsPage />
+              </RequirePermission>
+            }
           />
           <Route
             path="learn-explore/:certificationId"
-            element={<AdminCertificationDetail />}
+            element={
+              <RequirePermission anyOf={["learn.view"]}>
+                <AdminCertificationDetail />
+              </RequirePermission>
+            }
           />
-          <Route path="solution-new-ai" element={<AdminSolutionNewAI />} />
-          <Route path="role-management" element={<RoleManagement />} />
-          <Route path="role-management/:roleId" element={<RoleDetails />} />
-          <Route path="user-management" element={<UserManagement />} />
-          <Route path="user-management/:userId" element={<UserDetails />} />
+          <Route
+            path="solution-new-ai"
+            element={
+              <RequirePermission anyOf={["solutions.view"]}>
+                <AdminSolutionNewAI />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="role-management"
+            element={
+              <RequirePermission anyOf={["roles.view"]}>
+                <RoleManagement />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="role-management/:roleId"
+            element={
+              <RequirePermission anyOf={["roles.view"]}>
+                <RoleDetails />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="user-management"
+            element={
+              <RequirePermission anyOf={["users.view"]}>
+                <UserManagement />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="user-management/:userId"
+            element={
+              <RequirePermission anyOf={["users.view"]}>
+                <UserDetails />
+              </RequirePermission>
+            }
+          />
         </Route>
       </Routes>
       {!isAdminRoute && <Footer />}

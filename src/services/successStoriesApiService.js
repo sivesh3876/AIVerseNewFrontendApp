@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const parseJson = async (response) => {
   try {
@@ -22,6 +23,7 @@ export const fetchSuccessStories = async ({
       "get-success-stories",
       includeUnpublished ? { include_unpublished: "true" } : {},
     ),
+    { headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
 
@@ -47,6 +49,7 @@ export const fetchSuccessStory = async ({
       slug,
       include_unpublished: includeUnpublished ? "true" : "",
     }),
+    { headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
 
@@ -60,6 +63,7 @@ export const fetchSuccessStory = async ({
 const sendMultipart = async (endpoint, formData, method) => {
   const response = await fetch(buildApiPath(endpoint), {
     method,
+    headers: getAdminAuthHeaders(),
     body: formData,
   });
   const result = await parseJson(response);
@@ -77,7 +81,7 @@ export const updateSuccessStory = (formData) =>
 export const updateSuccessStoryStatus = async (storyId, status) => {
   const response = await fetch(buildApiPath("update-success-story-status"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ id: storyId, status }),
   });
   const result = await parseJson(response);
@@ -89,7 +93,7 @@ export const updateSuccessStoryStatus = async (storyId, status) => {
 export const deleteSuccessStory = async (storyId) => {
   const response = await fetch(
     buildApiPath("delete-success-story", { id: storyId }),
-    { method: "DELETE" },
+    { method: "DELETE", headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
 

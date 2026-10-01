@@ -360,3 +360,14 @@
 
     transform: translateY(-1px);
 }
+.assessment-industry-label {
+  margin-top: 6px;
+  margin-bottom: 10px;
+  color: #4d6b8a;
+  font-size: 15px;
+}
+
+.assessment-industry-label strong {
+  color: #0b2545;
+  font-weight: 700;
+}

@@ -9,8 +9,8 @@ import {
   selectTopOrderedSolutions,
 } from "../utils/solutionMapper";
 import { applyInactiveSolutionOverrides } from "../utils/solutionStatusStorage";
-import { getAdminAuthHeaders } from "../utils/adminAuth";
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const appendBusinessDomainFields = (formData, solution) => {
   const domains = parseBusinessDomains(solution);
@@ -31,9 +31,7 @@ export const fetchAllUseCases = async ({ includeInactive = false } = {}) => {
       "get-usecases",
       includeInactive ? { include_inactive: "true" } : {},
     ),
-    {
-      headers: includeInactive ? getAdminAuthHeaders() : {},
-    },
+    { headers: getAdminAuthHeaders() },
   );
   const result = await response.json();
 

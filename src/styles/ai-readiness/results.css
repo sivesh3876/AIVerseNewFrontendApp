@@ -416,3 +416,71 @@
         max-width: 300px;
     }
 }
+
+.results-action-with-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.results-action-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: max-content;
+  max-width: 240px;
+
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  background: #1f2937;
+  color: #ffffff;
+
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+  
+  z-index: 100;
+}
+
+.results-action-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1f2937 transparent transparent transparent;
+}
+
+.results-action-with-tooltip:hover .results-action-tooltip,
+.results-action-with-tooltip:focus-within .results-action-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+/* ===================================
+   EXIT ASSESSMENT
+=================================== */
+
+.results-actions .exit-assessment-button {
+    background: #ffffff;
+    border: 1px solid #153553;
+    color: #153553 !important;
+}
+
+.results-actions .exit-assessment-button:hover {
+    background: #153553;
+    border: 1px solid #153553;
+    color: #ffffff !important;
+}
