@@ -64,6 +64,8 @@ const SolutionEngagement = ({
   const [errorMessage, setErrorMessage] = useState("");
   const [portalRoot, setPortalRoot] = useState(null);
   const hasTrackedViewRef = useRef(false);
+  const likeRequestIdRef = useRef(0);
+  const isLikePendingRef = useRef(false);
 
   useLayoutEffect(() => {
     if (!isCardOverlayComments) {
@@ -80,9 +82,11 @@ const SolutionEngagement = ({
     [detailUrl, serviceLine, solutionId],
   );
 
-  const applyEngagementState = useCallback((state) => {
-    setLiked(state.liked);
-    setLikeCount(state.likeCount);
+  const applyEngagementState = useCallback((state, { preserveLike = false } = {}) => {
+    if (!preserveLike) {
+      setLiked(state.liked);
+      setLikeCount(state.likeCount);
+    }
     setCommentCount(state.commentCount);
     setShareCount(state.shareCount);
     setViewCount(state.viewCount);
@@ -90,6 +94,9 @@ const SolutionEngagement = ({
 
   useEffect(() => {
     let isMounted = true;
+    likeRequestIdRef.current += 1;
+    isLikePendingRef.current = false;
+    setIsLikePending(false);
 
     const loadState = async () => {
       if (!solutionId) {
@@ -102,7 +109,9 @@ const SolutionEngagement = ({
         setErrorMessage("");
         const state = await loadSolutionEngagement(solutionId);
         if (isMounted) {
-          applyEngagementState(state);
+          applyEngagementState(state, {
+            preserveLike: isLikePendingRef.current,
+          });
         }
       } catch (error) {
         if (isMounted && !isHomeVariant) {
@@ -138,7 +147,9 @@ const SolutionEngagement = ({
       try {
         const state = await recordSolutionView(solutionId, title, "detail");
         if (isMounted && state) {
-          applyEngagementState(state);
+          applyEngagementState(state, {
+            preserveLike: isLikePendingRef.current,
+          });
         }
       } catch {
         // View tracking should not block the detail page.
@@ -172,21 +183,41 @@ const SolutionEngagement = ({
   const handleLike = async (event) => {
     stopCardNavigation(event);
 
-    if (isLikePending || isLoading) {
+    if (isLikePendingRef.current || isLoading || !solutionId) {
       return;
     }
 
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const nextLiked = !liked;
+    const nextCount = Math.max(0, likeCount + (nextLiked ? 1 : -1));
+    const requestId = likeRequestIdRef.current + 1;
+    likeRequestIdRef.current = requestId;
+
+    isLikePendingRef.current = true;
+    setIsLikePending(true);
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
+    setErrorMessage("");
+
     try {
-      setIsLikePending(true);
-      setErrorMessage("");
       const state = await toggleSolutionLike(solutionId, title);
+      if (likeRequestIdRef.current !== requestId) {
+        return;
+      }
       applyEngagementState(state);
     } catch (error) {
-      if (!isHomeVariant) {
-        setErrorMessage(error.message || "Unable to update like.");
+      if (likeRequestIdRef.current !== requestId) {
+        return;
       }
+      setLiked(previousLiked);
+      setLikeCount(previousCount);
+      setErrorMessage(error.message || "Unable to update like.");
     } finally {
-      setIsLikePending(false);
+      if (likeRequestIdRef.current === requestId) {
+        isLikePendingRef.current = false;
+        setIsLikePending(false);
+      }
     }
   };
 
@@ -242,12 +273,13 @@ const SolutionEngagement = ({
 
         <button
           type="button"
-          className={`solution_engagement__btn${liked ? " is-active" : ""}`}
+          className={`solution_engagement__btn solution_engagement__btn--like${liked ? " is-active" : ""}${isLikePending ? " is-pending" : ""}`}
           onClick={handleLike}
           aria-pressed={liked}
+          aria-busy={isLikePending}
           aria-label={liked ? "Unlike" : "Like"}
           title={liked ? "Unlike" : "Like"}
-          disabled={isLoading || isLikePending}
+          disabled={isLoading}
         >
           <FiHeart aria-hidden="true" />
           {!isHomeVariant && <span>{liked ? "Liked" : "Like"}</span>}
@@ -304,7 +336,11 @@ const SolutionEngagement = ({
           solutionId={solutionId}
           title={title}
           onClose={() => setCommentOpen(false)}
-          onUpdated={applyEngagementState}
+          onUpdated={(state) =>
+            applyEngagementState(state, {
+              preserveLike: isLikePendingRef.current,
+            })
+          }
         />
       )}
 
@@ -318,7 +354,11 @@ const SolutionEngagement = ({
               title={title}
               variant="overlay"
               onClose={() => setCommentOpen(false)}
-              onUpdated={applyEngagementState}
+              onUpdated={(state) =>
+                applyEngagementState(state, {
+                  preserveLike: isLikePendingRef.current,
+                })
+              }
             />
           </div>,
           portalRoot,
@@ -329,7 +369,11 @@ const SolutionEngagement = ({
           solutionId={solutionId}
           title={title}
           onClose={() => setCommentOpen(false)}
-          onUpdated={applyEngagementState}
+          onUpdated={(state) =>
+            applyEngagementState(state, {
+              preserveLike: isLikePendingRef.current,
+            })
+          }
         />
       )}
     </>

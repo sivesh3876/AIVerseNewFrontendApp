@@ -1,14 +1,27 @@
 import {
   FEATURED_CARD_POSITION_MAX,
   HERO_CARD_POSITION_MAX,
+  formatBusinessDomainsForApi,
   getSolutionDisplayOrder,
   getSolutionOrderNumber,
+  parseBusinessDomains,
   selectTopHeroSolutions,
   selectTopOrderedSolutions,
 } from "../utils/solutionMapper";
 import { applyInactiveSolutionOverrides } from "../utils/solutionStatusStorage";
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 import { getAdminAuthHeaders } from "./adminApiHeaders";
+
+const appendBusinessDomainFields = (formData, solution) => {
+  const domains = parseBusinessDomains(solution);
+  const primary = domains[0] || solution?.BusinessDomain || "";
+  formData.append("BusinessDomain", primary);
+  if (domains.length > 0) {
+    const csv = formatBusinessDomainsForApi(domains);
+    formData.append("BusinessDomains", csv);
+    formData.append("BusinessDomainCodes", csv);
+  }
+};
 
 export const getUsecasesApiBaseUrl = () => getApiBaseUrl();
 
@@ -94,11 +107,12 @@ export const updateUseCaseStatus = async (solution, isActive) => {
 
   formData.append("ID", solution.ID);
   formData.append("Title", solution.Title || "");
-  formData.append("BusinessDomain", solution.BusinessDomain || "");
+  appendBusinessDomainFields(formData, solution);
   formData.append("OwnershipDetails", solution.OwnershipDetails || "");
   formData.append("AiEvangelists", toText(solution.AiEvangelists));
   formData.append("SolutionContext", solution.SolutionContext || "");
   formData.append("TechHighlights", solution.TechHighlights || "");
+  formData.append("EfficientBenefit", solution.EfficientBenefit || "");
   formData.append("RepositoryUrl", solution.RepositoryUrl || "");
   formData.append("DemoLink", solution.DemoLink || "");
   formData.append(
@@ -144,11 +158,12 @@ const appendSolutionBaseFields = (formData, solution) => {
 
   formData.append("ID", solution.ID);
   formData.append("Title", solution.Title || "");
-  formData.append("BusinessDomain", solution.BusinessDomain || "");
+  appendBusinessDomainFields(formData, solution);
   formData.append("OwnershipDetails", solution.OwnershipDetails || "");
   formData.append("AiEvangelists", toFormText(solution.AiEvangelists));
   formData.append("SolutionContext", solution.SolutionContext || "");
   formData.append("TechHighlights", solution.TechHighlights || "");
+  formData.append("EfficientBenefit", solution.EfficientBenefit || "");
   formData.append("RepositoryUrl", solution.RepositoryUrl || "");
   formData.append("DemoLink", solution.DemoLink || "");
   formData.append(
@@ -259,6 +274,7 @@ const persistUseCaseDisplayOrder = async (solution, displayOrder) => {
 
   const response = await fetch(buildApiPath("update-usecase"), {
     method: "POST",
+    headers: getAdminAuthHeaders(),
     body: formData,
   });
   const result = await response.json();

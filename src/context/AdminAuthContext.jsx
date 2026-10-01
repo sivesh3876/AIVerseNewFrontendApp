@@ -10,6 +10,18 @@ import { buildApiPath } from "../services/apiConfig";
 
 const AdminAuthContext = createContext(null);
 
+const parseJsonSafe = async (response) => {
+  const text = await response.text();
+  if (!text || !String(text).trim()) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { status: "error", message: "Invalid response from login server." };
+  }
+};
+
 export const AdminAuthProvider = ({ children }) => {
   const [session, setSession] = useState(() => getAdminSession());
 
@@ -27,7 +39,7 @@ export const AdminAuthProvider = ({ children }) => {
         const response = await fetch(buildApiPath("portal-me"), {
           headers: { Authorization: `Bearer ${current.token}` },
         });
-        const result = await response.json();
+        const result = await parseJsonSafe(response);
         if (!response.ok || result.status !== "success") {
           if (response.status === 401) {
             clearAdminSession();
@@ -65,7 +77,19 @@ export const AdminAuthProvider = ({ children }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const result = await response.json();
+      const result = await parseJsonSafe(response);
+
+      if (
+        response.status === 404 ||
+        (!response.ok && !result.message && Object.keys(result).length === 0)
+      ) {
+        return {
+          success: false,
+          message:
+            "Admin login service is unavailable. Point VITE_API_BASE_URL at Azure DEV (or a backend that exposes portal-login), then restart npm run dev.",
+        };
+      }
+
       if (!response.ok || result.status !== "success") {
         return {
           success: false,
@@ -79,7 +103,10 @@ export const AdminAuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.message || "Unable to sign in. Please try again.",
+        message:
+          error.message === "Unexpected end of JSON input"
+            ? "Admin login service returned an empty response. Check the API proxy target and restart the dev server."
+            : error.message || "Unable to sign in. Please try again.",
       };
     }
   }, []);

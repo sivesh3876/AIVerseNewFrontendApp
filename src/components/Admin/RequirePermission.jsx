@@ -6,7 +6,8 @@ const RequirePermission = ({ anyOf = [], children }) => {
   const { hasAnyPermission, permissions } = useAdminAuth();
 
   if (!hasAnyPermission(anyOf)) {
-    return <Navigate to={getAdminLandingPath(permissions)} replace />;
+    const landing = getAdminLandingPath(permissions);
+    return <Navigate to={landing || "/admin/login"} replace />;
   }
 
   return children;

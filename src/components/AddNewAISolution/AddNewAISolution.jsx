@@ -7,6 +7,8 @@ import {
   persistSubmittedCapability,
   serializeCapabilityForNavigation,
   buildExploreSolutionPath,
+  parseBusinessDomains,
+  formatBusinessDomainsForApi,
 } from "../../utils/solutionMapper";
 import {
   claimFeaturedCardPosition,
@@ -37,6 +39,7 @@ const CHAR_LIMITS = {
   Title: 100,
   SolutionContext: 1000,
   TechHighlights: 150,
+  EfficientBenefit: 2000,
 };
 
 const AI_FOUNDATION_OPTIONS = [
@@ -75,22 +78,218 @@ const sanitizeEvangelists = (evangelists = []) =>
 const CARD_POSITION_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const TOP_4_POSITION_OPTIONS = [1, 2, 3, 4];
 
-const ALLOWED_BUSINESS_DOMAIN_CODES = new Set([
-  "AgenticAutomation",
-  "CustomerCommunicationManagement",
-  "CustomerExperienceCRM",
-  "DataAnalytics",
-  "DigitalEngineering",
-  "DigitalExperience",
-  "Education",
-  "Insurance",
-  "Logistics",
-]);
+const BUSINESS_DOMAIN_ADMIN_SLOTS = [
+  {
+    DomainCode: "DigitalEngineering",
+    label: "Digital Engineering",
+    aliases: ["DigitalEngineering"],
+  },
+  {
+    DomainCode: "DigitalExperience",
+    label: "Digital Experience",
+    aliases: ["DigitalExperience"],
+  },
+  {
+    DomainCode: "CustomerCommunicationManagement",
+    label: "Customer Communication Management",
+    aliases: ["CustomerCommunicationManagement"],
+  },
+  {
+    DomainCode: "AgenticAutomation",
+    label: "Agentic Automation",
+    aliases: ["AgenticAutomation"],
+  },
+  {
+    DomainCode: "DataAnalytics",
+    label: "Data Management",
+    aliases: ["DataAnalytics", "DataManagement"],
+  },
+  {
+    DomainCode: "CustomerExperienceCRM",
+    label: "Enterprise Application",
+    aliases: [
+      "CustomerExperienceCRM",
+      "EnterpriseApplication",
+      "CustomerExperience",
+    ],
+  },
+  {
+    DomainCode: "Education",
+    label: "Education",
+    aliases: ["Education"],
+  },
+  {
+    DomainCode: "Insurance",
+    label: "BFSI",
+    aliases: ["Insurance", "BFSI"],
+  },
+  {
+    DomainCode: "Logistics",
+    label: "Logistics",
+    aliases: ["Logistics"],
+  },
+];
 
-const BUSINESS_DOMAIN_DISPLAY_NAMES = {
-  CustomerExperienceCRM: "Enterprise Application",
-  DataAnalytics: "Data Management",
-  Insurance: "BFSI",
+const BUSINESS_DOMAIN_DISPLAY_NAMES = Object.fromEntries(
+  BUSINESS_DOMAIN_ADMIN_SLOTS.flatMap((slot) => [
+    [slot.DomainCode, slot.label],
+    ...slot.aliases.map((alias) => [alias, slot.label]),
+  ]),
+);
+
+const normalizeDomainKey = (value = "") =>
+  String(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const findAdminDomainSlot = (domainCode = "") => {
+  const codeKey = normalizeDomainKey(domainCode);
+  if (!codeKey) return null;
+  return (
+    BUSINESS_DOMAIN_ADMIN_SLOTS.find(
+      (slot) =>
+        normalizeDomainKey(slot.DomainCode) === codeKey ||
+        slot.aliases.some((alias) => normalizeDomainKey(alias) === codeKey),
+    ) || null
+  );
+};
+
+const getDomainOptionLabel = (domain) =>
+  domain?.DomainName ||
+  BUSINESS_DOMAIN_DISPLAY_NAMES[domain?.DomainCode] ||
+  domain?.DomainCode ||
+  "";
+
+const buildAdminBusinessDomainOptions = (apiDomains = []) => {
+  const byCode = new Map();
+  const byName = new Map();
+
+  apiDomains.forEach((domain) => {
+    if (!domain) return;
+    const codeKey = normalizeDomainKey(domain.DomainCode);
+    const nameKey = normalizeDomainKey(domain.DomainName);
+    if (codeKey) byCode.set(codeKey, domain);
+    if (nameKey) byName.set(nameKey, domain);
+  });
+
+  return BUSINESS_DOMAIN_ADMIN_SLOTS.map((slot) => {
+    let match = null;
+    for (const alias of [slot.DomainCode, ...slot.aliases]) {
+      match = byCode.get(normalizeDomainKey(alias));
+      if (match) break;
+    }
+    if (!match) {
+      match = byName.get(normalizeDomainKey(slot.label));
+    }
+
+    if (match) {
+      return {
+        ...match,
+        DomainCode: match.DomainCode || slot.DomainCode,
+        DomainName: slot.label,
+        fromApi: true,
+        slotCode: slot.DomainCode,
+      };
+    }
+
+    return {
+      DomainCode: slot.DomainCode,
+      DomainName: slot.label,
+      fromApi: false,
+      slotCode: slot.DomainCode,
+    };
+  });
+};
+
+/** Map stored/selected codes onto API-backed option values when aliases differ. */
+const remapDomainCodesToApiOptions = (selectedCodes = [], options = []) => {
+  const remapped = [];
+  const seen = new Set();
+
+  selectedCodes.forEach((code) => {
+    const exact = options.find(
+      (option) =>
+        normalizeDomainKey(option.DomainCode) === normalizeDomainKey(code),
+    );
+    if (exact?.fromApi) {
+      const key = normalizeDomainKey(exact.DomainCode);
+      if (!seen.has(key)) {
+        seen.add(key);
+        remapped.push(exact.DomainCode);
+      }
+      return;
+    }
+
+    const slot = findAdminDomainSlot(code);
+    const bySlot = slot
+      ? options.find(
+          (option) =>
+            option.fromApi &&
+            (option.slotCode === slot.DomainCode ||
+              normalizeDomainKey(option.DomainCode) ===
+                normalizeDomainKey(slot.DomainCode) ||
+              slot.aliases.some(
+                (alias) =>
+                  normalizeDomainKey(alias) ===
+                  normalizeDomainKey(option.DomainCode),
+              )),
+        )
+      : null;
+
+    if (bySlot) {
+      const key = normalizeDomainKey(bySlot.DomainCode);
+      if (!seen.has(key)) {
+        seen.add(key);
+        remapped.push(bySlot.DomainCode);
+      }
+      return;
+    }
+
+    if (exact) {
+      const key = normalizeDomainKey(exact.DomainCode);
+      if (!seen.has(key)) {
+        seen.add(key);
+        remapped.push(exact.DomainCode);
+      }
+    }
+  });
+
+  return remapped;
+};
+
+const getApiBackedDomainCodes = (selectedCodes = [], options = []) => {
+  const remapped = remapDomainCodesToApiOptions(selectedCodes, options);
+  return remapped.filter((code) =>
+    options.some(
+      (option) =>
+        option.fromApi &&
+        normalizeDomainKey(option.DomainCode) === normalizeDomainKey(code),
+    ),
+  );
+};
+
+const getStubDomainLabels = (selectedCodes = [], options = []) => {
+  const labels = [];
+  selectedCodes.forEach((code) => {
+    const option = options.find(
+      (item) =>
+        normalizeDomainKey(item.DomainCode) === normalizeDomainKey(code) ||
+        item.slotCode === findAdminDomainSlot(code)?.DomainCode,
+    );
+    if (option && option.fromApi === false) {
+      labels.push(getDomainOptionLabel(option));
+    } else if (!option) {
+      const slot = findAdminDomainSlot(code);
+      const stub = options.find(
+        (item) =>
+          item.fromApi === false &&
+          (item.slotCode === slot?.DomainCode ||
+            normalizeDomainKey(item.DomainCode) === normalizeDomainKey(code)),
+      );
+      if (stub) {
+        labels.push(getDomainOptionLabel(stub));
+      }
+    }
+  });
+  return [...new Set(labels)];
 };
 
 const normalizeCardPosition = (value) => {
@@ -109,11 +308,12 @@ const normalizeHeroPosition = (value) => {
 
 const initialFormState = {
   Title: "",
-  BusinessDomain: "",
+  BusinessDomains: [],
   OwnershipDetails: "",
   AiEvangelists: [],
   SolutionContext: "",
   TechHighlights: "",
+  EfficientBenefit: "",
   RepositoryUrl: "",
   AiFoundation: [],
   DemoLink: "",
@@ -144,6 +344,7 @@ const isPdfFile = (file) => {
 /**
  * Custom select that always opens the menu below the trigger.
  * Native <select> cannot force open direction in the browser.
+ * Pass multiple=true for checkbox-style multi-select (value = string[]).
  */
 const FormSelectDropdown = ({
   id,
@@ -151,17 +352,29 @@ const FormSelectDropdown = ({
   options = [],
   placeholder = "Select…",
   disabled = false,
+  multiple = false,
   onChange,
 }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
-  const selectedOption =
-    value === "" || value == null
-      ? null
-      : options.find((option) => String(option.value) === String(value)) ||
-        null;
-  const displayLabel = selectedOption?.label || placeholder;
+  const selectedValues = multiple
+    ? Array.isArray(value)
+      ? value.map(String)
+      : []
+    : value === "" || value == null
+      ? []
+      : [String(value)];
+
+  const selectedOptions = options.filter((option) =>
+    selectedValues.includes(String(option.value)),
+  );
+
+  const displayLabel = multiple
+    ? selectedOptions.length > 0
+      ? selectedOptions.map((option) => option.label).join(", ")
+      : placeholder
+    : selectedOptions[0]?.label || placeholder;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -185,23 +398,36 @@ const FormSelectDropdown = ({
     };
   }, [open]);
 
-  const handleSelect = (optionValue) => {
-    onChange?.(optionValue);
-    setOpen(false);
+  const handleSelect = (optionValue, optionDisabled = false) => {
+    if (!multiple) {
+      if (optionDisabled) return;
+      onChange?.(optionValue);
+      setOpen(false);
+      return;
+    }
+
+    const next = String(optionValue);
+    const current = selectedValues;
+    if (current.includes(next)) {
+      onChange?.(current.filter((code) => code !== next));
+      return;
+    }
+    if (optionDisabled) return;
+    onChange?.([...current, next]);
   };
 
   return (
     <div
       className={`add_ai_solution__form-select${open ? " is-open" : ""}${
         disabled ? " is-disabled" : ""
-      }`}
+      }${multiple ? " is-multiple" : ""}`}
       ref={rootRef}
     >
       <button
         type="button"
         id={id}
         className={`add_ai_solution__form-select-trigger${
-          selectedOption ? "" : " is-placeholder"
+          selectedOptions.length > 0 ? "" : " is-placeholder"
         }`}
         onClick={() => {
           if (!disabled) setOpen((previous) => !previous);
@@ -219,21 +445,41 @@ const FormSelectDropdown = ({
           id={id ? `${id}-listbox` : undefined}
           className="add_ai_solution__form-select-menu"
           role="listbox"
+          aria-multiselectable={multiple || undefined}
         >
           {options.map((option) => {
-            const isSelected = String(option.value) === String(value);
+            const isSelected = selectedValues.includes(String(option.value));
+            const isOptionDisabled = Boolean(option.disabled) && !isSelected;
             return (
               <li key={`${option.value}-${option.label}`} role="presentation">
                 <button
                   type="button"
                   role="option"
                   aria-selected={isSelected}
+                  aria-disabled={isOptionDisabled || undefined}
+                  disabled={isOptionDisabled}
+                  title={
+                    option.disabled && !isSelected
+                      ? `${option.label} is not available in the catalog yet`
+                      : undefined
+                  }
                   className={`add_ai_solution__form-select-option${
                     isSelected ? " is-selected" : ""
-                  }`}
-                  onClick={() => handleSelect(option.value)}
+                  }${option.disabled ? " is-unavailable" : ""}`}
+                  onClick={() =>
+                    handleSelect(option.value, Boolean(option.disabled))
+                  }
                 >
+                  {multiple ? (
+                    <span
+                      className={`add_ai_solution__form-select-check${
+                        isSelected ? " is-checked" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                   {option.label}
+                  {option.disabled ? " (unavailable)" : ""}
                 </button>
               </li>
             );
@@ -501,10 +747,9 @@ const AddNewAISolution = () => {
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
-        const domains = (result.data || []).filter((domain) =>
-          ALLOWED_BUSINESS_DOMAIN_CODES.has(domain.DomainCode),
+        setBusinessDomains(
+          buildAdminBusinessDomainOptions(result.data || []),
         );
-        setBusinessDomains(domains);
       } else {
         setSubmitStatus({
           type: "error",
@@ -575,6 +820,27 @@ const AddNewAISolution = () => {
   }, []);
 
   useEffect(() => {
+    if (!businessDomains.length) return;
+
+    setForm((prev) => {
+      const current = Array.isArray(prev.BusinessDomains)
+        ? prev.BusinessDomains
+        : [];
+      if (current.length === 0) return prev;
+
+      const remapped = remapDomainCodesToApiOptions(current, businessDomains);
+      const same =
+        remapped.length === current.length &&
+        remapped.every(
+          (code, index) =>
+            normalizeDomainKey(code) === normalizeDomainKey(current[index]),
+        );
+      if (same) return prev;
+      return { ...prev, BusinessDomains: remapped };
+    });
+  }, [businessDomains]);
+
+  useEffect(() => {
     if (!isEditMode) return;
 
     const fetchExisting = async () => {
@@ -595,11 +861,12 @@ const AddNewAISolution = () => {
 
           setForm({
             Title: solution.Title || "",
-            BusinessDomain: solution.BusinessDomain || "",
+            BusinessDomains: parseBusinessDomains(solution),
             OwnershipDetails: solution.OwnershipDetails || "",
             AiEvangelists: sanitizeEvangelists(evangelistList),
             SolutionContext: solution.SolutionContext || "",
             TechHighlights: solution.TechHighlights || "",
+            EfficientBenefit: solution.EfficientBenefit || "",
             RepositoryUrl: solution.RepositoryUrl || "",
             AiFoundation: parseAiFoundation(
               solution.AiFoundation || solution.Client,
@@ -712,8 +979,24 @@ const AddNewAISolution = () => {
       newErrors.Title = "Solution title is required";
     }
 
-    if (!form.BusinessDomain.trim()) {
-      newErrors.BusinessDomain = "Business domain is required";
+    if (!Array.isArray(form.BusinessDomains) || form.BusinessDomains.length === 0) {
+      newErrors.BusinessDomains = "Select at least one business domain";
+    } else {
+      const apiBacked = getApiBackedDomainCodes(
+        form.BusinessDomains,
+        businessDomains,
+      );
+      if (apiBacked.length === 0) {
+        const stubLabels = getStubDomainLabels(
+          form.BusinessDomains,
+          businessDomains,
+        );
+        const labelText =
+          stubLabels.length > 0
+            ? stubLabels.join(", ")
+            : "selected domain";
+        newErrors.BusinessDomains = `${labelText} is not available in the catalog yet. Choose another business domain, or ask an admin to activate it.`;
+      }
     }
 
     if (!form.SolutionContext.trim()) {
@@ -886,6 +1169,23 @@ const AddNewAISolution = () => {
           return;
         }
 
+        if (key === "BusinessDomains") {
+          if (Array.isArray(form[key]) && form[key].length > 0) {
+            const apiDomains = getApiBackedDomainCodes(
+              form[key],
+              businessDomains,
+            );
+            if (apiDomains.length === 0) {
+              return;
+            }
+            const domainsCsv = formatBusinessDomainsForApi(apiDomains);
+            formDataToSend.append("BusinessDomains", domainsCsv);
+            formDataToSend.append("BusinessDomainCodes", domainsCsv);
+            formDataToSend.append("BusinessDomain", apiDomains[0]);
+          }
+          return;
+        }
+
         if (key === "AiFoundation") {
           if (Array.isArray(form[key]) && form[key].length > 0) {
             const foundationValue = form[key].join(", ");
@@ -1016,7 +1316,9 @@ const AddNewAISolution = () => {
       }
 
       if (response.ok && result.status === "success") {
-        const savedBusinessDomain = form.BusinessDomain;
+        const savedBusinessDomain =
+          (Array.isArray(form.BusinessDomains) && form.BusinessDomains[0]) ||
+          "";
         const solutionId =
           result.data?.solution_id ??
           result.data?.ID ??
@@ -1209,30 +1511,30 @@ const AddNewAISolution = () => {
 
         <div className="add_ai_solution__row">
           <div className="add_ai_solution__field">
-            <label htmlFor="BusinessDomain">
+            <label htmlFor="BusinessDomains">
               Business Domain <span className="required">*</span>
             </label>
             <FormSelectDropdown
-              id="BusinessDomain"
-              value={form.BusinessDomain}
+              id="BusinessDomains"
+              multiple
+              value={form.BusinessDomains}
               disabled={loadingDomains}
               placeholder={
                 loadingDomains
                   ? "Loading domains..."
-                  : "Select Business Domain"
+                  : "Select Business Domains"
               }
               options={businessDomains.map((domain) => ({
                 value: domain.DomainCode,
-                label:
-                  BUSINESS_DOMAIN_DISPLAY_NAMES[domain.DomainCode] ||
-                  domain.DomainName,
+                label: getDomainOptionLabel(domain),
+                disabled: domain.fromApi === false,
               }))}
               onChange={(nextValue) =>
-                updateField("BusinessDomain", nextValue)
+                updateField("BusinessDomains", nextValue)
               }
             />
-            {errors.BusinessDomain && (
-              <p className="add_ai_solution__error">{errors.BusinessDomain}</p>
+            {errors.BusinessDomains && (
+              <p className="add_ai_solution__error">{errors.BusinessDomains}</p>
             )}
           </div>
 
@@ -1406,6 +1708,25 @@ const AddNewAISolution = () => {
           {errors.TechHighlights && (
             <p className="add_ai_solution__error">{errors.TechHighlights}</p>
           )}
+        </div>
+
+        <div className="add_ai_solution__field">
+          <label htmlFor="EfficientBenefit">
+            Efficient Benefit
+            <span className="add_ai_solution__char-count">
+              {form.EfficientBenefit.length}/{CHAR_LIMITS.EfficientBenefit}
+            </span>
+          </label>
+          <textarea
+            id="EfficientBenefit"
+            rows={4}
+            placeholder="Enter the key benefits and business value of this AI solution..."
+            value={form.EfficientBenefit}
+            maxLength={CHAR_LIMITS.EfficientBenefit}
+            onChange={(event) =>
+              updateField("EfficientBenefit", event.target.value)
+            }
+          />
         </div>
 
         <div className="add_ai_solution__field">
