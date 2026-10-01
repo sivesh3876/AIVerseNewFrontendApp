@@ -194,22 +194,85 @@ export const buildExploreSolutionPath = ({
   return `/explore-solutions${query ? `?${query}` : ""}`;
 };
 
+/** Normalize API BusinessDomain / BusinessDomains into unique DomainCode strings. */
+export const parseBusinessDomains = (source = {}) => {
+  const seen = new Set();
+  const domains = [];
+
+  const pushCode = (value) => {
+    if (value == null) return;
+    if (typeof value === "object") {
+      const code =
+        value.DomainCode ?? value.domainCode ?? value.code ?? value.id;
+      pushCode(code);
+      return;
+    }
+    String(value)
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach((code) => {
+        if (!seen.has(code)) {
+          seen.add(code);
+          domains.push(code);
+        }
+      });
+  };
+
+  const multi =
+    source.BusinessDomains ??
+    source.businessDomains ??
+    source.BusinessDomainIds ??
+    source.businessDomainIds;
+
+  if (Array.isArray(multi)) {
+    multi.forEach(pushCode);
+  } else if (multi != null && String(multi).trim()) {
+    pushCode(multi);
+  }
+
+  if (domains.length === 0) {
+    pushCode(source.BusinessDomain ?? source.businessDomain);
+  }
+
+  return domains;
+};
+
+export const formatBusinessDomainsForApi = (domains = []) =>
+  (Array.isArray(domains) ? domains : [])
+    .map((code) => String(code || "").trim())
+    .filter(Boolean)
+    .join(", ");
+
 export const solutionMatchesExploreFilter = ({
   businessDomain,
+  businessDomains,
   activeServiceId,
   activeDomainCode = null,
 }) => {
-  if (!businessDomain) return false;
+  const domains = (
+    Array.isArray(businessDomains) && businessDomains.length > 0
+      ? businessDomains
+      : businessDomain
+        ? [businessDomain]
+        : []
+  )
+    .map((code) => String(code || "").trim())
+    .filter(Boolean);
+
+  if (domains.length === 0) return false;
 
   if (activeDomainCode) {
-    return normalizeKey(businessDomain) === normalizeKey(activeDomainCode);
+    const normalizedActive = normalizeKey(activeDomainCode);
+    return domains.some((code) => normalizeKey(code) === normalizedActive);
   }
 
-  if (isIndustryBusinessDomain(businessDomain)) {
-    return false;
-  }
-
-  return getServiceIdForDomain(businessDomain) === activeServiceId;
+  return domains.some((code) => {
+    if (isIndustryBusinessDomain(code)) {
+      return false;
+    }
+    return getServiceIdForDomain(code) === activeServiceId;
+  });
 };
 
 export const resolveIndustryDomainCode = (
@@ -599,15 +662,17 @@ export const mapApiSolutionToHomeCard = (solution) => {
   const orderNumber = getSolutionOrderNumber(solution);
   const displayOrder = getSolutionDisplayOrder(solution);
   const heroPosition = getSolutionHeroPosition(solution);
-  const serviceId = getServiceIdForDomain(solution.BusinessDomain);
+  const domains = parseBusinessDomains(solution);
+  const primaryDomain = domains[0] || solution.BusinessDomain || "";
+  const serviceId = getServiceIdForDomain(primaryDomain);
   const service = enterpriseServicesData.find((entry) => entry.id === serviceId);
-  const industry = getIndustryByDomainCode(solution.BusinessDomain);
+  const industry = getIndustryByDomainCode(primaryDomain);
   const techStack = parseTechStack(getTechStackSource(solution));
   const solutionApiId = `api-${solution.ID}`;
   const iconSeed =
     orderNumber ?? displayOrder ?? heroPosition ?? Number(solution.ID) ?? 0;
   const detailUrl = buildExploreSolutionPath({
-    businessDomain: solution.BusinessDomain,
+    businessDomain: primaryDomain,
     solutionId: solution.ID,
   });
 
@@ -618,7 +683,7 @@ export const mapApiSolutionToHomeCard = (solution) => {
       toText(solution.SolutionContext).trim() ||
       "Explore this enterprise AI solution.",
     domainLabel:
-      service?.label || industry?.title || solution.BusinessDomain || "Enterprise AI",
+      service?.label || industry?.title || primaryDomain || "Enterprise AI",
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),
     techHighlight: techStack[0]?.name || null,
@@ -633,13 +698,15 @@ export const mapApiSolutionToHomeCard = (solution) => {
     salesDeskDoc: getSalesDeskDocumentUrl(solution) || null,
     documents: buildDocumentsFromApiSolution(solution),
     detailUrl,
+    businessDomain: primaryDomain,
+    businessDomains: domains,
     capabilityForDemo: {
       id: solutionApiId,
       title: solution.Title || "Untitled Solution",
       description:
         truncateText(solution.SolutionContext, 200) ||
         "Explore this enterprise AI solution.",
-      businessDomain: solution.BusinessDomain,
+      businessDomain: primaryDomain,
     },
   };
 };
@@ -705,6 +772,8 @@ export const mapApiSolutionToCapability = (
   const techStack = parseTechStack(getTechStackSource(solution));
   const recordedDemoLink = resolveRecordedDemoLink(solution);
   const demoLink = resolveLiveDemoLink(solution);
+  const domains = parseBusinessDomains(solution);
+  const primaryDomain = domains[0] || solution.BusinessDomain || "";
 
   return {
     id: `api-${solution.ID}`,
@@ -731,9 +800,11 @@ export const mapApiSolutionToCapability = (
           ],
     recordedDemoLink,
     demoLink,
-    businessDomain: solution.BusinessDomain,
+    businessDomain: primaryDomain,
+    businessDomains: domains,
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),
+    efficientBenefit: String(solution.EfficientBenefit || "").trim(),
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
@@ -761,6 +832,10 @@ export const mapFormToCapability = (
   const evangelistNames = (form.AiEvangelists || []).filter(
     (name) => name !== PLACEHOLDER_EVANGELIST,
   );
+  const domains = parseBusinessDomains({
+    BusinessDomains: form.BusinessDomains,
+    BusinessDomain: form.BusinessDomain,
+  });
 
   return mapApiSolutionToCapability(
     {
@@ -768,11 +843,13 @@ export const mapFormToCapability = (
       Title: form.Title,
       SolutionContext: form.SolutionContext,
       TechHighlights: form.TechHighlights,
+      EfficientBenefit: form.EfficientBenefit,
       OwnershipDetails: form.OwnershipDetails,
       AiEvangelists: evangelistNames.join(", "),
       DemoLink: form.DemoLink,
       DemoRecordedVideoLink: "",
-      BusinessDomain: form.BusinessDomain,
+      BusinessDomain: domains[0] || form.BusinessDomain || "",
+      BusinessDomains: domains,
       AiFoundation: (form.AiFoundation || []).join(", "),
       Client: (form.AiFoundation || []).join(", "),
     },
@@ -965,9 +1042,70 @@ const dedupeCapabilitiesById = (capabilities = []) => {
   const byId = new Map();
 
   capabilities.forEach((capability) => {
-    if (capability?.id && !byId.has(capability.id)) {
-      byId.set(capability.id, capability);
+    if (!capability?.id) return;
+
+    const existing = byId.get(capability.id);
+    if (!existing) {
+      byId.set(capability.id, {
+        ...capability,
+        businessDomains: parseBusinessDomains({
+          BusinessDomains: capability.businessDomains,
+          BusinessDomain: capability.businessDomain,
+        }),
+      });
+      return;
     }
+
+    const mergedDomains = parseBusinessDomains({
+      BusinessDomains: [
+        ...(existing.businessDomains || []),
+        ...(capability.businessDomains || []),
+        existing.businessDomain,
+        capability.businessDomain,
+      ],
+    });
+
+    byId.set(capability.id, {
+      ...existing,
+      businessDomains: mergedDomains,
+      businessDomain: existing.businessDomain || capability.businessDomain || mergedDomains[0] || "",
+    });
+  });
+
+  return [...byId.values()];
+};
+
+/** Collapse duplicate API solution rows (same ID, different domains) into one. */
+export const dedupeApiSolutionsById = (solutions = []) => {
+  const byId = new Map();
+
+  solutions.forEach((solution) => {
+    if (solution?.ID == null && solution?.id == null) return;
+    const id = String(solution.ID ?? solution.id);
+    const existing = byId.get(id);
+
+    if (!existing) {
+      byId.set(id, {
+        ...solution,
+        BusinessDomains: parseBusinessDomains(solution),
+        BusinessDomain: parseBusinessDomains(solution)[0] || solution.BusinessDomain || "",
+      });
+      return;
+    }
+
+    const mergedDomains = parseBusinessDomains({
+      BusinessDomains: [
+        ...parseBusinessDomains(existing),
+        ...parseBusinessDomains(solution),
+      ],
+    });
+
+    byId.set(id, {
+      ...existing,
+      ...solution,
+      BusinessDomains: mergedDomains,
+      BusinessDomain: mergedDomains[0] || existing.BusinessDomain || solution.BusinessDomain || "",
+    });
   });
 
   return [...byId.values()];
@@ -1083,6 +1221,7 @@ export const mergeSubmittedCapabilities = ({
   const matchesFilter = (capability) =>
     solutionMatchesExploreFilter({
       businessDomain: capability.businessDomain,
+      businessDomains: capability.businessDomains,
       activeServiceId,
       activeDomainCode,
     });

@@ -4,6 +4,18 @@
   align-items: center;
   gap: 8px;
 
+  @keyframes solution-like-pop {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.28);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
   &__btn {
     display: inline-flex;
     align-items: center;
@@ -34,12 +46,18 @@
       font-size: 11px;
       line-height: 18px;
       text-align: center;
+      transition: transform 0.18s ease;
     }
 
     &:hover {
       background: rgba(58, 141, 157, 0.08);
       border-color: rgba(58, 141, 157, 0.28);
       color: #3a8d9d;
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.72;
     }
 
     &.is-active {
@@ -49,6 +67,24 @@
 
       svg {
         fill: currentColor;
+      }
+    }
+
+    &--like {
+      svg {
+        transition: transform 0.18s ease, fill 0.18s ease, color 0.18s ease;
+      }
+
+      strong {
+        transition: transform 0.18s ease, background 0.18s ease;
+      }
+
+      &.is-active svg {
+        animation: solution-like-pop 0.28s ease;
+      }
+
+      &.is-pending {
+        cursor: progress;
       }
     }
   }

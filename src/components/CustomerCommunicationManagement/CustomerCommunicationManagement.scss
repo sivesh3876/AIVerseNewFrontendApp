@@ -817,11 +817,23 @@
         margin-top : 0;
         padding-top: 12px;
         border-top : 1px solid #eef2f7;
+        position   : relative;
+        z-index    : 2;
 
         &.solution_engagement,
         &.solution_engagement--home {
             margin-top: 0;
             padding   : 12px 0 0;
+        }
+
+        .solution_engagement__btn {
+            position: relative;
+            z-index : 1;
+            cursor  : pointer;
+
+            > * {
+                pointer-events: none;
+            }
         }
     }
 
@@ -1099,6 +1111,29 @@
         .ccm_dashboard__action-btn {
             flex: 1;
             min-width: 160px;
+        }
+    }
+
+    &__efficient-benefit {
+        margin-top   : 28px;
+        padding      : 20px;
+        border       : 1px solid #e8ecf0;
+        border-radius: 12px;
+        background   : #f9fafb;
+
+        h3 {
+            margin     : 0 0 10px;
+            font-size  : 16px;
+            font-weight: 700;
+            color      : #0d1e32;
+        }
+
+        p {
+            margin     : 0;
+            font-size  : 15px;
+            line-height: 1.7;
+            color      : #4b5563;
+            white-space: pre-wrap;
         }
     }
 

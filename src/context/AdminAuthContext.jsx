@@ -1,9 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   clearAdminSession,
-  createAdminSession,
   getAdminSession,
-  validateAdminCredentials,
+  loginAdmin,
 } from "../utils/adminAuth";
 
 const AdminAuthContext = createContext(null);
@@ -25,13 +24,12 @@ export const AdminAuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = useCallback((email, password) => {
-    if (!validateAdminCredentials(email, password)) {
-      return { success: false, message: "Invalid email or password." };
+  const login = useCallback(async (email, password) => {
+    const result = await loginAdmin(email, password);
+    if (!result.success) {
+      return { success: false, message: result.message || "Invalid email or password." };
     }
-
-    const nextSession = createAdminSession(email);
-    setSession(nextSession);
+    setSession(result.session || getAdminSession());
     return { success: true };
   }, []);
 
