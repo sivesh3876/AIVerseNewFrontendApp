@@ -34,6 +34,7 @@ import {
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   mergeSubmittedCapabilities,
+  dedupeApiSolutionsById,
   persistSubmittedCapability,
   prunePersistedCapabilitiesSyncedWithApi,
   isPublicSolutionVisible,
@@ -277,6 +278,13 @@ const SolutionDetailPanel = ({
         )}
       </div>
 
+      {String(capability.efficientBenefit || "").trim() ? (
+        <div className="ccm_dashboard__efficient-benefit">
+          <h3>Efficient Benefit</h3>
+          <p>{String(capability.efficientBenefit).trim()}</p>
+        </div>
+      ) : null}
+
       {attachmentDocuments.length > 0 && (
         <SolutionDocuments
           documents={attachmentDocuments}
@@ -403,16 +411,18 @@ const CustomerCommunicationManagement = () => {
         setLoadingApiSolutions(true);
         setSolutionsFetchError(null);
 
-        const data = filterOutDeletedSolutions(await fetchAllUseCases()).filter(
-          (solution) => {
-            const title = String(solution?.Title || "").trim().toLowerCase();
-            return (
-              title &&
-              title !== "solution title *" &&
-              title !== "solution title*" &&
-              title !== "untitled solution"
-            );
-          },
+        const data = dedupeApiSolutionsById(
+          filterOutDeletedSolutions(await fetchAllUseCases()).filter(
+            (solution) => {
+              const title = String(solution?.Title || "").trim().toLowerCase();
+              return (
+                title &&
+                title !== "solution title *" &&
+                title !== "solution title*" &&
+                title !== "untitled solution"
+              );
+            },
+          ),
         );
         if (requestId !== fetchRequestIdRef.current) return;
 
@@ -465,7 +475,9 @@ const CustomerCommunicationManagement = () => {
   useEffect(() => {
     const syncInactiveStatus = async () => {
       try {
-        const data = filterOutDeletedSolutions(await fetchAllUseCases());
+        const data = dedupeApiSolutionsById(
+          filterOutDeletedSolutions(await fetchAllUseCases()),
+        );
         setApiSolutions(data);
         setPendingCapabilities(
           loadPersistedSubmittedCapabilities().map(hydrateCapability),
