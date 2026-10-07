@@ -95,6 +95,7 @@ const LiveDemoButton = ({ href, compact = false }) => {
         target="_blank"
         rel="noopener noreferrer"
         className="ai_capabilities__btn ai_capabilities__btn--live"
+        data-allow-public="true"
         onClick={(event) => event.stopPropagation()}
       >
         {label}
@@ -106,6 +107,7 @@ const LiveDemoButton = ({ href, compact = false }) => {
     <button
       type="button"
       className="ai_capabilities__btn ai_capabilities__btn--live"
+      data-allow-public="true"
       disabled
       title="Add a Live Demo Link in Admin to enable this button"
     >
@@ -255,6 +257,7 @@ export const OnboardingAcceleratorCard = ({
       <button
         type="button"
         className="ai_capabilities__btn ai_capabilities__btn--primary"
+        data-allow-public="true"
         onClick={handleViewSolution}
       >
         {compact ? (
@@ -276,6 +279,7 @@ export const OnboardingAcceleratorCard = ({
           target="_blank"
           rel="noopener noreferrer"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
+          data-allow-public="true"
           onClick={(event) => event.stopPropagation()}
         >
           {compact ? (
@@ -298,6 +302,7 @@ export const OnboardingAcceleratorCard = ({
           target="_blank"
           rel="noopener noreferrer"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
+          data-allow-public="true"
           onClick={(event) => event.stopPropagation()}
         >
           {salesPitchLabel}
@@ -306,6 +311,7 @@ export const OnboardingAcceleratorCard = ({
         <button
           type="button"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
+          data-allow-public="true"
           disabled={salesPitchLoading}
           title={
             salesPitchLoading
@@ -377,6 +383,7 @@ export const OnboardingAcceleratorCard = ({
             <button
               type="button"
               className="ai_capabilities__card-overlay-close"
+              data-allow-public="true"
               onClick={(event) => {
                 event.stopPropagation();
                 setActivePanel(null);
@@ -407,6 +414,7 @@ export const OnboardingAcceleratorCard = ({
                 <button
                   type="button"
                   className="ai_capabilities__read-less"
+                  data-allow-public="true"
                   onClick={(event) => {
                     event.stopPropagation();
                     setActivePanel(null);
@@ -427,6 +435,7 @@ export const OnboardingAcceleratorCard = ({
                     <button
                       type="button"
                       className="ai_capabilities__read-more"
+                      data-allow-public="true"
                       onClick={(event) => {
                         event.stopPropagation();
                         setIsDescriptionClamped(true);
@@ -523,6 +532,7 @@ const CompactSolutionCard = ({
         className="ai_capabilities__card-body"
         role="button"
         tabIndex={0}
+        data-allow-public="true"
         onClick={handleNavigate}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -546,6 +556,7 @@ const CompactSolutionCard = ({
         <button
           type="button"
           className="ai_capabilities__btn ai_capabilities__btn--primary"
+          data-allow-public="true"
           onClick={handleNavigate}
         >
           View Solution
@@ -717,6 +728,7 @@ const FullSolutionCard = ({
       <button
         type="button"
         className="ai_capabilities__btn ai_capabilities__btn--primary"
+        data-allow-public="true"
         onClick={handleNavigate}
       >
         <EyeSmallIcon />
@@ -732,6 +744,8 @@ const FullSolutionCard = ({
           target="_blank"
           rel="noopener noreferrer"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
+          data-allow-public="true"
+          onClick={(event) => event.stopPropagation()}
         >
           <PlaySmallIcon />
           <span className="ai_capabilities__btn-text">
@@ -743,6 +757,7 @@ const FullSolutionCard = ({
         <button
           type="button"
           className="ai_capabilities__btn ai_capabilities__btn--demo"
+          data-allow-public="true"
           onClick={() => onRequestDemo(solution.capabilityForDemo)}
         >
           <PlaySmallIcon />
@@ -756,6 +771,7 @@ const FullSolutionCard = ({
       <button
         type="button"
         className="ai_capabilities__btn ai_capabilities__btn--demo"
+        data-allow-public="true"
         disabled={
           salesPitchLoading || (!solutionApiId && !/^https?:\/\//i.test(salesPitchUrl))
         }
@@ -816,6 +832,7 @@ const FullSolutionCard = ({
             <button
               type="button"
               className="ai_capabilities__card-overlay-close"
+              data-allow-public="true"
               onClick={handleClosePanel}
               aria-label="Close panel"
             >
@@ -840,6 +857,7 @@ const FullSolutionCard = ({
                 <button
                   type="button"
                   className="ai_capabilities__read-less"
+                  data-allow-public="true"
                   onClick={handleReadLess}
                 >
                   Read less
@@ -857,6 +875,7 @@ const FullSolutionCard = ({
                     <button
                       type="button"
                       className="ai_capabilities__read-more"
+                      data-allow-public="true"
                       onClick={handleReadMore}
                     >
                       Read more
