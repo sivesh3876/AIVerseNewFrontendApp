@@ -9,17 +9,18 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import RegisterModal from "../components/Register/RegisterModal";
-import { resolveAppAccess } from "../utils/appAccess";
+import { resolveAppAccess, hasSyncAppAccess } from "../utils/appAccess";
 import {
-  DEFAULT_POST_REGISTRATION_PATH,
-  isPublicPath,
-  isRegistrationProtectedPath,
-} from "../utils/publicRoutes";
+  clearAdminSession,
+  PORTAL_SESSION_CHANGED_EVENT,
+} from "../utils/adminAuth";
+import { isRegistrationProtectedPath } from "../utils/publicRoutes";
 import {
   clearRegistrationReturnUrl,
   getRegistrationReturnUrl,
 } from "../utils/registrationReturnUrl";
 import {
+  clearRegistrationCompleted,
   hasCompletedRegistration,
   REGISTRATION_COMPLETED_EVENT,
 } from "../utils/registrationStatusStorage";
@@ -28,9 +29,29 @@ import {
 // Temporarily disabled: auto popup after 2 minutes.
 // const REMINDER_DELAY_MS = 120000;
 
+const BLOCKED_NORMAL_TARGETS = new Set([
+  "/login",
+  "/register",
+  "/admin/login",
+]);
+
+/**
+ * Normal users may only land on non-admin app paths.
+ * Default and preferred post-auth target is `/`.
+ */
+const resolveSafeNormalTarget = (target = "/") => {
+  const raw = String(target || "/").split("?")[0].split("#")[0] || "/";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  if (raw.startsWith("/admin")) return "/";
+  if (BLOCKED_NORMAL_TARGETS.has(raw)) return "/";
+  return raw;
+};
+
 const RegistrationReminderContext = createContext({
   openRegisterModal: () => {},
   closeRegisterModal: () => {},
+  logoutAppUser: () => {},
+  finalizeNormalUserAccess: () => {},
   isRegisterModalOpen: false,
   isAppAccessGranted: false,
 });
@@ -39,26 +60,25 @@ export const useRegistrationReminder = () =>
   useContext(RegistrationReminderContext);
 
 /**
- * Global mandatory Registration reminder.
+ * Global mandatory Registration reminder + public app-access state.
  *
- * Status is driven ONLY by Registration form completion
- * (`hasCompletedRegistration` / `markRegistrationCompleted`).
- * Other forms (Contact Us, Callback, Demo, Newsletter) never stop this cycle.
+ * Access is granted by Registration/Login form completion, portal session,
+ * or Easy Auth. Other lead forms never grant access.
  */
 export const RegistrationReminderProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [source, setSource] = useState("Website Registration");
   const [isAppAccessGranted, setIsAppAccessGranted] = useState(() =>
-    hasCompletedRegistration(),
+    hasSyncAppAccess(),
   );
   const timerRef = useRef(null);
   const isOpenRef = useRef(false);
-  const registeredRef = useRef(hasCompletedRegistration());
+  const registeredRef = useRef(hasSyncAppAccess());
   const navigate = useNavigate();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
-  const isAdminRouteRef = useRef(isAdminRoute);
-  isAdminRouteRef.current = isAdminRoute;
+  const isLoginRoute = location.pathname === "/login";
+  const hideRegisterModal = isAdminRoute || isLoginRoute;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -67,95 +87,64 @@ export const RegistrationReminderProvider = ({ children }) => {
     }
   }, []);
 
-  const startReminderTimer = useCallback(() => {
-    // Auto Register popup after 2 minutes is temporarily disabled.
-    clearTimer();
-    /*
-    // Only Registration form completion stops reminders.
-    if (registeredRef.current || hasCompletedRegistration()) {
-      registeredRef.current = true;
-      return;
-    }
-
-    timerRef.current = window.setTimeout(() => {
-      timerRef.current = null;
-
-      if (registeredRef.current || hasCompletedRegistration()) {
-        registeredRef.current = true;
-        return;
-      }
-      if (isOpenRef.current) return;
-
-      // Defer while on admin; keep the reminder cycle alive.
-      if (isAdminRouteRef.current) {
-        startReminderTimer();
-        return;
-      }
-
-      setSource("Registration Reminder");
-      setIsOpen(true);
-      isOpenRef.current = true;
-    }, REMINDER_DELAY_MS);
-    */
-  }, [clearTimer]);
-
-  const navigateAfterRegistration = useCallback(() => {
-    const pending = getRegistrationReturnUrl();
-    clearRegistrationReturnUrl();
-
-    let target = DEFAULT_POST_REGISTRATION_PATH;
-    if (pending && isRegistrationProtectedPath(pending.split("?")[0].split("#")[0])) {
-      target = pending;
-    } else if (pending && !isPublicPath(pending.split("?")[0].split("#")[0]) && !pending.startsWith("/admin")) {
-      target = pending;
-    }
-
-    navigate(target, { replace: true });
-  }, [navigate]);
-
-  // Navigating into admin with an open popup: close it and keep the cycle going.
+  // Navigating into admin/login with an open popup: close it.
   useEffect(() => {
-    if (!isAdminRoute || !isOpenRef.current) return;
+    if (!hideRegisterModal || !isOpenRef.current) return;
     setIsOpen(false);
     isOpenRef.current = false;
-    // Auto reminder restart disabled.
-    // if (!registeredRef.current && !hasCompletedRegistration()) {
-    //   startReminderTimer();
-    // }
-  }, [isAdminRoute]);
+  }, [hideRegisterModal]);
 
   useEffect(() => {
-    registeredRef.current = hasCompletedRegistration();
-    setIsAppAccessGranted(hasCompletedRegistration());
+    registeredRef.current = hasSyncAppAccess();
+    setIsAppAccessGranted(hasSyncAppAccess());
 
     let cancelled = false;
-    resolveAppAccess().then((state) => {
-      if (cancelled) return;
-      const granted = state === "granted";
-      setIsAppAccessGranted(granted);
-      if (granted) registeredRef.current = true;
-    });
+    const refreshAccess = () => {
+      resolveAppAccess().then((state) => {
+        if (cancelled) return;
+        const granted = state === "granted";
+        setIsAppAccessGranted(granted);
+        if (granted) registeredRef.current = true;
+      });
+    };
 
+    refreshAccess();
+
+    // Grant only — navigation is handled by finalizeNormalUserAccess so
+    // Home always sees isAppAccessGranted=true before/with the route change.
     const onRegistrationFormCompleted = () => {
       registeredRef.current = true;
       setIsAppAccessGranted(true);
       clearTimer();
-      navigateAfterRegistration();
+    };
+
+    const onPortalSessionChanged = () => {
+      const granted = hasSyncAppAccess();
+      registeredRef.current = granted;
+      setIsAppAccessGranted(granted);
+      if (!granted) {
+        refreshAccess();
+      }
     };
 
     window.addEventListener(
       REGISTRATION_COMPLETED_EVENT,
       onRegistrationFormCompleted,
     );
+    window.addEventListener(PORTAL_SESSION_CHANGED_EVENT, onPortalSessionChanged);
     return () => {
       cancelled = true;
       window.removeEventListener(
         REGISTRATION_COMPLETED_EVENT,
         onRegistrationFormCompleted,
       );
+      window.removeEventListener(
+        PORTAL_SESSION_CHANGED_EVENT,
+        onPortalSessionChanged,
+      );
       clearTimer();
     };
-  }, [clearTimer, navigateAfterRegistration]);
+  }, [clearTimer]);
 
   const openRegisterModal = useCallback(
     (nextSource = "Hero Registration") => {
@@ -173,7 +162,7 @@ export const RegistrationReminderProvider = ({ children }) => {
     isOpenRef.current = false;
 
     // Closing without Registration form submit must NOT mark registered.
-    if (registeredRef.current || hasCompletedRegistration()) {
+    if (registeredRef.current || hasCompletedRegistration() || hasSyncAppAccess()) {
       registeredRef.current = true;
       clearTimer();
       return;
@@ -185,27 +174,54 @@ export const RegistrationReminderProvider = ({ children }) => {
     if (pending && isRegistrationProtectedPath(location.pathname)) {
       navigate("/", { replace: true });
     }
-
-    // Auto Register popup restart after close is temporarily disabled.
-    // startReminderTimer();
   }, [clearTimer, location.pathname, navigate]);
 
-  const handleRegistered = useCallback(() => {
-    // Status is already persisted inside RegisterModal via markRegistrationCompleted.
-    // REGISTRATION_COMPLETED_EVENT listener handles navigation + access flag.
-    registeredRef.current = true;
-    setIsAppAccessGranted(true);
+  /**
+   * Grant app access synchronously, then navigate to Full Home (`/`).
+   * Call only after portal session is already written.
+   */
+  const finalizeNormalUserAccess = useCallback(
+    (target = "/") => {
+      registeredRef.current = true;
+      setIsAppAccessGranted(true);
+      clearTimer();
+      clearRegistrationReturnUrl();
+
+      setIsOpen(false);
+      isOpenRef.current = false;
+
+      const safeTarget = resolveSafeNormalTarget(target);
+      navigate(safeTarget, { replace: true });
+    },
+    [clearTimer, navigate],
+  );
+
+  const logoutAppUser = useCallback(() => {
+    clearAdminSession();
+    clearRegistrationCompleted();
+    registeredRef.current = false;
+    setIsAppAccessGranted(false);
     clearTimer();
-  }, [clearTimer]);
+    navigate("/", { replace: true });
+  }, [clearTimer, navigate]);
 
   const value = useMemo(
     () => ({
       openRegisterModal,
       closeRegisterModal,
+      logoutAppUser,
+      finalizeNormalUserAccess,
       isRegisterModalOpen: isOpen,
       isAppAccessGranted,
     }),
-    [openRegisterModal, closeRegisterModal, isOpen, isAppAccessGranted],
+    [
+      openRegisterModal,
+      closeRegisterModal,
+      logoutAppUser,
+      finalizeNormalUserAccess,
+      isOpen,
+      isAppAccessGranted,
+    ],
   );
 
   return (
@@ -214,7 +230,7 @@ export const RegistrationReminderProvider = ({ children }) => {
       <RegisterModal
         open={isOpen}
         onClose={closeRegisterModal}
-        onRegistered={handleRegistered}
+        onRegistered={() => finalizeNormalUserAccess("/")}
         source={source}
       />
     </RegistrationReminderContext.Provider>

@@ -14,7 +14,11 @@ import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
+  const {
+    isAppAccessGranted,
+    openRegisterModal,
+    logoutAppUser,
+  } = useRegistrationReminder();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [callbackOpen, setCallbackOpen] = useState(false);
 
@@ -112,13 +116,26 @@ const Navigation = () => {
               </svg>
               Schedule a Call
             </button>
-            <Link
-              to="/admin/login"
-              className="nav-admin-link"
-              onClick={() => setMobileMenu(false)}
-            >
-              Login
-            </Link>
+            {isAppAccessGranted ? (
+              <button
+                type="button"
+                className="nav-admin-link"
+                onClick={() => {
+                  setMobileMenu(false);
+                  logoutAppUser();
+                }}
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="nav-admin-link"
+                onClick={() => setMobileMenu(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </nav>
       </div>

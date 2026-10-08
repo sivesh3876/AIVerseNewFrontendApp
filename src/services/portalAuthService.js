@@ -1,16 +1,6 @@
 import { buildApiPath } from "./apiConfig";
 
-/**
- * Authenticate against the Admin Portal RBAC API (Azure DEV/prod).
- * Returns { token, user, role, permissions, expiresAt } on success.
- */
-export const portalLogin = async (email, password) => {
-  const response = await fetch(buildApiPath("portal-login"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-
+const parsePortalAuthResponse = async (response) => {
   let result;
   try {
     result = await response.json();
@@ -34,5 +24,48 @@ export const portalLogin = async (email, password) => {
     role: payload.role || result.role || "",
     permissions: payload.permissions || result.permissions || [],
     expiresAt: payload.expiresAt || result.expiresAt || null,
+    portalAudience:
+      payload.portalAudience || result.portalAudience || "",
+    isAdminPortal: Boolean(
+      payload.isAdminPortal ?? result.isAdminPortal ?? false,
+    ),
+    data: payload,
   };
+};
+
+/**
+ * Authenticate against the Portal RBAC API (Azure DEV/prod).
+ * Returns { token, user, role, permissions, expiresAt } on success.
+ */
+export const portalLogin = async (email, password) => {
+  const response = await fetch(buildApiPath("portal-login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  return parsePortalAuthResponse(response);
+};
+
+/**
+ * Public self-registration as Member; returns the same session shape as portal-login.
+ */
+export const portalRegister = async ({
+  fullName,
+  email,
+  phone,
+  password,
+}) => {
+  const response = await fetch(buildApiPath("portal-register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fullName,
+      email,
+      phone,
+      password,
+    }),
+  });
+
+  return parsePortalAuthResponse(response);
 };

@@ -16,15 +16,14 @@ const Footer = () => {
   const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
 
   const handleInternalLinkClick = (event, to) => {
-    // Public "Login" unlocks full Home — never open Admin Portal from site chrome.
-    if (to === "/admin/login") {
+    // Public Login uses /login — never send users to Admin Portal from site chrome.
+    if (to === "/admin/login" || to === "/login") {
       event.preventDefault();
       if (isAppAccessGranted) {
         navigate("/");
         return;
       }
-      setRegistrationReturnUrl("/");
-      openRegisterModal("Login");
+      navigate("/login");
       return;
     }
 

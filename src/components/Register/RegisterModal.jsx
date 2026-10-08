@@ -4,17 +4,19 @@ import {
   LEAD_TYPES,
 } from "../../utils/contactRequestStorage";
 import { markRegistrationCompleted } from "../../utils/registrationStatusStorage";
+import { createAdminSessionFromLogin } from "../../utils/adminAuth";
 import {
   isRequestDemoEmailConfigured,
   sendContactEmail,
 } from "../../services/requestDemoEmailService";
-import logo from "../../assets/images/logo.svg";
+import { portalRegister } from "../../services/portalAuthService";
 import "./RegisterModal.scss";
 
 const INITIAL_FORM = {
   fullName: "",
   email: "",
   phone: "",
+  password: "",
   consent: false,
 };
 
@@ -54,6 +56,7 @@ const RegisterModal = ({
         form.fullName.trim() &&
         EMAIL_RE.test(form.email.trim()) &&
         form.phone.trim() &&
+        form.password.length >= 6 &&
         form.consent,
       ),
     [form],
@@ -79,6 +82,9 @@ const RegisterModal = ({
     else if (!EMAIL_RE.test(form.email.trim()))
       next.email = "Enter a valid business email";
     if (!form.phone.trim()) next.phone = "Phone number is required";
+    if (!form.password) next.password = "Password is required";
+    else if (form.password.length < 6)
+      next.password = "Password must be at least 6 characters";
     if (!form.consent)
       next.consent = "Please agree to the Privacy Policy and Terms";
     setErrors(next);
@@ -94,17 +100,8 @@ const RegisterModal = ({
     onClose?.();
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!validate() || !isValid) return;
-
-    setIsSubmitting(true);
-    setErrors({});
-
+  const persistLeadBestEffort = async ({ fullName, email, phone }) => {
     const leadSource = source || "Hero Registration";
-    const fullName = form.fullName.trim();
-    const email = form.email.trim();
-    const phone = form.phone.trim();
     const message = [
       "AI Verse registration request",
       `Source: ${leadSource}`,
@@ -113,7 +110,6 @@ const RegisterModal = ({
     ].join("\n");
 
     try {
-      // Always persist locally so Admin → Leads shows the card immediately.
       addContactRequest({
         name: fullName,
         email,
@@ -126,39 +122,73 @@ const RegisterModal = ({
         source: leadSource,
         message,
       });
+    } catch {
+      // Lead persistence must not block auth.
+    }
 
-      if (isRequestDemoEmailConfigured()) {
-        try {
-          await sendContactEmail({
-            form: {
-              name: fullName,
-              email,
-              company: "",
-              phone,
-              message,
-              subject: "Register for AI Verse",
-              leadType: LEAD_TYPES.REGISTER,
-            },
-          });
-        } catch (apiError) {
-          console.warn(
-            "Register saved to Leads locally; contact-us API sync failed.",
-            apiError,
-          );
-        }
+    if (isRequestDemoEmailConfigured()) {
+      try {
+        await sendContactEmail({
+          form: {
+            name: fullName,
+            email,
+            company: "",
+            phone,
+            message,
+            subject: "Register for AI Verse",
+            leadType: LEAD_TYPES.REGISTER,
+          },
+        });
+      } catch (apiError) {
+        console.warn(
+          "Register auth succeeded; contact-us API sync failed.",
+          apiError,
+        );
       }
+    }
+  };
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!validate() || !isValid) return;
+
+    setIsSubmitting(true);
+    setErrors({});
+
+    const fullName = form.fullName.trim();
+    const email = form.email.trim();
+    const phone = form.phone.trim();
+    const password = form.password;
+
+    try {
+      const auth = await portalRegister({
+        fullName,
+        email,
+        phone,
+        password,
+      });
+      createAdminSessionFromLogin({
+        token: auth.token,
+        user: auth.user,
+        role: auth.role,
+        permissions: auth.permissions,
+        expiresAt: auth.expiresAt,
+        portalAudience: auth.portalAudience || "member",
+        isAdminPortal: auth.isAdminPortal === true,
+        data: auth.data,
+      });
+      void persistLeadBestEffort({ fullName, email, phone });
+
+      // Session is written; grant access + go to Full Home immediately.
       markRegistrationCompleted();
       onRegistered?.();
-      setSuccessMessage(
-        "Thank you for registering with AI Verse. Your details are now on the Leads page.",
-      );
       setForm(INITIAL_FORM);
-      closeTimerRef.current = setTimeout(() => {
-        resetAndClose();
-      }, 2200);
-    } catch {
-      setErrors({ form: "Something went wrong. Please try again." });
+      setIsSubmitting(false);
+      resetAndClose();
+    } catch (err) {
+      setErrors({
+        form: err?.message || "Registration failed. Please try again.",
+      });
       setIsSubmitting(false);
     }
   };
@@ -189,10 +219,9 @@ const RegisterModal = ({
         <div className="register_modal__glow" aria-hidden="true" />
 
         <header className="register_modal__header">
-          {/* <img src={logo} alt="AI Verse" className="register_modal__logo" /> */}
           <h2 id="register-modal-title">Register for AI Verse</h2>
           <p>
-            Register to access AI Verse solutions, AI resources, and enterprise
+            Create a free account to access AI Verse solutions, resources, and
             insights.
           </p>
         </header>
@@ -248,6 +277,19 @@ const RegisterModal = ({
                 autoComplete="tel"
               />
               {errors.phone && <em>{errors.phone}</em>}
+            </label>
+
+            <label className="register_modal__field">
+              <span>Password *</span>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="At least 6 characters"
+                autoComplete="new-password"
+              />
+              {errors.password && <em>{errors.password}</em>}
             </label>
 
             <label className="register_modal__consent">

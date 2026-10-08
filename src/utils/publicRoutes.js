@@ -5,6 +5,7 @@
 
 const PUBLIC_EXACT = new Set([
   "/",
+  "/login",
   "/admin/login",
   "/ai-readiness-assessment",
 ]);

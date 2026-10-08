@@ -14,6 +14,7 @@ import {
   resolveLiveDemoLink,
 } from "../../utils/solutionMapper";
 import { getSalesPitchOpenUrl } from "../../utils/solutionDocuments";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
 
 const EyeSmallIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -76,6 +77,8 @@ const resolveWmsRecordedDemoLink = (solution = {}) =>
   String(solution.DemoRecordedVideoLink || "").trim();
 
 const LiveDemoButton = ({ href, compact = false }) => {
+  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
+
   const label = compact ? (
     "Live Demo"
   ) : (
@@ -88,14 +91,13 @@ const LiveDemoButton = ({ href, compact = false }) => {
     </>
   );
 
-  if (href) {
+  if (href && isAppAccessGranted) {
     return (
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="ai_capabilities__btn ai_capabilities__btn--live"
-        data-allow-public="true"
         onClick={(event) => event.stopPropagation()}
       >
         {label}
@@ -103,11 +105,26 @@ const LiveDemoButton = ({ href, compact = false }) => {
     );
   }
 
+  if (href && !isAppAccessGranted) {
+    return (
+      <button
+        type="button"
+        className="ai_capabilities__btn ai_capabilities__btn--live"
+        onClick={(event) => {
+          event.stopPropagation();
+          event.preventDefault();
+          openRegisterModal("Live Demo gate");
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
       className="ai_capabilities__btn ai_capabilities__btn--live"
-      data-allow-public="true"
       disabled
       title="Add a Live Demo Link in Admin to enable this button"
     >

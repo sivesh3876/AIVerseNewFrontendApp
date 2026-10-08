@@ -1,23 +1,28 @@
 import { fetchAuthenticatedUser } from "../services/authUserService";
+import { getAdminSession } from "./adminAuth";
 import { hasCompletedRegistration } from "./registrationStatusStorage";
 
 /**
- * Synchronous fast path — registration form completion only.
+ * Synchronous fast path — registration completion or portal session.
  */
-export const hasSyncAppAccess = () => hasCompletedRegistration();
+export const hasSyncAppAccess = () =>
+  hasCompletedRegistration() || Boolean(getAdminSession()?.token);
 
 /**
  * Resolve whether the visitor may access registration-protected app pages /
  * full Home. Granted via:
- * - successful Registration form completion, or
+ * - successful Registration / Login form completion, or
+ * - valid portal session (Member or Admin), or
  * - Azure Easy Auth (`/.auth/me`) profile with email
- *
- * Admin portal session alone does NOT grant end-user access.
  *
  * @returns {Promise<'granted' | 'denied'>}
  */
 export const resolveAppAccess = async ({ forceRefresh = false } = {}) => {
   if (hasCompletedRegistration()) {
+    return "granted";
+  }
+
+  if (getAdminSession()?.token) {
     return "granted";
   }
 

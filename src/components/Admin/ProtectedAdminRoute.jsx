@@ -1,8 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAdminAuth } from "../../context/AdminAuthContext";
+import { isAdminPortalSession } from "../../utils/adminAuth";
 
 const ProtectedAdminRoute = ({ children }) => {
-  const { isAuthenticated } = useAdminAuth();
+  const { isAuthenticated, session } = useAdminAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -13,6 +14,11 @@ const ProtectedAdminRoute = ({ children }) => {
         state={{ from: location.pathname + location.search }}
       />
     );
+  }
+
+  // Member (normal user) sessions must never see Admin pages.
+  if (!isAdminPortalSession(session)) {
+    return <Navigate to="/" replace />;
   }
 
   return children;

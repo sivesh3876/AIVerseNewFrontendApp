@@ -1612,9 +1612,9 @@ const AddNewAISolution = () => {
 
         <div className="add_ai_solution__field">
           <label htmlFor="evangelistSearch">AI Evangelist</label>
-          <input
+            <input
             id="evangelistSearch"
-            type="text"
+              type="text"
             className="add_ai_solution__evangelist-search"
             placeholder="Type to search evangelists..."
             value={evangelistSearch}
@@ -1636,7 +1636,7 @@ const AddNewAISolution = () => {
                     type="checkbox"
                     value={evangelist.Name}
                     checked={form.AiEvangelists.includes(evangelist.Name)}
-                    onChange={(event) =>
+              onChange={(event) =>
                       toggleEvangelist(evangelist.Name, event.target.checked)
                     }
                   />
@@ -1660,8 +1660,8 @@ const AddNewAISolution = () => {
                   ×
                 </button>
               </span>
-            ))}
-          </div>
+              ))}
+            </div>
         </div>
 
         <div className="add_ai_solution__field">
@@ -1758,7 +1758,7 @@ const AddNewAISolution = () => {
           >
             {AI_FOUNDATION_OPTIONS.map((option) => (
               <label key={option} className="add_ai_solution__checkbox-item">
-                <input
+          <input
                   type="checkbox"
                   value={option}
                   checked={form.AiFoundation.includes(option)}
