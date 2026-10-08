@@ -64,3 +64,15 @@ export const markRegistrationCompleted = () => {
     new CustomEvent(REGISTRATION_COMPLETED_EVENT, { detail: payload }),
   );
 };
+
+/**
+ * Clear registration completion (e.g. after logout / acceptance testing).
+ * Does not affect Azure Easy Auth cookies or admin sessions.
+ */
+export const clearRegistrationCompleted = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore storage errors.
+  }
+};

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
+import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 import "./Footer.scss";
 
 import linkdIn from "../../assets/images/linkdIn.svg";
@@ -9,7 +11,37 @@ import facebook from "../../assets/images/facebook.svg";
 import { footerSections } from "./footerData";
 
 const Footer = () => {
+  const navigate = useNavigate();
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
+
+  const handleInternalLinkClick = (event, to) => {
+    // Public "Login" unlocks full Home — never open Admin Portal from site chrome.
+    if (to === "/admin/login") {
+      event.preventDefault();
+      if (isAppAccessGranted) {
+        navigate("/");
+        return;
+      }
+      setRegistrationReturnUrl("/");
+      openRegisterModal("Login");
+      return;
+    }
+
+    if (isAppAccessGranted) return;
+    event.preventDefault();
+    setRegistrationReturnUrl(to || "/");
+    openRegisterModal("Footer gate");
+  };
+
+  const handleContactClick = () => {
+    if (!isAppAccessGranted) {
+      setRegistrationReturnUrl("/");
+      openRegisterModal("Footer gate");
+      return;
+    }
+    setIsContactFormOpen(true);
+  };
 
   return (
     <>
@@ -23,7 +55,14 @@ const Footer = () => {
                 <ul>
                   {section.links.map((link) => (
                     <li key={link.label}>
-                      <Link to={link.to}>{link.label}</Link>
+                      <Link
+                        to={link.to}
+                        onClick={(event) =>
+                          handleInternalLinkClick(event, link.to)
+                        }
+                      >
+                        {link.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -38,7 +77,7 @@ const Footer = () => {
                   <button
                     type="button"
                     className="footer_contact_button"
-                    onClick={() => setIsContactFormOpen(true)}
+                    onClick={handleContactClick}
                   >
                     info@aiverse.com
                   </button>

@@ -5,6 +5,7 @@ import Footer from "./components/Footer/Footer";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { RegistrationReminderProvider } from "./context/RegistrationReminderContext";
 import { ProtectedAdminRoute, RequirePermission } from "./components/Admin";
+import RequireRegisteredRoute from "./components/RequireRegisteredRoute";
 import HomePage from "./pages/HomePage";
 import GetStarted from "./pages/GetStarted";
 import ExploreSolutions from "./pages/ExploreSolutions";
@@ -114,16 +115,38 @@ const AppShell = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
-        <Route path="/learn-explore" element={<LearnExplorePage />} />
+        <Route
+          path="/learn-explore"
+          element={
+            <RequireRegisteredRoute>
+              <LearnExplorePage />
+            </RequireRegisteredRoute>
+          }
+        />
         <Route
           path="/learn-explore/certifications"
-          element={<CertificationDetailsPage />}
+          element={
+            <RequireRegisteredRoute>
+              <CertificationDetailsPage />
+            </RequireRegisteredRoute>
+          }
         />
         <Route
           path="/learn-explore/certifications/:certificationId"
-          element={<CertificationDetailsPage />}
+          element={
+            <RequireRegisteredRoute>
+              <CertificationDetailsPage />
+            </RequireRegisteredRoute>
+          }
         />
-        <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
+        <Route
+          path="/ai-capabilities"
+          element={
+            <RequireRegisteredRoute>
+              <AICapabilitiesPage />
+            </RequireRegisteredRoute>
+          }
+        />
 
         <Route
           path="/ai-readiness-assessment"
@@ -138,20 +161,118 @@ const AppShell = () => {
             </ProtectedAdminRoute>
           }
         />
-        <Route path="/about-us" element={<AboutUsPage />} />
-        <Route path="/clients" element={<ClientsPage />} />
-        <Route path="/industry-solutions" element={<IndustrySolutionsPage />} />
-        <Route path="/solutions" element={<Solutions />} />
-        <Route path="/customer-experience" element={<CustomerExperiencePage />} />
-        <Route path="/employee-experience" element={<EmployeeExperiencePage />} />
-        <Route path="/business-experience" element={<BusinessExperiencePage />} />
-        <Route path="/total-experience" element={<TotalExperienceDetailPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/careers" element={<CareersPage />} />
-        <Route path="/blogs" element={<BlogsPage />} />
-        <Route path="/whitepapers" element={<WhitepapersPage />} />
-        <Route path="/case-studies" element={<CaseStudiesPage />} />
-        <Route path="/success-stories" element={<SuccessStoriesPage />} />
+        <Route
+          path="/about-us"
+          element={
+            <RequireRegisteredRoute>
+              <AboutUsPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/clients"
+          element={
+            <RequireRegisteredRoute>
+              <ClientsPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/industry-solutions"
+          element={
+            <RequireRegisteredRoute>
+              <IndustrySolutionsPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/solutions"
+          element={
+            <RequireRegisteredRoute>
+              <Solutions />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/customer-experience"
+          element={
+            <RequireRegisteredRoute>
+              <CustomerExperiencePage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/employee-experience"
+          element={
+            <RequireRegisteredRoute>
+              <EmployeeExperiencePage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/business-experience"
+          element={
+            <RequireRegisteredRoute>
+              <BusinessExperiencePage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/total-experience"
+          element={
+            <RequireRegisteredRoute>
+              <TotalExperienceDetailPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <RequireRegisteredRoute>
+              <ContactPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/careers"
+          element={
+            <RequireRegisteredRoute>
+              <CareersPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/blogs"
+          element={
+            <RequireRegisteredRoute>
+              <BlogsPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/whitepapers"
+          element={
+            <RequireRegisteredRoute>
+              <WhitepapersPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/case-studies"
+          element={
+            <RequireRegisteredRoute>
+              <CaseStudiesPage />
+            </RequireRegisteredRoute>
+          }
+        />
+        <Route
+          path="/success-stories"
+          element={
+            <RequireRegisteredRoute>
+              <SuccessStoriesPage />
+            </RequireRegisteredRoute>
+          }
+        />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route
           path="/admin"

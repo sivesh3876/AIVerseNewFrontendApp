@@ -8,25 +8,40 @@ import {
   updateHomeHash,
 } from "../../utils/homeSections";
 import CallbackScheduleModal from "../CallbackSchedule/CallbackScheduleModal";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
+import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [callbackOpen, setCallbackOpen] = useState(false);
 
-  const handleSectionNav = (sectionId) => {
-    setMobileMenu(false);
-
-    if (location.pathname === "/") {
-      scrollToHomeSection(sectionId);
-      updateHomeHash(sectionId);
+  const requireAccess = (returnUrl, action) => {
+    if (isAppAccessGranted) {
+      action();
       return;
     }
+    setRegistrationReturnUrl(returnUrl || "/");
+    openRegisterModal("Navigation gate");
+  };
 
-    navigate("/", {
-      state: { scrollToSection: sectionId },
+  const handleSectionNav = (sectionId) => {
+    requireAccess(`/#${sectionId}`, () => {
+      setMobileMenu(false);
+
+      if (location.pathname === "/") {
+        scrollToHomeSection(sectionId);
+        updateHomeHash(sectionId);
+        return;
+      }
+
+      navigate("/", {
+        state: { scrollToSection: sectionId },
+      });
     });
+    setMobileMenu(false);
   };
 
   return (
@@ -53,7 +68,19 @@ const Navigation = () => {
               </li>
             ))}
             <li>
-              <Link to="/about-us" onClick={() => setMobileMenu(false)}>
+              <Link
+                to="/about-us"
+                onClick={(event) => {
+                  if (isAppAccessGranted) {
+                    setMobileMenu(false);
+                    return;
+                  }
+                  event.preventDefault();
+                  setMobileMenu(false);
+                  setRegistrationReturnUrl("/about-us");
+                  openRegisterModal("Navigation gate");
+                }}
+              >
                 About Us
               </Link>
             </li>

@@ -6,6 +6,8 @@ import {
   getRatingBlocks,
 } from "../../utils/aiReadinessAssessmentUtils";
 import downloadAssessmentReport from "../../utils/downloadAssessmentReport";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
+import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 
 export default function ResultsPage({
   heroBackground,
@@ -16,6 +18,8 @@ export default function ResultsPage({
   onRetake,
   onStartOver,
 }) {
+  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
+
   const readinessMessage = {
     Initial: "AI readiness is at an early stage. Focus on establishing foundational capabilities.",
     Developing: "AI capabilities are beginning to develop. Focus on building consistent practices.",
@@ -32,6 +36,18 @@ export default function ResultsPage({
     Advanced: "60–79%",
     Leading: "80–100%",
   }[readinessLevel] || "—";
+
+  const assessmentReturnPath = "/ai-readiness-assessment";
+
+  const handleRegisterForDownload = () => {
+    setRegistrationReturnUrl(assessmentReturnPath);
+    openRegisterModal("Assessment download");
+  };
+
+  const handleLoginForDownload = () => {
+    setRegistrationReturnUrl(assessmentReturnPath);
+    openRegisterModal("Login");
+  };
 
   return (
     <div className="results-page">
@@ -80,97 +96,132 @@ export default function ResultsPage({
           <p className="score-range">Score range: {scoreRange}</p>
           <p className="readiness-message">{readinessMessage}</p>
         </div>
+
+        {!isAppAccessGranted && (
+          <div className="results-download-gate">
+            <p>
+              If you want to download your result, then login or register.
+            </p>
+            <div className="results-download-gate__actions">
+              <button
+                type="button"
+                className="results-download-gate__register"
+                onClick={handleRegisterForDownload}
+              >
+                Register
+              </button>
+              <button
+                type="button"
+                className="results-download-gate__login"
+                onClick={handleLoginForDownload}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                className="exit-assessment-button"
+                onClick={() => {
+                  window.location.href = "/";
+                }}
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
-      <div className="results-card">
-        <div className="dimension-section">
-          <h3>Dimension Scores</h3>
-          {dimensionResults.map((dimension, index) => {
-            const score = dimension.score ?? 0;
-            const maturityScore = getDimensionMaturityScore(score);
-            const maturityLevel = getDimensionMaturityLevel(score);
-            const rating = getRatingBlocks(score);
-            const questionCount = dimension.maxRawScore ? dimension.maxRawScore / 5 : 4;
+      {isAppAccessGranted && (
+        <div className="results-card">
+          <div className="dimension-section">
+            <h3>Dimension Scores</h3>
+            {dimensionResults.map((dimension, index) => {
+              const score = dimension.score ?? 0;
+              const maturityScore = getDimensionMaturityScore(score);
+              const maturityLevel = getDimensionMaturityLevel(score);
+              const rating = getRatingBlocks(score);
+              const questionCount = dimension.maxRawScore ? dimension.maxRawScore / 5 : 4;
 
-            return (
-              <div className={`dimension-result dimension-result-${index}`} key={dimension.id}>
-                <div className="dimension-header">
-                  <div>
-                    <span className="dimension-name">{dimension.name}</span>
-                    <span className="dimension-question-count">{questionCount} questions</span>
+              return (
+                <div className={`dimension-result dimension-result-${index}`} key={dimension.id}>
+                  <div className="dimension-header">
+                    <div>
+                      <span className="dimension-name">{dimension.name}</span>
+                      <span className="dimension-question-count">{questionCount} questions</span>
+                    </div>
+                    <span className="dimension-score">{score}%</span>
                   </div>
-                  <span className="dimension-score">{score}%</span>
+
+                  <div className="progress-background">
+                    <div className="progress-fill" style={{ width: `${score}%` }} />
+                  </div>
+
+                  <div className="dimension-maturity-info">
+                    <span className="dimension-maturity-level">{maturityLevel}</span>
+                    <span className="dimension-rating">{rating}</span>
+                    <span className="dimension-maturity-score">{maturityScore.toFixed(1)} / 5</span>
+                  </div>
+
+                  {dimension.recommendation && (
+                    <p className="dimension-recommendation">
+                      <strong>{getRecommendationPrefix(score)}</strong>{" "}
+                      {dimension.recommendation}
+                    </p>
+                  )}
+
+                  {dimension.nextStep && (
+                    <p className="dimension-next-step">
+                      <strong>Recommended next step:</strong> {dimension.nextStep}
+                    </p>
+                  )}
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="progress-background">
-                  <div className="progress-fill" style={{ width: `${score}%` }} />
-                </div>
+          <MaturityRadarChart dimensions={dimensionResults} />
 
-                <div className="dimension-maturity-info">
-                  <span className="dimension-maturity-level">{maturityLevel}</span>
-                  <span className="dimension-rating">{rating}</span>
-                  <span className="dimension-maturity-score">{maturityScore.toFixed(1)} / 5</span>
-                </div>
+          <p className="results-footer">
+            Thank you for completing the AI Readiness Assessment.
+          </p>
 
-                {dimension.recommendation && (
-                  <p className="dimension-recommendation">
-                    <strong>{getRecommendationPrefix(score)}</strong>{" "}
-                    {dimension.recommendation}
-                  </p>
-                )}
+          <div className="results-actions">
+            <button
+              type="button"
+              className="download-results-button"
+              onClick={() => downloadAssessmentReport({ overallScore, readinessLevel, dimensionResults })}
+            >
+              Download Results
+            </button>
 
-                {dimension.nextStep && (
-                  <p className="dimension-next-step">
-                    <strong>Recommended next step:</strong> {dimension.nextStep}
-                  </p>
-                )}
+            <div className="results-action-with-tooltip">
+              <button type="button" className="retake-button" onClick={onRetake}>
+                Retake Assessment
+              </button>
+              <div className="results-action-tooltip">
+                Go to the Assessment page
               </div>
-            );
-          })}
-        </div>
-
-        <MaturityRadarChart dimensions={dimensionResults} />
-
-        <p className="results-footer">
-          Thank you for completing the AI Readiness Assessment.
-        </p>
-
-        <div className="results-actions">
-          <button
-            type="button"
-            className="download-results-button"
-            onClick={() => downloadAssessmentReport({ overallScore, readinessLevel, dimensionResults })}
-          >
-            Download Results
-          </button>
-
-          <div className="results-action-with-tooltip">
-            <button type="button" className="retake-button" onClick={onRetake}>
-              Retake Assessment
-            </button>
-            <div className="results-action-tooltip">
-              Go to the Assessment page
             </div>
-          </div>
-          <div className="results-action-with-tooltip">
-            <button type="button" className="start-over-button" onClick={onStartOver}>
-              Start Over
-            </button>
-            <div className="results-action-tooltip">
-              Return to the Industry selection page
+            <div className="results-action-with-tooltip">
+              <button type="button" className="start-over-button" onClick={onStartOver}>
+                Start Over
+              </button>
+              <div className="results-action-tooltip">
+                Return to the Industry selection page
+              </div>
             </div>
+            <button
+              type="button"
+              className="exit-assessment-button"
+              onClick={() => {
+                window.location.href = "/";
+              }}
+            >
+              Exit
+            </button>
           </div>
-          <button
-            type="button"
-            className="exit-assessment-button"
-            onClick={() => {
-              window.location.href = "/";
-            }}
-          >
-            Exit
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -40,6 +40,7 @@ const HeroJourneySteps = ({ onCreateAccount }) => {
         <button
           type="button"
           className="hero_journey_steps__cta-btn primary_btn"
+          data-allow-public="true"
           onClick={onCreateAccount}
         >
           Create free account

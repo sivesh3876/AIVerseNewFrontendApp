@@ -10,8 +10,15 @@ import MeetOurAIExperts from "../components/MeetOurAIExperts";
 import NewsletterSubscribe from "../components/NewsletterSubscribe";
 import ClientsLogoBar from "../components/ClientsLogoBar";
 import StatsSection from "../components/StatsSection/StatsSection";
+import { useRegistrationReminder } from "../context/RegistrationReminderContext";
 
 const HomePage = () => {
+  const { isAppAccessGranted } = useRegistrationReminder();
+
+  if (!isAppAccessGranted) {
+    return <HeroBannerSlider />;
+  }
+
   return (
     <>
       <HeroBannerSlider />

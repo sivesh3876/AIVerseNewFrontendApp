@@ -116,9 +116,42 @@ export const getLoginUrl = (redirectUri = window.location.href) => {
   return `/.auth/login/aad?post_login_redirect_uri=${encodeURIComponent(redirectUri)}`;
 };
 
-export const fetchAuthenticatedUser = async ({ forceRefresh = false } = {}) => {
+const fetchEasyAuthUser = async () => {
+  try {
+    const response = await fetch(AUTH_ME_URL, {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json();
+    const profile = Array.isArray(payload) ? payload[0] : payload;
+    return normalizeAuthProfile(profile);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * @param {{ forceRefresh?: boolean, allowAdminFallback?: boolean }} [options]
+ * - allowAdminFallback (default true): when Easy Auth has no profile, use admin
+ *   portal session. Set false for end-user app access (full Home / route gates)
+ *   so admin login alone does not unlock the public site.
+ */
+export const fetchAuthenticatedUser = async ({
+  forceRefresh = false,
+  allowAdminFallback = true,
+} = {}) => {
   if (typeof window === "undefined") {
     return null;
+  }
+
+  // End-user access checks must not reuse a cached admin-session user.
+  if (!allowAdminFallback) {
+    return fetchEasyAuthUser();
   }
 
   if (!forceRefresh && cachedUser) {
@@ -130,23 +163,10 @@ export const fetchAuthenticatedUser = async ({ forceRefresh = false } = {}) => {
   }
 
   cachedUserPromise = (async () => {
-    try {
-      const response = await fetch(AUTH_ME_URL, {
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-
-      if (response.ok) {
-        const payload = await response.json();
-        const profile = Array.isArray(payload) ? payload[0] : payload;
-        const authUser = normalizeAuthProfile(profile);
-        if (authUser) {
-          cachedUser = authUser;
-          return cachedUser;
-        }
-      }
-    } catch {
-      // Fall through to admin session.
+    const authUser = await fetchEasyAuthUser();
+    if (authUser) {
+      cachedUser = authUser;
+      return cachedUser;
     }
 
     cachedUser = userFromAdminSession();
