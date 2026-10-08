@@ -1,27 +1,30 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useRegistrationReminder } from "../context/RegistrationReminderContext";
-import { resolveAppAccess } from "../utils/appAccess";
-import { hasCompletedRegistration, REGISTRATION_COMPLETED_EVENT } from "../utils/registrationStatusStorage";
+import { hasSyncAppAccess, resolveAppAccess } from "../utils/appAccess";
+import { PORTAL_SESSION_CHANGED_EVENT } from "../utils/adminAuth";
+import {
+  REGISTRATION_COMPLETED_EVENT,
+} from "../utils/registrationStatusStorage";
 import { setRegistrationReturnUrl } from "../utils/registrationReturnUrl";
 
 /**
- * Blocks registration-protected pages until the visitor has completed
- * registration (or has an Easy Auth profile). Opens the existing RegisterModal
- * and stores a return URL for post-registration navigation.
+ * Blocks registration-protected pages until the visitor has app access via:
+ * registration completion, portal session (Login-first), or Easy Auth.
+ * Opens the existing RegisterModal and stores a return URL.
  */
 const RequireRegisteredRoute = ({ children }) => {
   const location = useLocation();
   const { openRegisterModal } = useRegistrationReminder();
   const [access, setAccess] = useState(() =>
-    hasCompletedRegistration() ? "granted" : "loading",
+    hasSyncAppAccess() ? "granted" : "loading",
   );
 
   useEffect(() => {
     let cancelled = false;
 
     const check = async () => {
-      if (hasCompletedRegistration()) {
+      if (hasSyncAppAccess()) {
         if (!cancelled) setAccess("granted");
         return;
       }
@@ -33,21 +36,17 @@ const RequireRegisteredRoute = ({ children }) => {
 
     check();
 
-    const onRegistrationCompleted = () => {
-      if (!cancelled) setAccess("granted");
+    const onAccessGranted = () => {
+      if (!cancelled && hasSyncAppAccess()) setAccess("granted");
     };
 
-    window.addEventListener(
-      REGISTRATION_COMPLETED_EVENT,
-      onRegistrationCompleted,
-    );
+    window.addEventListener(REGISTRATION_COMPLETED_EVENT, onAccessGranted);
+    window.addEventListener(PORTAL_SESSION_CHANGED_EVENT, onAccessGranted);
 
     return () => {
       cancelled = true;
-      window.removeEventListener(
-        REGISTRATION_COMPLETED_EVENT,
-        onRegistrationCompleted,
-      );
+      window.removeEventListener(REGISTRATION_COMPLETED_EVENT, onAccessGranted);
+      window.removeEventListener(PORTAL_SESSION_CHANGED_EVENT, onAccessGranted);
     };
   }, [location.pathname, location.search, location.hash]);
 
@@ -70,8 +69,6 @@ const RequireRegisteredRoute = ({ children }) => {
   }
 
   // Loading / denied: do not render protected content.
-  // RegistrationReminderContext redirects to `/` if the modal is dismissed
-  // without registering, and navigates to the return URL after success.
   return null;
 };
 

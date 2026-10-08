@@ -28,6 +28,7 @@ import WhitepapersPage from "./pages/WhitepapersPage";
 import CaseStudiesPage from "./pages/CaseStudiesPage";
 import SuccessStoriesPage from "./pages/SuccessStoriesPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import UserLoginPage from "./pages/UserLoginPage";
 import AIReadinessAssessmentPage from "./pages/AIReadinessAssessmentPage";
 import AdminDashboardPage, {
   AdminBlogs,
@@ -106,13 +107,16 @@ const RouteScrollManager = () => {
 const AppShell = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isLoginRoute = location.pathname === "/login";
+  const hideChrome = isAdminRoute || isLoginRoute;
 
   return (
     <>
       <RouteScrollManager />
-      {!isAdminRoute && <Navigation />}
+      {!hideChrome && <Navigation />}
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<UserLoginPage />} />
         <Route path="/explore-solutions/:id" element={<SolutionDetails />} />
         <Route path="/explore-solutions" element={<ExploreSolutions />} />
         <Route
@@ -408,7 +412,7 @@ const AppShell = () => {
           />
         </Route>
       </Routes>
-      {!isAdminRoute && <Footer />}
+      {!hideChrome && <Footer />}
     </>
   );
 };

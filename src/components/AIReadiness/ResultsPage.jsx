@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import MaturityRadarChart from "./MaturityRadarChart";
 import {
   getRecommendationPrefix,
@@ -18,6 +19,7 @@ export default function ResultsPage({
   onRetake,
   onStartOver,
 }) {
+  const navigate = useNavigate();
   const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
 
   const readinessMessage = {
@@ -45,8 +47,9 @@ export default function ResultsPage({
   };
 
   const handleLoginForDownload = () => {
-    setRegistrationReturnUrl(assessmentReturnPath);
-    openRegisterModal("Login");
+    navigate(
+      `/login?returnUrl=${encodeURIComponent(assessmentReturnPath)}`,
+    );
   };
 
   return (

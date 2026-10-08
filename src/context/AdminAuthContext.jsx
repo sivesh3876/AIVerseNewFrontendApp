@@ -5,6 +5,7 @@ import {
   getAdminSession,
   hasAnyPermission as sessionHasAnyPermission,
   hasPermission as sessionHasPermission,
+  PORTAL_SESSION_CHANGED_EVENT,
 } from "../utils/adminAuth";
 import { buildApiPath } from "../services/apiConfig";
 
@@ -61,11 +62,13 @@ export const AdminAuthProvider = ({ children }) => {
     const syncSession = () => setSession(getAdminSession());
     refreshSession();
     window.addEventListener("storage", syncSession);
+    window.addEventListener(PORTAL_SESSION_CHANGED_EVENT, syncSession);
     window.addEventListener("focus", refreshSession);
 
     return () => {
       active = false;
       window.removeEventListener("storage", syncSession);
+      window.removeEventListener(PORTAL_SESSION_CHANGED_EVENT, syncSession);
       window.removeEventListener("focus", refreshSession);
     };
   }, []);

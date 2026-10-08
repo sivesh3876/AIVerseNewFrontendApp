@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useAdminAuth } from "../../context/AdminAuthContext";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { portalLogin } from "../../services/portalAuthService";
 import {
+  createAdminSessionFromLogin,
+  getAdminSession,
   isAdminPortalSession,
-  isMemberRole,
 } from "../../utils/adminAuth";
 import { getAdminLandingPath } from "../../utils/adminLanding";
+import { markRegistrationCompleted } from "../../utils/registrationStatusStorage";
+import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
 import logo from "../../assets/images/logo.svg";
 import sliderBg from "../../assets/images/slider1.svg";
 import robotIcon from "../../assets/images/robot.svg";
 import graphIcon from "../../assets/images/graph.svg";
 import searchIcon from "../../assets/images/search-teal.svg";
 import dollarIcon from "../../assets/images/dollar.svg";
-import "./AdminDashboard.scss";
-import "./AdminLogin.scss";
+import "../Admin/AdminDashboard.scss";
+import "../Admin/AdminLogin.scss";
 
 const HUB_NODES = [
   { id: "search", icon: searchIcon, label: "Enterprise Search", position: "top" },
@@ -22,48 +25,15 @@ const HUB_NODES = [
   { id: "dollar", icon: dollarIcon, label: "Business Value", position: "left" },
 ];
 
-const resolveSafeReturnUrl = (value) => {
-  if (!value || typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
-    return null;
-  }
-
-  if (trimmed.includes("://")) {
-    return null;
-  }
-
-  return trimmed;
-};
-
-const AdminLogin = () => {
+const UserLogin = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isAuthenticated, login, logout, permissions, session } = useAdminAuth();
+  const { finalizeNormalUserAccess } = useRegistrationReminder();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const returnUrl = resolveSafeReturnUrl(
-    new URLSearchParams(location.search).get("returnUrl"),
-  );
-  const isAdminPortalUser = isAdminPortalSession(session);
-  const fallbackLanding = isAdminPortalUser
-    ? getAdminLandingPath(permissions)
-    : null;
-  const redirectPath =
-    isAdminPortalUser
-      ? returnUrl ||
-        (location.state?.from && location.state.from !== "/admin"
-          ? location.state.from
-          : null) ||
-        fallbackLanding ||
-        null
-      : null;
+  const existingSession = getAdminSession();
 
   useEffect(() => {
     document.documentElement.style.overflow = "hidden";
@@ -75,73 +45,46 @@ const AdminLogin = () => {
     };
   }, []);
 
-  // Stale admin session with no usable landing used to Navigate to
-  // /admin/login while already on login → blank white page.
-  // Member sessions are valid for the public app — send them home, do not clear.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (isMemberRole(session?.role) || session?.portalAudience === "member") {
-      return;
+  if (existingSession?.token) {
+    if (isAdminPortalSession(existingSession)) {
+      const adminLanding =
+        getAdminLandingPath(existingSession.permissions) || "/admin";
+      return <Navigate to={adminLanding} replace />;
     }
-    if (redirectPath && redirectPath !== "/admin/login") return;
-    logout();
-  }, [isAuthenticated, redirectPath, logout, session?.role, session?.portalAudience]);
-
-  if (
-    isAuthenticated &&
-    (isMemberRole(session?.role) || session?.portalAudience === "member")
-  ) {
     return <Navigate to="/" replace />;
   }
 
-  if (isAuthenticated && redirectPath && redirectPath !== "/admin/login") {
-    return <Navigate to={redirectPath} replace />;
-  }
-
-  const resetMessages = () => {
-    setError("");
-  };
-
   const handleSignInSubmit = async (event) => {
     event.preventDefault();
-    resetMessages();
+    setError("");
     setIsSubmitting(true);
 
     try {
-      const result = await login(email, password);
+      const auth = await portalLogin(email.trim(), password);
+      const session = createAdminSessionFromLogin({
+        token: auth.token,
+        user: auth.user,
+        role: auth.role,
+        permissions: auth.permissions,
+        expiresAt: auth.expiresAt,
+        portalAudience: auth.portalAudience,
+        isAdminPortal: auth.isAdminPortal,
+        data: auth.data,
+      });
 
-      if (!result.success) {
-        setError(result.message);
+      // Backend portalAudience decides landing — never email or a UI role field.
+      if (isAdminPortalSession(session)) {
+        const adminLanding =
+          getAdminLandingPath(session.permissions) || "/admin";
+        navigate(adminLanding, { replace: true });
         return;
       }
 
-      const nextSession = result.session;
-      if (!isAdminPortalSession(nextSession)) {
-        setError(
-          "Signed in, but this account has no Admin Portal permissions. Use Login on the public site for a Member account.",
-        );
-        logout();
-        return;
-      }
-
-      const landing =
-        returnUrl ||
-        (location.state?.from && location.state.from !== "/admin"
-          ? location.state.from
-          : null) ||
-        getAdminLandingPath(nextSession?.permissions || []);
-
-      if (!landing || landing === "/admin/login") {
-        setError(
-          "Signed in, but this account has no Admin Portal permissions.",
-        );
-        logout();
-        return;
-      }
-
-      navigate(landing, { replace: true });
+      // Login-first Member: session + Full Home (Register not required first).
+      markRegistrationCompleted();
+      finalizeNormalUserAccess("/");
     } catch (err) {
-      setError(err?.message || "Sign in failed. Please try again.");
+      setError(err?.message || "Invalid email or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,10 +141,11 @@ const AdminLogin = () => {
             <img src={logo} alt="AI Verse" className="admin_login__logo" />
           </div>
 
-          <p className="admin_login__portal-title">Admin Portal</p>
+          <p className="admin_login__portal-title">Login</p>
 
           <p className="admin_login__subtitle">
-            Sign in to manage AI solutions, review submissions, and update the catalog.
+            Sign in to unlock full access to AI Verse solutions, resources, and
+            insights.
           </p>
 
           <form
@@ -215,9 +159,9 @@ const AdminLogin = () => {
               </div>
             )}
 
-            <label htmlFor="admin-email">Email</label>
+            <label htmlFor="user-login-email">Email</label>
             <input
-              id="admin-email"
+              id="user-login-email"
               type="email"
               autoComplete="username"
               placeholder="Enter your email address"
@@ -226,9 +170,9 @@ const AdminLogin = () => {
               required
             />
 
-            <label htmlFor="admin-password">Password</label>
+            <label htmlFor="user-login-password">Password</label>
             <input
-              id="admin-password"
+              id="user-login-password"
               type="password"
               autoComplete="current-password"
               placeholder="Enter your password"
@@ -257,4 +201,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default UserLogin;

@@ -237,7 +237,7 @@ const SolutionEngagementBar = ({ solutionId, className = "", compact = false }) 
 
       {!compact && !isAuthenticated && (
         <p className="solution_engagement__auth-hint">
-          <Link to="/admin/login">Sign in</Link> to like or dislike. Your
+          <Link to="/login">Sign in</Link> to like or dislike. Your
           account is used automatically — no name entry needed.
         </p>
       )}
