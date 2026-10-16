@@ -267,7 +267,7 @@ const SolutionDetailPanel = ({
             <DocumentIcon />
           </a>
         ) : (
-          <button type="button" className="ccm_dashboard__action-btn">
+          <button type="button" className="ccm_dashboard__action-btn" disabled>
             Sales Pitch
             <DocumentIcon />
           </button>
@@ -325,8 +325,6 @@ const CustomerCommunicationManagement = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingCapabilityId, setDeletingCapabilityId] = useState(null);
   const [demoRequestTarget, setDemoRequestTarget] = useState(null);
-  const fetchRequestIdRef = useRef(0);
-
   useEffect(() => {
     const fetchDirectories = async () => {
       try {
@@ -401,13 +399,15 @@ const CustomerCommunicationManagement = () => {
   }, [highlightId, loadingApiSolutions, activeServiceIndex]);
 
   useEffect(() => {
-    const requestId = ++fetchRequestIdRef.current;
+    let cancelled = false;
+    let latestAttempt = 0;
 
-    const fetchSubmittedSolutions = async () => {
+    const loadSubmittedSolutions = async () => {
+      const attempt = ++latestAttempt;
+      setLoadingApiSolutions(true);
+      setSolutionsFetchError(null);
+
       try {
-        setLoadingApiSolutions(true);
-        setSolutionsFetchError(null);
-
         const data = filterOutDeletedSolutions(await fetchAllUseCases()).filter(
           (solution) => {
             const title = String(solution?.Title || "").trim().toLowerCase();
@@ -419,7 +419,8 @@ const CustomerCommunicationManagement = () => {
             );
           },
         );
-        if (requestId !== fetchRequestIdRef.current) return;
+
+        if (cancelled || attempt !== latestAttempt) return;
 
         setApiSolutions(data);
 
@@ -439,31 +440,28 @@ const CustomerCommunicationManagement = () => {
           loadPersistedSubmittedCapabilities().map(hydrateCapability),
         );
       } catch (error) {
+        if (cancelled || attempt !== latestAttempt) return;
         console.error("Error fetching submitted solutions:", error);
-        if (requestId === fetchRequestIdRef.current) {
-          setSolutionsFetchError(
-            error.message || "Network error while loading solutions",
-          );
-        }
+        setSolutionsFetchError(
+          error.message || "Network error while loading solutions",
+        );
       } finally {
-        if (requestId === fetchRequestIdRef.current) {
+        if (!cancelled && attempt === latestAttempt) {
           setLoadingApiSolutions(false);
         }
       }
     };
 
-    fetchSubmittedSolutions();
-
-    if (submitted) {
-      const retryTimer = window.setTimeout(fetchSubmittedSolutions, 2000);
-      return () => {
-        window.clearTimeout(retryTimer);
-        fetchRequestIdRef.current += 1;
-      };
-    }
+    loadSubmittedSolutions();
+    const retryTimer = submitted
+      ? window.setTimeout(loadSubmittedSolutions, 2000)
+      : null;
 
     return () => {
-      fetchRequestIdRef.current += 1;
+      cancelled = true;
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
     };
   }, [submitted]);
 
@@ -501,7 +499,9 @@ const CustomerCommunicationManagement = () => {
   const handleEditCapability = (capability) => {
     const solutionId = extractSolutionIdFromCapabilityId(capability.id);
     if (!solutionId) return;
-    navigate(`/get-started?id=${solutionId}`);
+    navigate(`/get-started?id=${solutionId}`, {
+      state: { returnTo: `${location.pathname}${location.search}` },
+    });
   };
 
   const handleDeleteCapability = (capability) => {

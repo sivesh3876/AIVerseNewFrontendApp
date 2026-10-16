@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
 import { getServiceIdForDomain, mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation } from "../../utils/solutionMapper";
+import { getAdminAuthHeaders } from "../../utils/adminAuth";
+import { buildApiPath } from "../../services/apiConfig";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -12,15 +14,13 @@ import {
   UploadIcon,
 } from "./FormIcons";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://func-aiverse-backend-dwgpguatgadjezae.centralindia-01.azurewebsites.net/api";
-
 const DEMO_VIDEOS_SHAREPOINT_URL =
   "https://espireinfolab.sharepoint.com/:f:/r/sites/BETeam/Shared%20Documents/ESPIRE_AI%20Verse/Demo%20Videos?csf=1&web=1&e=xqbPma";
 
 const AZURE_DEFAULT_BODY_LIMIT = 100 * 1024 * 1024;
 const AZURE_BODY_LIMIT_WARN_THRESHOLD = 0.8 * AZURE_DEFAULT_BODY_LIMIT;
+const SUBMIT_TIMEOUT_MS = 600_000;
+const LARGE_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const CHAR_LIMITS = {
   Title: 100,
@@ -95,6 +95,16 @@ const isPdfFile = (file) => {
   return file.type === "application/pdf" || fileName.endsWith(".pdf");
 };
 
+const getFileNameFromUrl = (url) => {
+  if (!url) return "";
+  try {
+    const path = decodeURIComponent(new URL(url).pathname);
+    return path.split("/").filter(Boolean).pop() || url;
+  } catch {
+    return decodeURIComponent(url.split("/").pop() || url);
+  }
+};
+
 const FileDropzone = ({
   id,
   label,
@@ -115,7 +125,12 @@ const FileDropzone = ({
   const [isDragging, setIsDragging] = useState(false);
 
   const fileList = Array.isArray(files) ? files : files ? [files] : [];
-  const displayTitle = uploadTitle || hint;
+  const displayTitle =
+    fileList.length === 0
+      ? uploadTitle || hint
+      : multiple && fileList.length > 1
+        ? `${fileList.length} files selected`
+        : fileList[0].name;
 
   const handleFiles = (selectedFiles) => {
     if (!selectedFiles?.length) return;
@@ -272,6 +287,16 @@ const AddNewAISolution = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [actionsFeedback, setActionsFeedback] = useState("");
+  const initialExistingFilesRef = useRef({
+    SolutionDetailsDoc: null,
+    LowLevelDesignDoc: null,
+    ArchitectureDiagram: null,
+    SalesDeskDoc: null,
+    OtherDocuments: [],
+    DemoRecordedVideoLink: null,
+  });
+  const submitAbortRef = useRef(null);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -283,7 +308,7 @@ const AddNewAISolution = () => {
   const fetchBusinessDomains = async () => {
     try {
       setLoadingDomains(true);
-      const response = await fetch(`${API_BASE_URL}/get-business-domains`);
+      const response = await fetch(buildApiPath("get-business-domains"));
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -307,7 +332,7 @@ const AddNewAISolution = () => {
   const fetchSolutionOwners = async () => {
     try {
       setLoadingOwners(true);
-      const response = await fetch(`${API_BASE_URL}/get-solution-owners`);
+      const response = await fetch(buildApiPath("get-solution-owners"));
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -323,7 +348,7 @@ const AddNewAISolution = () => {
   const fetchAIEvangelists = async () => {
     try {
       setLoadingEvangelists(true);
-      const response = await fetch(`${API_BASE_URL}/get-ai-evangelists`);
+      const response = await fetch(buildApiPath("get-ai-evangelists"));
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
@@ -348,7 +373,9 @@ const AddNewAISolution = () => {
     const fetchExisting = async () => {
       try {
         setLoadingExisting(true);
-        const response = await fetch(`${API_BASE_URL}/get-usecases?id=${editId}`);
+        const response = await fetch(
+          buildApiPath("get-usecases", { id: editId }),
+        );
         const result = await response.json();
 
         if (response.ok && result.status === "success" && result.data) {
@@ -377,7 +404,7 @@ const AddNewAISolution = () => {
               (solution.IsSolutionActive === false ? "No" : "Yes"),
           });
 
-          setExistingFiles({
+          const nextExisting = {
             SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
             LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
             ArchitectureDiagram: solution.ArchitectureDiagram || null,
@@ -386,7 +413,12 @@ const AddNewAISolution = () => {
               ? solution.OtherDocuments
               : [],
             DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
-          });
+          };
+          initialExistingFilesRef.current = {
+            ...nextExisting,
+            OtherDocuments: [...nextExisting.OtherDocuments],
+          };
+          setExistingFiles(nextExisting);
         } else {
           setSubmitStatus({
             type: "error",
@@ -470,6 +502,17 @@ const AddNewAISolution = () => {
     }));
   };
 
+  const clearExistingFile = (field) => {
+    setExistingFiles((prev) => ({ ...prev, [field]: null }));
+  };
+
+  const clearExistingOtherDocument = (url) => {
+    setExistingFiles((prev) => ({
+      ...prev,
+      OtherDocuments: (prev.OtherDocuments || []).filter((item) => item !== url),
+    }));
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -479,14 +522,16 @@ const AddNewAISolution = () => {
 
     if (!form.BusinessDomain.trim()) {
       newErrors.BusinessDomain = "Business domain is required";
+    } else if (
+      businessDomains.length > 0 &&
+      !businessDomains.some((domain) => domain.DomainCode === form.BusinessDomain)
+    ) {
+      newErrors.BusinessDomain =
+        "Selected business domain is inactive or unknown. Choose an active domain.";
     }
 
     if (!form.SolutionContext.trim()) {
       newErrors.SolutionContext = "Solution context is required";
-    }
-
-    if (!form.TechHighlights.trim()) {
-      newErrors.TechHighlights = "Technology highlights are required";
     }
 
     if (form.RepositoryUrl.trim() && !isValidUrl(form.RepositoryUrl)) {
@@ -495,15 +540,6 @@ const AddNewAISolution = () => {
 
     if (form.DemoLink.trim() && !isValidUrl(form.DemoLink)) {
       newErrors.DemoLink = "Enter a valid demo URL starting with http:// or https://";
-    }
-
-    if (
-      !form.DemoLink.trim() &&
-      !files.DemoRecordedVideo &&
-      !existingFiles.DemoRecordedVideoLink
-    ) {
-      newErrors.DemoLink = "Either Demo Link or Demo Video is required";
-      newErrors.DemoRecordedVideo = "Either Demo Link or Demo Video is required";
     }
 
     if (files.DemoRecordedVideo && files.DemoRecordedVideo.size > 98 * 1024 * 1024) {
@@ -541,6 +577,22 @@ const AddNewAISolution = () => {
       newErrors.OtherDocuments = `Combined size ${combinedMB} MB exceeds Azure's default ${limitMB} MB request body limit.`;
     }
 
+    const totalNewUploadBytes =
+      otherDocsCombined +
+      (files.DemoRecordedVideo?.size || 0) +
+      (files.SolutionDetailsDoc?.size || 0) +
+      (files.LowLevelDesignDoc?.size || 0) +
+      (files.ArchitectureDiagram?.size || 0) +
+      (files.SalesDeskDoc?.size || 0);
+
+    if (totalNewUploadBytes >= AZURE_DEFAULT_BODY_LIMIT) {
+      const combinedMB = (totalNewUploadBytes / (1024 * 1024)).toFixed(2);
+      const limitMB = (AZURE_DEFAULT_BODY_LIMIT / (1024 * 1024)).toFixed(0);
+      newErrors.DemoRecordedVideo =
+        newErrors.DemoRecordedVideo ||
+        `Total upload size ${combinedMB} MB exceeds Azure's default ${limitMB} MB request body limit. Remove some files or use SharePoint + Demo Link for large videos.`;
+    }
+
     return newErrors;
   };
 
@@ -561,6 +613,11 @@ const AddNewAISolution = () => {
   const handleReset = () => {
     resetFormFields();
     setSubmitStatus(null);
+    setActionsFeedback("");
+  };
+
+  const handleCancelUpload = () => {
+    submitAbortRef.current?.abort();
   };
 
   const handleSubmit = async (event) => {
@@ -573,12 +630,16 @@ const AddNewAISolution = () => {
         type: "error",
         message: `Please fix the errors in the form: ${Object.values(validationErrors).join(" ")}`,
       });
+      setActionsFeedback(
+        "Please fix the errors above, then try Update Solution again.",
+      );
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setActionsFeedback("");
 
     try {
       const formDataToSend = new FormData();
@@ -646,20 +707,117 @@ const AddNewAISolution = () => {
         });
       }
 
+      if (isEditMode) {
+        const initialExisting = initialExistingFilesRef.current;
+
+        const appendClearIfRemoved = (
+          initialKey,
+          existingKey,
+          clearFieldName,
+        ) => {
+          if (initialExisting?.[initialKey] && !existingFiles[existingKey]) {
+            formDataToSend.append(clearFieldName, "true");
+          }
+        };
+
+        appendClearIfRemoved(
+          "DemoRecordedVideoLink",
+          "DemoRecordedVideoLink",
+          "ClearDemoRecordedVideo",
+        );
+        appendClearIfRemoved(
+          "SolutionDetailsDoc",
+          "SolutionDetailsDoc",
+          "ClearSolutionDetailsDoc",
+        );
+        appendClearIfRemoved(
+          "SalesDeskDoc",
+          "SalesDeskDoc",
+          "ClearSalesDeskDoc",
+        );
+        appendClearIfRemoved(
+          "LowLevelDesignDoc",
+          "LowLevelDesignDoc",
+          "ClearLowLevelDesignDoc",
+        );
+        appendClearIfRemoved(
+          "ArchitectureDiagram",
+          "ArchitectureDiagram",
+          "ClearArchitectureDiagram",
+        );
+
+        const initialOther = initialExisting?.OtherDocuments || [];
+        const retainedOther = existingFiles.OtherDocuments || [];
+        if (initialOther.length > 0) {
+          formDataToSend.append(
+            "OtherDocumentsRetain",
+            retainedOther.join(","),
+          );
+          if (retainedOther.length === 0) {
+            formDataToSend.append("ClearOtherDocuments", "true");
+          }
+        }
+      }
+
       const endpoint = isEditMode ? "update-usecase" : "save-usecase";
-      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-        method: "POST",
-        body: formDataToSend,
-      });
+      const controller = new AbortController();
+      submitAbortRef.current = controller;
+      const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        SUBMIT_TIMEOUT_MS,
+      );
+
+      let response;
+      try {
+        response = await fetch(buildApiPath(endpoint), {
+          method: "POST",
+          headers: getAdminAuthHeaders(),
+          body: formDataToSend,
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (submitAbortRef.current === controller) {
+          submitAbortRef.current = null;
+        }
+      }
+
+      if (!response) {
+        const message =
+          "No response from the API. Check that the backend is reachable, then retry Update Solution.";
+        setSubmitStatus({
+          type: "error",
+          message,
+        });
+        setActionsFeedback(message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
 
       let result;
       try {
         result = await response.json();
       } catch {
+        const message = `Server error (${response.status}). Please try again.`;
         setSubmitStatus({
           type: "error",
-          message: `Server error (${response.status}). Please try again.`,
+          message,
         });
+        setActionsFeedback(message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+
+      if (response.status === 401) {
+        const message =
+          result.message === "Authentication required" || !result.message
+            ? "Session expired or missing. Please sign in again at /admin/login, then retry Update Solution."
+            : result.message;
+        setSubmitStatus({
+          type: "error",
+          message,
+        });
+        setActionsFeedback(message);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -690,40 +848,77 @@ const AddNewAISolution = () => {
           return;
         }
 
-        const serviceId =
-          getServiceIdForDomain(savedBusinessDomain) || "agentic-automation";
-        const params = new URLSearchParams({
-          service: serviceId,
-          submitted: "1",
-        });
+        const buildExploreReturnPath = () => {
+          const returnTo = location.state?.returnTo;
+          if (
+            typeof returnTo === "string" &&
+            returnTo.startsWith("/") &&
+            !returnTo.startsWith("//")
+          ) {
+            const [pathOnly, query = ""] = returnTo.split("?");
+            const params = new URLSearchParams(query);
+            params.set("submitted", "1");
+            if (solutionId) {
+              params.set("highlight", String(solutionId));
+            }
+            const queryString = params.toString();
+            return queryString ? `${pathOnly}?${queryString}` : pathOnly;
+          }
 
-        if (solutionId) {
-          params.set("highlight", String(solutionId));
-        }
+          const params = new URLSearchParams({ submitted: "1" });
+          if (solutionId) {
+            params.set("highlight", String(solutionId));
+          }
 
-        navigate(`/explore-solutions?${params.toString()}`, {
+          const serviceId = getServiceIdForDomain(savedBusinessDomain);
+          if (serviceId) {
+            params.set("service", serviceId);
+          } else if (savedBusinessDomain) {
+            params.set("domain", savedBusinessDomain);
+          } else {
+            params.set("service", "agentic-automation");
+          }
+
+          return `/explore-solutions?${params.toString()}`;
+        };
+
+        navigate(buildExploreReturnPath(), {
           state: {
             submittedSolution: serializedSolution,
           },
         });
         return;
       } else {
+        const message =
+          result.message ||
+          (isEditMode ? "Failed to update solution" : "Failed to save solution");
         setSubmitStatus({
           type: "error",
-          message:
-            result.message ||
-            (isEditMode ? "Failed to update solution" : "Failed to save solution"),
+          message,
         });
+        setActionsFeedback(message);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
+      const timedOut = error?.name === "AbortError";
+      const networkFailed =
+        !timedOut &&
+        (error?.message === "Failed to fetch" ||
+          /network|fetch|econnrefused|proxy/i.test(String(error?.message || "")));
+      const message = timedOut
+        ? "Upload cancelled or timed out. For large videos, use the SharePoint Demo Videos folder and paste the URL into Demo Link, or try a smaller file."
+        : networkFailed
+          ? `API unreachable (${error.message || "network error"}). Confirm the backend is running (or VITE_API_BASE_URL points to Azure DEV), restart npm run dev, then retry. For large videos, prefer SharePoint + Demo Link.`
+          : `Network error: ${error.message}`;
       setSubmitStatus({
         type: "error",
-        message: `Network error: ${error.message}`,
+        message,
       });
+      setActionsFeedback(message);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setIsSubmitting(false);
+      submitAbortRef.current = null;
     }
   };
 
@@ -813,6 +1008,14 @@ const AddNewAISolution = () => {
               <option value="">
                 {loadingDomains ? "Loading domains..." : "Select a business domain"}
               </option>
+              {form.BusinessDomain &&
+                !businessDomains.some(
+                  (domain) => domain.DomainCode === form.BusinessDomain,
+                ) && (
+                  <option value={form.BusinessDomain}>
+                    {form.BusinessDomain} (inactive — choose another)
+                  </option>
+                )}
               {businessDomains.map((domain) => (
                 <option key={domain.DomainCode} value={domain.DomainCode}>
                   {domain.DomainName}
@@ -940,7 +1143,7 @@ const AddNewAISolution = () => {
 
         <div className="add_ai_solution__field">
           <label htmlFor="TechHighlights">
-            Technology Highlights <span className="required">*</span>
+            Technology Highlights
             <span className="add_ai_solution__char-count">
               {form.TechHighlights.length}/{CHAR_LIMITS.TechHighlights}
             </span>
@@ -952,7 +1155,6 @@ const AddNewAISolution = () => {
             value={form.TechHighlights}
             maxLength={CHAR_LIMITS.TechHighlights}
             onChange={(event) => updateField("TechHighlights", event.target.value)}
-            required
           />
           {errors.TechHighlights && (
             <p className="add_ai_solution__error">{errors.TechHighlights}</p>
@@ -1028,7 +1230,7 @@ const AddNewAISolution = () => {
       <section className="add_ai_solution__card">
         <h2>
           <PlayIcon />
-          Demo and Media (At least one required)
+          Demo and Media
         </h2>
 
         <div className="add_ai_solution__field">
@@ -1072,16 +1274,26 @@ const AddNewAISolution = () => {
         />
 
         {isEditMode && !files.DemoRecordedVideo && existingFiles.DemoRecordedVideoLink && (
-          <p className="add_ai_solution__existing-file">
-            Current video:{" "}
-            <a
-              href={existingFiles.DemoRecordedVideoLink}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="add_ai_solution__existing-file">
+            <span>
+              Current video:{" "}
+              <a
+                href={existingFiles.DemoRecordedVideoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getFileNameFromUrl(existingFiles.DemoRecordedVideoLink)}
+              </a>
+            </span>
+            <button
+              type="button"
+              className="add_ai_solution__existing-file-remove"
+              aria-label="Remove demo video"
+              onClick={() => clearExistingFile("DemoRecordedVideoLink")}
             >
-              View attached demo video
-            </a>
-          </p>
+              ×
+            </button>
+          </div>
         )}
       </section>
 
@@ -1104,16 +1316,26 @@ const AddNewAISolution = () => {
         />
 
         {isEditMode && !files.SolutionDetailsDoc && existingFiles.SolutionDetailsDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current document:{" "}
-            <a
-              href={existingFiles.SolutionDetailsDoc}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="add_ai_solution__existing-file">
+            <span>
+              Current document:{" "}
+              <a
+                href={existingFiles.SolutionDetailsDoc}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getFileNameFromUrl(existingFiles.SolutionDetailsDoc)}
+              </a>
+            </span>
+            <button
+              type="button"
+              className="add_ai_solution__existing-file-remove"
+              aria-label="Remove solution details document"
+              onClick={() => clearExistingFile("SolutionDetailsDoc")}
             >
-              View attached document
-            </a>
-          </p>
+              ×
+            </button>
+          </div>
         )}
 
         <FileDropzone
@@ -1141,16 +1363,26 @@ const AddNewAISolution = () => {
         />
 
         {isEditMode && !files.SalesDeskDoc && existingFiles.SalesDeskDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current Sales Pitch document:{" "}
-            <a
-              href={existingFiles.SalesDeskDoc}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="add_ai_solution__existing-file">
+            <span>
+              Current Sales Pitch document:{" "}
+              <a
+                href={existingFiles.SalesDeskDoc}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getFileNameFromUrl(existingFiles.SalesDeskDoc)}
+              </a>
+            </span>
+            <button
+              type="button"
+              className="add_ai_solution__existing-file-remove"
+              aria-label="Remove Sales Pitch document"
+              onClick={() => clearExistingFile("SalesDeskDoc")}
             >
-              View attached Sales Pitch PDF
-            </a>
-          </p>
+              ×
+            </button>
+          </div>
         )}
 
         <div className="add_ai_solution__row">
@@ -1182,31 +1414,51 @@ const AddNewAISolution = () => {
         </div>
 
         {isEditMode && !files.LowLevelDesignDoc && existingFiles.LowLevelDesignDoc && (
-          <p className="add_ai_solution__existing-file">
-            Current LLD:{" "}
-            <a
-              href={existingFiles.LowLevelDesignDoc}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div className="add_ai_solution__existing-file">
+            <span>
+              Current LLD:{" "}
+              <a
+                href={existingFiles.LowLevelDesignDoc}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {getFileNameFromUrl(existingFiles.LowLevelDesignDoc)}
+              </a>
+            </span>
+            <button
+              type="button"
+              className="add_ai_solution__existing-file-remove"
+              aria-label="Remove LLD document"
+              onClick={() => clearExistingFile("LowLevelDesignDoc")}
             >
-              View attached LLD
-            </a>
-          </p>
+              ×
+            </button>
+          </div>
         )}
 
         {isEditMode &&
           !files.ArchitectureDiagram &&
           existingFiles.ArchitectureDiagram && (
-            <p className="add_ai_solution__existing-file">
-              Current diagram:{" "}
-              <a
-                href={existingFiles.ArchitectureDiagram}
-                target="_blank"
-                rel="noopener noreferrer"
+            <div className="add_ai_solution__existing-file">
+              <span>
+                Current diagram:{" "}
+                <a
+                  href={existingFiles.ArchitectureDiagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {getFileNameFromUrl(existingFiles.ArchitectureDiagram)}
+                </a>
+              </span>
+              <button
+                type="button"
+                className="add_ai_solution__existing-file-remove"
+                aria-label="Remove architecture diagram"
+                onClick={() => clearExistingFile("ArchitectureDiagram")}
               >
-                View attached architecture diagram
-              </a>
-            </p>
+                ×
+              </button>
+            </div>
           )}
 
         <FileDropzone
@@ -1225,14 +1477,22 @@ const AddNewAISolution = () => {
         {isEditMode &&
           files.OtherDocuments.length === 0 &&
           existingFiles.OtherDocuments.length > 0 && (
-            <div className="add_ai_solution__existing-file">
+            <div className="add_ai_solution__existing-file add_ai_solution__existing-file--list">
               <span>Current additional documents:</span>
               <ul>
                 {existingFiles.OtherDocuments.map((url) => (
                   <li key={url}>
                     <a href={url} target="_blank" rel="noopener noreferrer">
-                      {url.split("/").pop()}
+                      {getFileNameFromUrl(url)}
                     </a>
+                    <button
+                      type="button"
+                      className="add_ai_solution__existing-file-remove"
+                      aria-label="Remove additional document"
+                      onClick={() => clearExistingOtherDocument(url)}
+                    >
+                      ×
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -1250,25 +1510,51 @@ const AddNewAISolution = () => {
         )}
       </section>
 
-      <div className="add_ai_solution__actions">
-        <button
-          type="reset"
-          className="add_ai_solution__reset"
-          disabled={isSubmitting}
-        >
-          Reset Form
-        </button>
-        <button
-          type="submit"
-          className="add_ai_solution__submit"
-          disabled={isSubmitting || loadingExisting}
-        >
-          {isSubmitting
-            ? "Submitting..."
-            : isEditMode
-              ? "Update Solution"
-              : "Submit Solution"}
-        </button>
+      <div className="add_ai_solution__actions-wrap">
+        {actionsFeedback && (
+          <p className="add_ai_solution__actions-feedback" role="alert">
+            {actionsFeedback}
+          </p>
+        )}
+        <div className="add_ai_solution__actions">
+          <button
+            type="reset"
+            className="add_ai_solution__reset"
+            disabled={isSubmitting}
+          >
+            Reset Form
+          </button>
+          {isSubmitting && (
+            <button
+              type="button"
+              className="add_ai_solution__cancel-upload"
+              onClick={handleCancelUpload}
+            >
+              Cancel upload
+            </button>
+          )}
+          <button
+            type="submit"
+            className="add_ai_solution__submit"
+            disabled={isSubmitting || loadingExisting}
+          >
+            {loadingExisting
+              ? "Loading solution…"
+              : isSubmitting
+                ? totalUploadSize >= LARGE_UPLOAD_BYTES
+                  ? "Uploading…"
+                  : "Submitting..."
+                : isEditMode
+                  ? "Update Solution"
+                  : "Submit Solution"}
+          </button>
+        </div>
+        {isSubmitting && totalUploadSize >= LARGE_UPLOAD_BYTES && (
+          <p className="add_ai_solution__actions-hint">
+            Large files can take several minutes. For videos over 50 MB, prefer
+            SharePoint + Demo Link instead of uploading here.
+          </p>
+        )}
       </div>
     </form>
   );

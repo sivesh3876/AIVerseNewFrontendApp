@@ -266,11 +266,7 @@ const SolutionCapabilityCard = ({
               <DocumentIcon />
             </a>
           ) : (
-            <button
-              type="button"
-              className="ccm_dashboard__action-btn"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <button type="button" className="ccm_dashboard__action-btn" disabled>
               Sales Pitch
               <DocumentIcon />
             </button>

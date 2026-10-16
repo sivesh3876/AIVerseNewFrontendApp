@@ -1,15 +1,20 @@
 import { selectTopOrderedSolutions } from "../utils/solutionMapper";
 import { applyInactiveSolutionOverrides } from "../utils/solutionStatusStorage";
+import { getAdminAuthHeaders } from "../utils/adminAuth";
 import { buildApiPath, getApiBaseUrl } from "./apiConfig";
 
 export const getUsecasesApiBaseUrl = () => getApiBaseUrl();
 
-export const fetchAllUseCases = async ({ includeInactive = false } = {}) => {
+export const fetchAllUseCases = async ({
+  includeInactive = false,
+  signal,
+} = {}) => {
   const response = await fetch(
     buildApiPath(
       "get-usecases",
       includeInactive ? { include_inactive: "true" } : {},
     ),
+    signal ? { signal } : undefined,
   );
   const result = await response.json();
 
@@ -73,9 +78,17 @@ export const updateUseCaseStatus = async (solution, isActive) => {
 
   const response = await fetch(buildApiPath("update-usecase"), {
     method: "POST",
+    headers: getAdminAuthHeaders(),
     body: formData,
   });
   const result = await response.json();
+
+  if (response.status === 401) {
+    throw new Error(
+      result.message ||
+        "Session expired or missing. Please sign in again at /admin/login.",
+    );
+  }
 
   if (!response.ok || result.status !== "success") {
     throw new Error(result.message || "Failed to update solution status.");
@@ -106,7 +119,10 @@ export const deleteUseCase = async (solutionId) => {
 
   const attemptDelete = async (method) => {
     const { response, result } = await parseResponse(
-      await fetch(url, { method }),
+      await fetch(url, {
+        method,
+        headers: getAdminAuthHeaders(),
+      }),
     );
     return { response, result };
   };

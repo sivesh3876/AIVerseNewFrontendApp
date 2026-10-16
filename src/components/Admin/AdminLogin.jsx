@@ -80,15 +80,18 @@ const AdminLogin = () => {
     resetMessages();
     setIsSubmitting(true);
 
-    const result = login(email, password);
+    try {
+      const result = await login(email, password);
 
-    if (!result.success) {
-      setError(result.message);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+
+      navigate(redirectPath, { replace: true });
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    navigate(redirectPath, { replace: true });
   };
 
   const handleSignupChange = (event) => {
