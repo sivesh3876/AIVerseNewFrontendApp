@@ -50,12 +50,21 @@ export const AdminAuthProvider = ({ children }) => {
       const payload = result.data && typeof result.data === "object" ? result.data : result;
 
       if (!response.ok || result.status === "error" || !payload?.token) {
-        return {
-          success: false,
-          message:
+        let message =
+          result.message ||
+          payload?.message ||
+          "Invalid email or password.";
+        if (response.status === 404) {
+          message = "Login service is unavailable. Please contact support.";
+        } else if (response.status >= 500) {
+          message =
             result.message ||
             payload?.message ||
-            "Invalid email or password.",
+            "Login service error. Please try again later.";
+        }
+        return {
+          success: false,
+          message,
         };
       }
 
