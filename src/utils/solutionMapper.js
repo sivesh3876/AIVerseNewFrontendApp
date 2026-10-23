@@ -7,8 +7,10 @@ import {
   ChartIcon,
 } from "../components/CustomerCommunicationManagement/CapabilityIcons";
 import { enterpriseServicesData } from "../components/CustomerCommunicationManagement/enterpriseServicesData";
+import { getIndustryByDomainCode } from "../components/IndustryExplore/industrySolutionsData";
 import {
   buildDocumentsFromApiSolution,
+  normalizeOtherDocuments,
 } from "./solutionDocuments";
 import { isSolutionIdMarkedInactiveLocally } from "./solutionStatusStorage";
 
@@ -139,6 +141,9 @@ export const getServiceIdForDomain = (domainCode) => {
 
   return null;
 };
+
+export const isIndustryBusinessDomain = (domainCode) =>
+  Boolean(getIndustryByDomainCode(domainCode));
 
 export const solutionMatchesExploreFilter = ({
   businessDomain,
@@ -483,11 +488,14 @@ const parseEvangelists = (value, evangelistDirectory = []) => {
       const name = parsePersonName(item);
       if (!name) return null;
 
-      const match = evangelistDirectory.find((entry) => entry.Name === name);
+      const normalizedName = normalizeKey(name);
+      const match = evangelistDirectory.find(
+        (entry) => normalizeKey(entry?.Name || "") === normalizedName,
+      );
 
       return {
-        name,
-        title: match?.Department || "AI Evangelist",
+        name: String(match?.Name || name).trim(),
+        title: String(match?.Department || "AI Evangelist").trim() || "AI Evangelist",
         color: getAvatarColor(index + 1),
         email: parseEmailFromValue(item) || match?.Email || "",
       };
@@ -556,13 +564,12 @@ export const mapApiSolutionToCapability = (
     businessDomain: solution.BusinessDomain,
     client: resolveSolutionClient(solution),
     aiFoundation: resolveSolutionAiFoundation(solution),
+    efficientBenefit: String(solution.EfficientBenefit || "").trim(),
     solutionDetailsDoc: solution.SolutionDetailsDoc || null,
     lowLevelDesignDoc: solution.LowLevelDesignDoc || null,
     architectureDiagram: solution.ArchitectureDiagram || null,
     salesDeskDoc: solution.SalesDeskDoc || null,
-    otherDocuments: Array.isArray(solution.OtherDocuments)
-      ? solution.OtherDocuments
-      : [],
+    otherDocuments: normalizeOtherDocuments(solution.OtherDocuments),
     documents: buildDocumentsFromApiSolution(solution),
   };
 };
@@ -585,6 +592,7 @@ export const mapFormToCapability = (
       Title: form.Title,
       SolutionContext: form.SolutionContext,
       TechHighlights: form.TechHighlights,
+      EfficientBenefit: form.EfficientBenefit,
       OwnershipDetails: form.OwnershipDetails,
       AiEvangelists: evangelistNames.join(", "),
       DemoLink: form.DemoLink,

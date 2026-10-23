@@ -412,6 +412,25 @@ export const industryExperiences = {
             ],
           },
         },
+        {
+          id: "broker-portfolio-analytics",
+          title: "Broker Portfolio Analytics",
+          description:
+            "Portfolio and book analytics for brokers — retention, growth, and performance insights across the agency book.",
+          detail: {
+            overview:
+              "Broker Portfolio Analytics unifies policy, claims, and production data so brokers and agency leaders can see book performance, retention risk, and growth opportunities in one place.",
+            benefits: [
+              "Clear visibility into portfolio mix, premium, and loss trends.",
+              "Early signals on accounts at risk of non-renewal.",
+              "Actionable growth and cross-sell opportunities by segment.",
+            ],
+            outcomes: [
+              "Stronger broker retention and wallet share.",
+              "More informed agency planning and producer coaching.",
+            ],
+          },
+        },
       ]),
       ex: buildExperience("ex", [
         {
@@ -490,6 +509,44 @@ export const industryExperiences = {
             ],
           },
         },
+        {
+          id: "ai-claims-document-fraud-detection",
+          title: "AI-Powered Claims Document Fraud Detection",
+          description:
+            "Detect AI-generated or digitally manipulated claim photos and supporting evidence for further review.",
+          detail: {
+            overview:
+              "Claims handlers upload PDF documents with photographs and supporting evidence; AI flags potentially AI-generated or digitally manipulated images for investigator review.",
+            benefits: [
+              "Early detection of manipulated claim imagery.",
+              "Faster triage for SIU and claims handlers.",
+              "Reduced leakage from document-based fraud.",
+            ],
+            outcomes: [
+              "Lower fraud losses from doctored evidence.",
+              "More efficient special investigation workflows.",
+            ],
+          },
+        },
+        {
+          id: "underwriting-submission-assistant",
+          title: "Underwriting Submission Assistant",
+          description:
+            "AI assists intake of underwriting submissions, extracts risk data, and prepares underwriter-ready packs.",
+          detail: {
+            overview:
+              "Underwriting Submission Assistant ingests emails, PDFs, and spreadsheets, extracts structured risk data, and assembles underwriter-ready submission packs aligned to appetite and guidelines.",
+            benefits: [
+              "Faster submission intake and data extraction.",
+              "Consistent packaging of risk information for review.",
+              "Less manual re-keying across underwriting teams.",
+            ],
+            outcomes: [
+              "Higher underwriting throughput on inbound submissions.",
+              "Improved quality and completeness of underwriter packs.",
+            ],
+          },
+        },
       ]),
       bx: buildExperience("bx", [
         {
@@ -565,6 +622,44 @@ export const industryExperiences = {
             outcomes: [
               "Better pricing and portfolio decisions.",
               "Improved visibility into profitability drivers.",
+            ],
+          },
+        },
+        {
+          id: "underwriting-portfolio-intelligence",
+          title: "Underwriting Portfolio Intelligence",
+          description:
+            "Portfolio-level underwriting analytics for appetite, loss ratio, and risk concentration.",
+          detail: {
+            overview:
+              "Underwriting Portfolio Intelligence gives underwriting leaders a governed view of appetite alignment, loss ratios, and concentration risk across products, segments, and geographies.",
+            benefits: [
+              "Portfolio dashboards for appetite and exposure monitoring.",
+              "Early visibility into loss-ratio and concentration trends.",
+              "Support for pricing and capacity decisions at book level.",
+            ],
+            outcomes: [
+              "More disciplined underwriting portfolio management.",
+              "Faster response to emerging risk concentrations.",
+            ],
+          },
+        },
+        {
+          id: "auto-cash-application",
+          title: "Auto Cash Application powered by Agentic Automation",
+          description:
+            "Agentic matching of unapplied payments to invoices with higher match rates and governed automation.",
+          detail: {
+            overview:
+              "An advanced automation framework that orchestrates AI agents, automation, and people to reconcile unapplied payments with invoices using AI data extraction and ERP integration.",
+            benefits: [
+              "Higher payment-to-invoice match rates.",
+              "Reduced manual cash application effort.",
+              "Governed, scalable agentic automation for finance operations.",
+            ],
+            outcomes: [
+              "Faster cash application cycles.",
+              "Improved accuracy in accounts receivable matching.",
             ],
           },
         },

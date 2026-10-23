@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./AddNewAISolution.scss";
-import { getServiceIdForDomain, mapFormToCapability, persistSubmittedCapability, serializeCapabilityForNavigation } from "../../utils/solutionMapper";
+import {
+  getServiceIdForDomain,
+  mapApiSolutionToCapability,
+  mapFormToCapability,
+  persistSubmittedCapability,
+  serializeCapabilityForNavigation,
+} from "../../utils/solutionMapper";
 import { getAdminAuthHeaders } from "../../utils/adminAuth";
 import { buildApiPath } from "../../services/apiConfig";
+import { getDisplayFileNameFromUrl } from "../../utils/solutionDocuments";
 import {
   DocumentIcon,
   FileDocIcon,
@@ -26,6 +33,7 @@ const CHAR_LIMITS = {
   Title: 100,
   SolutionContext: 1000,
   TechHighlights: 150,
+  EfficientBenefit: 2000,
 };
 
 const AI_FOUNDATION_OPTIONS = [
@@ -70,6 +78,7 @@ const initialFormState = {
   AiEvangelists: [],
   SolutionContext: "",
   TechHighlights: "",
+  EfficientBenefit: "",
   RepositoryUrl: "",
   AiFoundation: [],
   DemoLink: "",
@@ -93,16 +102,6 @@ const isPdfFile = (file) => {
 
   const fileName = file.name.toLowerCase();
   return file.type === "application/pdf" || fileName.endsWith(".pdf");
-};
-
-const getFileNameFromUrl = (url) => {
-  if (!url) return "";
-  try {
-    const path = decodeURIComponent(new URL(url).pathname);
-    return path.split("/").filter(Boolean).pop() || url;
-  } catch {
-    return decodeURIComponent(url.split("/").pop() || url);
-  }
 };
 
 const FileDropzone = ({
@@ -393,6 +392,7 @@ const AddNewAISolution = () => {
             AiEvangelists: sanitizeEvangelists(evangelistList),
             SolutionContext: solution.SolutionContext || "",
             TechHighlights: solution.TechHighlights || "",
+            EfficientBenefit: solution.EfficientBenefit || "",
             RepositoryUrl: solution.RepositoryUrl || "",
             AiFoundation: parseAiFoundation(
               solution.AiFoundation || solution.Client,
@@ -404,14 +404,20 @@ const AddNewAISolution = () => {
               (solution.IsSolutionActive === false ? "No" : "Yes"),
           });
 
+          const otherDocuments = Array.isArray(solution.OtherDocuments)
+            ? solution.OtherDocuments.filter(Boolean)
+            : typeof solution.OtherDocuments === "string"
+              ? solution.OtherDocuments.split(",")
+                  .map((url) => url.trim())
+                  .filter(Boolean)
+              : [];
+
           const nextExisting = {
             SolutionDetailsDoc: solution.SolutionDetailsDoc || null,
             LowLevelDesignDoc: solution.LowLevelDesignDoc || null,
             ArchitectureDiagram: solution.ArchitectureDiagram || null,
             SalesDeskDoc: solution.SalesDeskDoc || null,
-            OtherDocuments: Array.isArray(solution.OtherDocuments)
-              ? solution.OtherDocuments
-              : [],
+            OtherDocuments: otherDocuments,
             DemoRecordedVideoLink: solution.DemoRecordedVideoLink || null,
           };
           initialExistingFilesRef.current = {
@@ -824,15 +830,22 @@ const AddNewAISolution = () => {
 
       if (response.ok && result.status === "success") {
         const savedBusinessDomain = form.BusinessDomain;
+        const savedSolution = result.data?.solution;
         const solutionId =
           result.data?.solution_id ??
+          savedSolution?.ID ??
           result.data?.ID ??
           (isEditMode ? editId : null);
-        const submittedSolution = mapFormToCapability(form, {
-          solutionId,
+        const directoryOpts = {
           evangelistDirectory: aiEvangelists,
           solutionOwners,
-        });
+        };
+        const submittedSolution = savedSolution
+          ? mapApiSolutionToCapability(savedSolution, directoryOpts)
+          : mapFormToCapability(form, {
+              solutionId,
+              ...directoryOpts,
+            });
         const serializedSolution = serializeCapabilityForNavigation(submittedSolution);
         const isPublishedSolution = form.Publish === "Yes";
         if (isPublishedSolution) {
@@ -1162,6 +1175,25 @@ const AddNewAISolution = () => {
         </div>
 
         <div className="add_ai_solution__field">
+          <label htmlFor="EfficientBenefit">
+            Efficient Benefit
+            <span className="add_ai_solution__char-count">
+              {form.EfficientBenefit.length}/{CHAR_LIMITS.EfficientBenefit}
+            </span>
+          </label>
+          <textarea
+            id="EfficientBenefit"
+            rows={4}
+            placeholder="Enter the key benefits and business value of this AI solution..."
+            value={form.EfficientBenefit}
+            maxLength={CHAR_LIMITS.EfficientBenefit}
+            onChange={(event) =>
+              updateField("EfficientBenefit", event.target.value)
+            }
+          />
+        </div>
+
+        <div className="add_ai_solution__field">
           <label htmlFor="RepositoryUrl">Repository URL</label>
           <div className="add_ai_solution__input-icon">
             <LinkIcon />
@@ -1282,7 +1314,7 @@ const AddNewAISolution = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {getFileNameFromUrl(existingFiles.DemoRecordedVideoLink)}
+                {getDisplayFileNameFromUrl(existingFiles.DemoRecordedVideoLink)}
               </a>
             </span>
             <button
@@ -1324,7 +1356,7 @@ const AddNewAISolution = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {getFileNameFromUrl(existingFiles.SolutionDetailsDoc)}
+                {getDisplayFileNameFromUrl(existingFiles.SolutionDetailsDoc)}
               </a>
             </span>
             <button
@@ -1371,7 +1403,7 @@ const AddNewAISolution = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {getFileNameFromUrl(existingFiles.SalesDeskDoc)}
+                {getDisplayFileNameFromUrl(existingFiles.SalesDeskDoc)}
               </a>
             </span>
             <button
@@ -1422,7 +1454,7 @@ const AddNewAISolution = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {getFileNameFromUrl(existingFiles.LowLevelDesignDoc)}
+                {getDisplayFileNameFromUrl(existingFiles.LowLevelDesignDoc)}
               </a>
             </span>
             <button
@@ -1447,7 +1479,7 @@ const AddNewAISolution = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {getFileNameFromUrl(existingFiles.ArchitectureDiagram)}
+                  {getDisplayFileNameFromUrl(existingFiles.ArchitectureDiagram)}
                 </a>
               </span>
               <button
@@ -1483,7 +1515,7 @@ const AddNewAISolution = () => {
                 {existingFiles.OtherDocuments.map((url) => (
                   <li key={url}>
                     <a href={url} target="_blank" rel="noopener noreferrer">
-                      {getFileNameFromUrl(url)}
+                      {getDisplayFileNameFromUrl(url)}
                     </a>
                     <button
                       type="button"

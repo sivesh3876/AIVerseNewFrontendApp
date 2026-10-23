@@ -74,7 +74,7 @@
         color          : inherit;
         transition     : background 0.2s, transform 0.2s;
 
-        &:hover:not(&--empty) {
+        &:hover:not(&--empty):not(&--static) {
             transform : translateY(-1px);
             background: rgba(255, 255, 255, 0.72) !important;
         }
@@ -99,6 +99,10 @@
             visibility    : hidden;
             pointer-events: none;
         }
+
+        &--static {
+            cursor: default;
+        }
     }
 
     &__card-icon {
@@ -114,6 +118,14 @@
     &__footer {
         margin-top: 32px;
         text-align: center;
+    }
+
+    &__cta-row {
+        display        : flex;
+        flex-wrap      : wrap;
+        align-items    : center;
+        justify-content: center;
+        gap            : 14px;
     }
 
     &__cta {
@@ -133,6 +145,14 @@
         &:hover {
             background: #d97a1f;
             transform : translateY(-1px);
+        }
+
+        &--primary {
+            background: #3A8D9D;
+
+            &:hover {
+                background: #327d8c;
+            }
         }
     }
 }

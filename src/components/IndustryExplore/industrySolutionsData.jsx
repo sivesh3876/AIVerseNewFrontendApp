@@ -52,7 +52,8 @@ export const industrySolutionsData = [
   },
   {
     id: "insurance",
-    title: "Insurance",
+    title: "Banking, Financial, Services, and Insurance",
+    navTitle: "BFSI",
     domainCode: "Insurance",
     shortDescription: "AI for underwriting and claims",
     icon: InsuranceIcon,

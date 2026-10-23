@@ -62,6 +62,7 @@ export const solutionToCapabilityCard = (solution) => {
     recordedDemoLink: solution.recordedDemoLink || solution.demoLink || "",
     client: solution.client || "",
     aiFoundation: solution.aiFoundation || [],
+    efficientBenefit: String(solution.efficientBenefit || "").trim(),
     documents: solution.documents || [],
     isApiSolution: Boolean(solution.isApiSolution),
   };

@@ -6,7 +6,6 @@ import AddAISolutionCard from "../AddAISolutionCard";
 import TalkToExpertCard from "../TalkToExpertCard";
 import SolutionDocuments from "../SolutionDocuments";
 import SolutionEngagement from "../SolutionEngagement/SolutionEngagement";
-import SolutionEngagementBar from "../SolutionEngagement/SolutionEngagementBar";
 import RequestDemoModal from "./RequestDemoModal";
 import {
   TechStackLabelIcon,
@@ -20,7 +19,10 @@ import {
   enterpriseServicesData,
   getEnterpriseServiceIndexById,
 } from "./enterpriseServicesData";
-import { getIndustryByDomainCode } from "../IndustryExplore/industrySolutionsData";
+import {
+  getIndustryByDomainCode,
+  industrySolutionsData,
+} from "../IndustryExplore/industrySolutionsData";
 import {
   buildDetailFromCapability,
   mapApiSolutionToDetail,
@@ -32,6 +34,7 @@ import {
   filterOutDeletedSolutions,
   getServiceIdForDomain,
   hydrateCapability,
+  isIndustryBusinessDomain,
   loadPersistedSubmittedCapabilities,
   mapApiSolutionToCapability,
   markSolutionAsDeleted,
@@ -115,6 +118,13 @@ const SolutionDetailPanel = ({
   const hasSalesDesk = Boolean(salesDeskUrl);
   const clientName = (detailSolution?.client || capability.client || "").trim();
   const attachmentDocuments = excludeSalesDeskDocuments(documents);
+  const businessDomain =
+    capability.businessDomain || detailSolution?.businessDomain;
+  const isIndustrySolution = isIndustryBusinessDomain(businessDomain);
+  const placementLabel = isIndustrySolution ? "Industry" : "Service line";
+  const placementValue = isIndustrySolution
+    ? detailSolution?.industry
+    : detailSolution?.serviceLineLabel || detailSolution?.industry;
 
   return (
     <section className="ccm_dashboard__content">
@@ -162,10 +172,10 @@ const SolutionDetailPanel = ({
         <p>{detailSolution.detailedDescription || capability.description}</p>
       </div>
 
-      {detailSolution.industry && (
+      {placementValue && (
         <div className="ccm_dashboard__detail-meta">
           <span>
-            <strong>Industry:</strong> {detailSolution.industry}
+            <strong>{placementLabel}:</strong> {placementValue}
           </span>
         </div>
       )}
@@ -212,9 +222,11 @@ const SolutionDetailPanel = ({
           <h3>Technology Stack</h3>
           <div className="ccm_dashboard__highlights-grid">
             {(capability.techStack || []).map((tech) => (
-              <article className="ccm_dashboard__highlight" key={`${tech.name}-${tech.label}`}>
+              <article
+                className="ccm_dashboard__highlight"
+                key={`${tech.name}-${tech.label}`}
+              >
                 <h4>{tech.name}</h4>
-                <p>{tech.label}</p>
               </article>
             ))}
           </div>
@@ -274,10 +286,12 @@ const SolutionDetailPanel = ({
         )}
       </div>
 
-      <SolutionEngagementBar
-        solutionId={capability.id}
-        className="ccm_dashboard__detail-engagement"
-      />
+      {String(capability.efficientBenefit || "").trim() ? (
+        <div className="ccm_dashboard__efficient-benefit">
+          <h3>Efficient Benefit</h3>
+          <p>{String(capability.efficientBenefit).trim()}</p>
+        </div>
+      ) : null}
 
       {attachmentDocuments.length > 0 && (
         <SolutionDocuments
@@ -614,28 +628,48 @@ const CustomerCommunicationManagement = () => {
   const activeIndustryDomain = businessDomains.find(
     (domain) => domain.DomainCode === activeDomainCode,
   );
-  const industryDomains = businessDomains.filter(
-    (domain) => domain.ParentDomainCode === "Industries",
-  );
+  const seenIndustryCodes = new Set();
+  const apiIndustryDomains = businessDomains
+    .filter((domain) => domain.ParentDomainCode === "Industries")
+    .filter((domain) => {
+      const key = String(domain.DomainCode || "")
+        .trim()
+        .toLowerCase();
+      if (!key || seenIndustryCodes.has(key)) return false;
+      seenIndustryCodes.add(key);
+      return true;
+    });
+  const industryDomains =
+    apiIndustryDomains.length > 0
+      ? apiIndustryDomains
+      : industrySolutionsData.map((industry) => ({
+          DomainCode: industry.domainCode,
+          DomainName: industry.navTitle || industry.title,
+          ParentDomainCode: "Industries",
+          Description: industry.subtitle,
+        }));
+  const activeIndustryMeta = activeDomainCode
+    ? getIndustryByDomainCode(activeDomainCode)
+    : null;
   const detailPrimaryCapability = detailSolution
     ? solutionToCapabilityCard(detailSolution)
     : null;
   const BannerIconComponent =
     isDetailView && detailPrimaryCapability
       ? resolveCapabilityIcon(detailPrimaryCapability)
-      : activeService.navIcon;
+      : activeIndustryMeta?.icon || activeService.navIcon;
   const bannerTitle =
-    detailSolution?.title || activeIndustryDomain?.DomainName || activeService.label;
+    detailSolution?.title ||
+    activeIndustryMeta?.title ||
+    activeIndustryDomain?.DomainName ||
+    activeService.label;
   const bannerSubtitle =
-    detailSolution?.shortDescription ||
     activeIndustryDomain?.Description ||
+    activeIndustryMeta?.subtitle ||
     activeService.subtitle;
-  const bannerFeatures =
-    isDetailView && detailPrimaryCapability
-      ? (detailPrimaryCapability.techStack || []).map((tech) => tech.name)
-      : activeIndustryDomain
-        ? []
-        : activeService.features;
+  const bannerFeatures = activeIndustryDomain || activeIndustryMeta
+    ? []
+    : activeService.features;
 
   const submittedCapabilities = useMemo(() => {
     const merged = mergeSubmittedCapabilities({
@@ -681,15 +715,41 @@ const CustomerCommunicationManagement = () => {
       businessDomains,
     };
 
-    const rawSolution = apiSolutions.find(
-      (solution) => `api-${solution.ID}` === solutionQueryId,
-    );
+    // Always load API solutions by id so Documentation uses detail URLs
+    // (list/home cards intentionally omit SolutionDetailsDoc / LLD / etc.).
+    const apiMatch = solutionQueryId.match(/^api-(\d+)$/);
+    if (apiMatch) {
+      let isMounted = true;
 
-    if (rawSolution) {
-      setDetailSolution(mapApiSolutionToDetail(rawSolution, mapDirectories));
-      setDetailSolutionError(null);
-      setLoadingDetailSolution(false);
-      return;
+      const loadSolutionDetail = async () => {
+        try {
+          setLoadingDetailSolution(true);
+          setDetailSolutionError(null);
+
+          const fetchedSolution = await fetchUseCaseById(apiMatch[1]);
+          if (!isMounted) return;
+
+          setDetailSolution(
+            mapApiSolutionToDetail(fetchedSolution, mapDirectories),
+          );
+        } catch (error) {
+          console.error("Error loading solution detail:", error);
+          if (isMounted) {
+            setDetailSolution(null);
+            setDetailSolutionError("Solution not found or could not be loaded.");
+          }
+        } finally {
+          if (isMounted) {
+            setLoadingDetailSolution(false);
+          }
+        }
+      };
+
+      loadSolutionDetail();
+
+      return () => {
+        isMounted = false;
+      };
     }
 
     const matchedCapability = [...apiCapabilities, ...pendingCapabilities].find(
@@ -705,56 +765,16 @@ const CustomerCommunicationManagement = () => {
       return;
     }
 
-    const apiMatch = solutionQueryId.match(/^api-(\d+)$/);
-    if (!apiMatch) {
-      setDetailSolution(null);
-      setDetailSolutionError("Solution not found.");
-      setLoadingDetailSolution(false);
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadSolutionDetail = async () => {
-      try {
-        setLoadingDetailSolution(true);
-        setDetailSolutionError(null);
-
-        const fetchedSolution = await fetchUseCaseById(apiMatch[1]);
-        if (!isMounted) return;
-
-        setDetailSolution(
-          mapApiSolutionToDetail(fetchedSolution, mapDirectories),
-        );
-      } catch (error) {
-        console.error("Error loading solution detail:", error);
-        if (isMounted) {
-          setDetailSolution(null);
-          setDetailSolutionError("Solution not found or could not be loaded.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingDetailSolution(false);
-        }
-      }
-    };
-
-    if (!loadingApiSolutions) {
-      loadSolutionDetail();
-    }
-
-    return () => {
-      isMounted = false;
-    };
+    setDetailSolution(null);
+    setDetailSolutionError("Solution not found.");
+    setLoadingDetailSolution(false);
   }, [
     solutionQueryId,
-    apiSolutions,
     apiCapabilities,
     pendingCapabilities,
     aiEvangelists,
     solutionOwners,
     businessDomains,
-    loadingApiSolutions,
   ]);
 
   useEffect(() => {
@@ -851,6 +871,8 @@ const CustomerCommunicationManagement = () => {
             <ul>
               {industryDomains.map((domain) => {
                 const isActive = activeDomainCode === domain.DomainCode;
+                const industryMeta = getIndustryByDomainCode(domain.DomainCode);
+                const IndustryIcon = industryMeta?.icon;
 
                 return (
                   <li key={domain.DomainCode}>
@@ -860,7 +882,20 @@ const CustomerCommunicationManagement = () => {
                       onClick={() => handleIndustryChange(domain.DomainCode)}
                       aria-current={isActive ? "page" : undefined}
                     >
-                      <span className="ccm_dashboard__nav-label">{domain.DomainName}</span>
+                      {IndustryIcon && (
+                        <span
+                          className="ccm_dashboard__nav-icon"
+                          style={{ background: industryMeta.iconBg }}
+                          aria-hidden="true"
+                        >
+                          <IndustryIcon />
+                        </span>
+                      )}
+                      <span className="ccm_dashboard__nav-label">
+                        {industryMeta?.navTitle ||
+                          industryMeta?.title ||
+                          domain.DomainName}
+                      </span>
                       {isActive && (
                         <span className="ccm_dashboard__nav-arrow" aria-hidden="true">
                           &rsaquo;
@@ -890,12 +925,12 @@ const CustomerCommunicationManagement = () => {
             </div>
             <div className="ccm_dashboard__banner-copy">
               <h1>{bannerTitle}</h1>
-              <p>{bannerSubtitle}</p>
+              {!isDetailView && bannerSubtitle ? <p>{bannerSubtitle}</p> : null}
             </div>
           </div>
 
-          <div className="ccm_dashboard__banner-body">
-            {bannerFeatures.length > 0 && (
+          {!isDetailView && bannerFeatures.length > 0 ? (
+            <div className="ccm_dashboard__banner-body">
               <ul className="ccm_dashboard__features">
                 {bannerFeatures.map((feature) => (
                   <li key={feature}>
@@ -904,8 +939,8 @@ const CustomerCommunicationManagement = () => {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          ) : null}
         </section>
 
         {isDetailView ? (

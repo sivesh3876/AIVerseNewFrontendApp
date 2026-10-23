@@ -62,6 +62,7 @@ export const updateUseCaseStatus = async (solution, isActive) => {
   formData.append("AiEvangelists", toText(solution.AiEvangelists));
   formData.append("SolutionContext", solution.SolutionContext || "");
   formData.append("TechHighlights", solution.TechHighlights || "");
+  formData.append("EfficientBenefit", solution.EfficientBenefit || "");
   formData.append("RepositoryUrl", solution.RepositoryUrl || "");
   formData.append("DemoLink", solution.DemoLink || "");
   formData.append(
@@ -138,10 +139,13 @@ export const deleteUseCase = async (solutionId) => {
   }
 
   if (response.status === 404) {
-    return {
-      success: true,
-      message: result.message || "Solution was already removed from the server.",
-    };
+    const message = String(result.message || "");
+    if (/not found/i.test(message)) {
+      return {
+        success: true,
+        message: message || "Solution was already removed from the server.",
+      };
+    }
   }
 
   throw new Error(result.message || "Failed to delete solution from server.");

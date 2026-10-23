@@ -80,7 +80,7 @@ const IndustrySpecificAISolutions = ({ industries = homeIndustries }) => {
                       <Icon />
                     </div>
                     <span className="industry_solutions__badge-title">
-                      {industry.title}
+                      {industry.navTitle || industry.title}
                     </span>
                   </div>
                 </div>

@@ -109,8 +109,16 @@ const INDUSTRY_ENTRIES = [
     type: "industry",
   },
   {
-    title: "Insurance",
-    keywords: ["insurance", "claims", "underwriting", "policy", "mga"],
+    title: "BFSI",
+    keywords: [
+      "bfsi",
+      "insurance",
+      "banking",
+      "claims",
+      "underwriting",
+      "policy",
+      "mga",
+    ],
     path: "/industry-solutions?industry=insurance",
     type: "industry",
   },

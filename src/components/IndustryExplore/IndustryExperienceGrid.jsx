@@ -1,10 +1,28 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { buildApiPath } from "../../services/apiConfig";
 import {
   experiencePillars,
   getIndustryExperienceMeta,
 } from "./industryExperiencesData";
-import { getIndustryDomainCode } from "./industrySolutionsData";
+import {
+  getIndustryById,
+  getIndustryDomainCode,
+} from "./industrySolutionsData";
 import "./IndustryExperienceGrid.scss";
+
+const getExploreSolutionLabel = (industryId) => {
+  if (industryId === "insurance") {
+    return "Explore BFSI Solution";
+  }
+  if (industryId === "logistics") {
+    return "Explore Logistics Solution";
+  }
+  return "Explore Education Solution";
+};
+
+const normalizeTitleKey = (value = "") =>
+  String(value).trim().replace(/\s+/g, " ").toLowerCase();
 
 const PillarIcon = ({ pillarId }) => {
   if (pillarId === "cx") {
@@ -46,15 +64,78 @@ const PILLAR_IDS = ["cx", "ex", "bx"];
 
 const IndustryExperienceGrid = ({ industryId }) => {
   const meta = getIndustryExperienceMeta(industryId);
+  const industry = getIndustryById(industryId);
   const domainCode = getIndustryDomainCode(industryId);
+  const isEducationIndustry = industryId === "education";
+  const isLogisticsIndustry = industryId === "logistics";
+  const isInsuranceIndustry = industryId === "insurance";
+  const isClickableExperienceCard = (item) => {
+    if (isEducationIndustry) return false;
+    if (isLogisticsIndustry) {
+      return item?.id === "wms-customer-onboarding-accelerator";
+    }
+    return true;
+  };
+  const exploreSolutionPath = `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industry?.id || industryId}`;
+  const exploreSolutionLabel = getExploreSolutionLabel(industryId);
   const maxRows = Math.max(
     ...PILLAR_IDS.map((pillarId) => meta.pillars[pillarId]?.length ?? 0),
   );
+  const [titleToSolutionId, setTitleToSolutionId] = useState({});
 
-  const resolveCardLink = (item) =>
-    item.apiSolutionId
-      ? `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industryId}&solution=api-${item.apiSolutionId}`
-      : `/industry-solutions?industry=${industryId}&solution=${item.id}`;
+  useEffect(() => {
+    if (!isInsuranceIndustry) {
+      setTitleToSolutionId({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadInsuranceSolutions = async () => {
+      try {
+        const response = await fetch(
+          buildApiPath("get-usecases", { businessDomain: "Insurance" }),
+        );
+        const result = await response.json();
+
+        if (
+          cancelled ||
+          !response.ok ||
+          result.status !== "success" ||
+          !Array.isArray(result.data)
+        ) {
+          return;
+        }
+
+        const nextMap = {};
+        for (const solution of result.data) {
+          const key = normalizeTitleKey(solution?.Title);
+          if (!key || solution?.ID == null) continue;
+          nextMap[key] = solution.ID;
+        }
+        setTitleToSolutionId(nextMap);
+      } catch (error) {
+        console.error("Failed to map BFSI experience cards to Explore solutions:", error);
+      }
+    };
+
+    loadInsuranceSolutions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isInsuranceIndustry]);
+
+  const resolveCardLink = (item) => {
+    const resolvedId =
+      item.apiSolutionId || titleToSolutionId[normalizeTitleKey(item.title)];
+
+    if (resolvedId) {
+      return `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industryId}&solution=api-${resolvedId}`;
+    }
+
+    return `/industry-solutions?industry=${industryId}&solution=${item.id}`;
+  };
 
   return (
     <section className="industry_experience">
@@ -94,16 +175,8 @@ const IndustryExperienceGrid = ({ industryId }) => {
                   );
                 }
 
-                return (
-                  <Link
-                    key={item.id}
-                    to={resolveCardLink(item)}
-                    className="industry_experience__card"
-                    style={{
-                      background: pillar.cardBg,
-                      animationDelay: `${rowIndex * 0.05}s`,
-                    }}
-                  >
+                const cardContent = (
+                  <>
                     <div
                       className="industry_experience__card-icon"
                       style={{
@@ -115,6 +188,34 @@ const IndustryExperienceGrid = ({ industryId }) => {
                     </div>
                     <h3>{item.title}</h3>
                     <p>{item.description}</p>
+                  </>
+                );
+
+                const cardStyle = {
+                  background: pillar.cardBg,
+                  animationDelay: `${rowIndex * 0.05}s`,
+                };
+
+                if (!isClickableExperienceCard(item)) {
+                  return (
+                    <article
+                      key={item.id}
+                      className="industry_experience__card industry_experience__card--static"
+                      style={cardStyle}
+                    >
+                      {cardContent}
+                    </article>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={item.id}
+                    to={resolveCardLink(item)}
+                    className="industry_experience__card"
+                    style={cardStyle}
+                  >
+                    {cardContent}
                   </Link>
                 );
               })}
@@ -124,9 +225,17 @@ const IndustryExperienceGrid = ({ industryId }) => {
       </div>
 
       <div className="industry_experience__footer">
-        <Link to="/success-stories" className="industry_experience__cta">
-          Explore Case Studies
-        </Link>
+        <div className="industry_experience__cta-row">
+          <Link to="/success-stories" className="industry_experience__cta">
+            Explore Case Studies
+          </Link>
+          <Link
+            to={exploreSolutionPath}
+            className="industry_experience__cta industry_experience__cta--primary"
+          >
+            {exploreSolutionLabel}
+          </Link>
+        </div>
       </div>
     </section>
   );

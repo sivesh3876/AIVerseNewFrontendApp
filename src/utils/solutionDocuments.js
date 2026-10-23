@@ -86,17 +86,35 @@ const getFileNameFromUrl = (url = "") => {
   }
 };
 
+/** Matches backend `_unique_blob_name`: `{prefix}-{unixTime}-{uuid8}-{original}`. */
+const UNIQUE_BLOB_PREFIX =
+  /^(?:other-doc-\d+|solution-details|lld|architecture-diagram|sales-desk|demo-video)-\d+-[a-f0-9]{8}-/i;
+
+export const getDisplayFileNameFromUrl = (url = "") => {
+  const blobName = getFileNameFromUrl(url);
+  if (!blobName || blobName === "Document") return blobName;
+  const original = blobName.replace(UNIQUE_BLOB_PREFIX, "");
+  return original || blobName;
+};
+
+const toPrettyDocumentLabel = (fileName = "") =>
+  fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim() ||
+  "Supporting Document";
+
 const normalizeDocument = ({ id, type, label, url, fileName }) => {
   if (!url) return null;
 
-  const resolvedType = DOCUMENT_TYPE_META[type] ? type : inferTypeFromText(`${label} ${fileName || url}`);
+  const resolvedFileName = fileName || getDisplayFileNameFromUrl(url);
+  const resolvedType = DOCUMENT_TYPE_META[type]
+    ? type
+    : inferTypeFromText(`${label} ${resolvedFileName || url}`);
   const meta = DOCUMENT_TYPE_META[resolvedType] || DOCUMENT_TYPE_META.other;
 
   return {
-    id: id || `${resolvedType}-${fileName || label}`,
+    id: id || `${resolvedType}-${resolvedFileName || label}`,
     type: resolvedType,
     label: label || meta.label,
-    fileName: fileName || getFileNameFromUrl(url),
+    fileName: resolvedFileName,
     url,
     description: meta.description,
     accent: meta.accent,
@@ -174,12 +192,12 @@ export const buildSolutionDocuments = ({
   }
 
   otherDocuments.forEach((url, index) => {
-    const fileName = getFileNameFromUrl(url);
+    const fileName = getDisplayFileNameFromUrl(url);
     resolved.push(
       normalizeDocument({
         id: `other-doc-${index}`,
         type: inferTypeFromText(fileName),
-        label: fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        label: toPrettyDocumentLabel(fileName),
         url,
         fileName,
       }),
@@ -201,15 +219,26 @@ export const buildSolutionDocuments = ({
   return resolved.filter(Boolean);
 };
 
+export const normalizeOtherDocuments = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((url) => String(url || "").trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 export const buildDocumentsFromApiSolution = (solution = {}) =>
   buildSolutionDocuments({
     solutionDetailsDoc: solution.SolutionDetailsDoc,
     lowLevelDesignDoc: solution.LowLevelDesignDoc,
     architectureDiagram: solution.ArchitectureDiagram,
     salesDeskDoc: solution.SalesDeskDoc,
-    otherDocuments: Array.isArray(solution.OtherDocuments)
-      ? solution.OtherDocuments
-      : [],
+    otherDocuments: normalizeOtherDocuments(solution.OtherDocuments),
   });
 
 export const buildDocumentsFromCapability = (capability = {}) => {
