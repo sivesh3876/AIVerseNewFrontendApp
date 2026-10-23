@@ -693,7 +693,7 @@ export const industryExperiences = {
         },
         {
           id: "wms-customer-onboarding-accelerator",
-          apiSolutionId: 104,
+          apiSolutionId: 48,
           title: "WMS Customer Onboarding Accelerator",
           description:
             "Guided onboarding that speeds up evaluation, integration, and WMS configuration with reusable EDI/API mapping.",
