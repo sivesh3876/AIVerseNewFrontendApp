@@ -262,7 +262,7 @@ const SolutionEngagement = ({
         aria-label={`Engagement actions for ${title}`}
       >
         <span
-          className="solution_engagement__stat"
+          className="solution_engagement__btn solution_engagement__btn--views"
           aria-label={`${viewCount} views`}
           title={`${viewCount} views`}
         >

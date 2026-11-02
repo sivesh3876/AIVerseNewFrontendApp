@@ -269,6 +269,19 @@
             box-shadow  : 0 0 0 3px rgba(24, 224, 204, 0.25);
         }
 
+        &.is-reorderable {
+            position: relative;
+        }
+
+        &.is-drag-over {
+            border-color: #3A8D9D;
+            box-shadow  : 0 0 0 2px rgba(58, 141, 157, 0.35);
+        }
+
+        &.is-reordering {
+            opacity: 0.72;
+        }
+
         &--skeleton {
             pointer-events: none;
 
@@ -577,6 +590,53 @@
         &--danger {
             background: #dc2626;
             color     : #fff;
+        }
+    }
+
+    &__reorder-controls {
+        display    : flex;
+        align-items: center;
+        margin     : -4px 0 12px;
+        flex-shrink: 0;
+    }
+
+    &__drag-handle {
+        display        : inline-flex;
+        align-items    : center;
+        justify-content: center;
+        width          : 32px;
+        height         : 32px;
+        border-radius  : 8px;
+        border         : 1px solid #e5e7eb;
+        background     : #f8fafc;
+        color          : #64748b;
+        cursor         : grab;
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    &__reorder-feedback {
+        margin       : 0 0 12px;
+        padding      : 10px 12px;
+        border-radius: 8px;
+        font-size    : 13px;
+        font-weight  : 600;
+
+        &--saving {
+            background: #eff6ff;
+            color     : #1d4ed8;
+        }
+
+        &--success {
+            background: #ecfdf5;
+            color     : #047857;
+        }
+
+        &--error {
+            background: #fef2f2;
+            color     : #b91c1c;
         }
     }
 

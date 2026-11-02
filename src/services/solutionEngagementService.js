@@ -1,3 +1,4 @@
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 import { getUsecasesApiBaseUrl } from "./usecasesService";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -67,6 +68,7 @@ export const recordSolutionViewApi = async (payload) => {
 export const fetchSolutionEngagementSummary = async (limit = 100) => {
   const response = await fetch(
     `${API_BASE_URL}/get-solution-engagement-summary?limit=${encodeURIComponent(limit)}`,
+    { headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
   assertSuccess(response, result, "Failed to load engagement summary.");
