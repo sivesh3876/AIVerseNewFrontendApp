@@ -1,4 +1,12 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { fetchAllUseCases } from "../../services/usecasesService";
+import {
+  filterOutDeletedSolutions,
+  isPublicSolutionVisible,
+  parseBusinessDomains,
+  solutionMatchesExploreFilter,
+} from "../../utils/solutionMapper";
 import {
   experiencePillars,
   getIndustryExperienceMeta,
@@ -47,6 +55,12 @@ const CardIcon = () => (
 
 const PILLAR_IDS = ["cx", "ex", "bx"];
 
+const normalizeSolutionTitle = (title) =>
+  String(title || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
 const getExploreSolutionLabel = (industryId) => {
   if (industryId === "insurance") {
     return "Explore BFSI Solution";
@@ -57,20 +71,112 @@ const getExploreSolutionLabel = (industryId) => {
   return "Explore Education Solution";
 };
 
+const isLogisticsWmsOnboardingCard = (industryId, item) =>
+  industryId === "logistics" &&
+  item?.id === "wms-customer-onboarding-accelerator";
+
+const LOGISTICS_WMS_ONBOARDING_API_ID = "api-104";
+
+const ExperienceCardContent = ({ item, pillar }) => (
+  <>
+    <div
+      className="industry_experience__card-icon"
+      style={{
+        background: pillar.iconBg,
+        color: pillar.headerColor,
+      }}
+    >
+      <CardIcon />
+    </div>
+    <h3>{item.title}</h3>
+    <p>{item.description}</p>
+  </>
+);
+
 const IndustryExperienceGrid = ({ industryId }) => {
   const meta = getIndustryExperienceMeta(industryId);
   const industry = getIndustryById(industryId);
   const domainCode = getIndustryDomainCode(industryId);
+  const cardsAreNonClickable =
+    industryId === "education" || industryId === "logistics";
   const exploreSolutionPath = `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industry?.id || industryId}`;
   const exploreSolutionLabel = getExploreSolutionLabel(industryId);
+  const [titleToApiSolutionId, setTitleToApiSolutionId] = useState({});
   const maxRows = Math.max(
     ...PILLAR_IDS.map((pillarId) => meta.pillars[pillarId]?.length ?? 0),
   );
 
-  const resolveCardLink = (item) =>
-    item.apiSolutionId
-      ? `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industryId}&solution=api-${item.apiSolutionId}`
-      : `/industry-solutions?industry=${industryId}&solution=${item.id}`;
+  useEffect(() => {
+    if (cardsAreNonClickable) {
+      setTitleToApiSolutionId({});
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadTitleMap = async () => {
+      try {
+        const solutions = filterOutDeletedSolutions(await fetchAllUseCases());
+        if (!isMounted) return;
+
+        const nextMap = {};
+
+        solutions.forEach((solution) => {
+          if (!isPublicSolutionVisible(solution)) return;
+
+          const businessDomains = parseBusinessDomains(solution);
+          const matchesDomain = solutionMatchesExploreFilter({
+            businessDomain: businessDomains[0] || solution.BusinessDomain || "",
+            businessDomains,
+            activeServiceId: null,
+            activeDomainCode: domainCode,
+          });
+
+          if (!matchesDomain) return;
+
+          const key = normalizeSolutionTitle(solution.Title);
+          const id = solution.ID ?? solution.Id ?? solution.id;
+          if (!key || id == null || id === "") return;
+
+          nextMap[key] = `api-${id}`;
+        });
+
+        setTitleToApiSolutionId(nextMap);
+      } catch (error) {
+        console.error("Failed to map industry cards to Explore Solutions:", error);
+        if (isMounted) {
+          setTitleToApiSolutionId({});
+        }
+      }
+    };
+
+    setTitleToApiSolutionId({});
+    loadTitleMap();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cardsAreNonClickable, domainCode]);
+
+  const resolveCardLink = useMemo(() => {
+    const staticDetailPath = (item) =>
+      `/industry-solutions?industry=${industryId}&solution=${item.id}`;
+
+    return (item) => {
+      if (isLogisticsWmsOnboardingCard(industryId, item)) {
+        return `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=logistics&solution=${LOGISTICS_WMS_ONBOARDING_API_ID}`;
+      }
+
+      const apiSolutionKey =
+        titleToApiSolutionId[normalizeSolutionTitle(item?.title)];
+
+      if (apiSolutionKey) {
+        return `/explore-solutions?domain=${encodeURIComponent(domainCode)}&industry=${industryId}&solution=${encodeURIComponent(apiSolutionKey)}`;
+      }
+
+      return staticDetailPath(item);
+    };
+  }, [domainCode, industryId, titleToApiSolutionId]);
 
   return (
     <section className="industry_experience">
@@ -110,27 +216,34 @@ const IndustryExperienceGrid = ({ industryId }) => {
                   );
                 }
 
+                const cardStyle = {
+                  background: pillar.cardBg,
+                  animationDelay: `${rowIndex * 0.05}s`,
+                };
+                const isCardClickable =
+                  !cardsAreNonClickable ||
+                  isLogisticsWmsOnboardingCard(industryId, item);
+
+                if (!isCardClickable) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="industry_experience__card industry_experience__card--static"
+                      style={cardStyle}
+                    >
+                      <ExperienceCardContent item={item} pillar={pillar} />
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.id}
                     to={resolveCardLink(item)}
                     className="industry_experience__card"
-                    style={{
-                      background: pillar.cardBg,
-                      animationDelay: `${rowIndex * 0.05}s`,
-                    }}
+                    style={cardStyle}
                   >
-                    <div
-                      className="industry_experience__card-icon"
-                      style={{
-                        background: pillar.iconBg,
-                        color: pillar.headerColor,
-                      }}
-                    >
-                      <CardIcon />
-                    </div>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
+                    <ExperienceCardContent item={item} pillar={pillar} />
                   </Link>
                 );
               })}

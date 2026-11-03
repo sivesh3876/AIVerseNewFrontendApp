@@ -74,7 +74,7 @@
         color          : inherit;
         transition     : background 0.2s, transform 0.2s;
 
-        &:hover:not(&--empty) {
+        &:hover:not(&--empty):not(&--static) {
             transform : translateY(-1px);
             background: rgba(255, 255, 255, 0.72) !important;
         }
@@ -93,6 +93,11 @@
             font-size  : 14px;
             line-height: 1.65;
             color      : #4b5563;
+        }
+
+        &--static {
+            cursor        : default;
+            pointer-events: none;
         }
 
         &--empty {

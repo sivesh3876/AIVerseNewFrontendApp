@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import SolutionCapabilityCard from "../SolutionCapabilityCard/SolutionCapabilityCard";
 import AddAISolutionCard from "../AddAISolutionCard";
@@ -51,12 +51,21 @@ import {
   fetchAllUseCases,
   fetchUseCaseById,
   getUsecasesApiBaseUrl,
+  reorderUseCasesForCategory,
 } from "../../services/usecasesService";
 import {
   SOLUTION_STATUS_STORAGE_KEY,
   SOLUTION_STATUS_UPDATED_EVENT,
   applyInactiveSolutionOverrides,
 } from "../../utils/solutionStatusStorage";
+import { useAdminAuth } from "../../context/AdminAuthContext";
+import {
+  applyCapabilityOrder,
+  canReorderExploreCards,
+  extractNumericSolutionId,
+  moveItemInList,
+  resolveExploreCategoryKey,
+} from "../../utils/exploreCategoryOrder";
 import "./CustomerCommunicationManagement.scss";
 
 const API_BASE_URL = getUsecasesApiBaseUrl();
@@ -302,6 +311,7 @@ const CustomerCommunicationManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { session } = useAdminAuth();
   const serviceId = searchParams.get("service");
   const solutionQueryId = searchParams.get("solution");
   const isDetailView = Boolean(solutionQueryId);
@@ -311,6 +321,14 @@ const CustomerCommunicationManagement = () => {
     industryId || getIndustryByDomainCode(activeDomainCode)?.id || null;
   const highlightId = searchParams.get("highlight");
   const submitted = searchParams.get("submitted") === "1";
+  const exploreCategoryKey = resolveExploreCategoryKey({
+    serviceId: activeDomainCode ? null : serviceId,
+    domainCode: activeDomainCode,
+  });
+  const canReorderCards =
+    !isDetailView &&
+    Boolean(exploreCategoryKey) &&
+    canReorderExploreCards(session);
   const mainRef = useRef(null);
   const [activeServiceIndex, setActiveServiceIndex] = useState(() =>
     getEnterpriseServiceIndexById(serviceId),
@@ -328,6 +346,10 @@ const CustomerCommunicationManagement = () => {
   const [solutionOwners, setSolutionOwners] = useState([]);
   const [businessDomains, setBusinessDomains] = useState([]);
   const [demoRequestTarget, setDemoRequestTarget] = useState(null);
+  const [orderedCapabilityIds, setOrderedCapabilityIds] = useState([]);
+  const [dragOverCapabilityId, setDragOverCapabilityId] = useState(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [reorderFeedback, setReorderFeedback] = useState(null);
   const fetchRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -411,8 +433,15 @@ const CustomerCommunicationManagement = () => {
         setLoadingApiSolutions(true);
         setSolutionsFetchError(null);
 
+        const fetchOptions = {};
+        if (activeDomainCode) {
+          fetchOptions.businessDomain = activeDomainCode;
+        } else if (serviceId) {
+          fetchOptions.service = serviceId;
+        }
+
         const data = dedupeApiSolutionsById(
-          filterOutDeletedSolutions(await fetchAllUseCases()).filter(
+          filterOutDeletedSolutions(await fetchAllUseCases(fetchOptions)).filter(
             (solution) => {
               const title = String(solution?.Title || "").trim().toLowerCase();
               return (
@@ -470,7 +499,7 @@ const CustomerCommunicationManagement = () => {
     return () => {
       fetchRequestIdRef.current += 1;
     };
-  }, [submitted]);
+  }, [submitted, serviceId, activeDomainCode]);
 
   useEffect(() => {
     const syncInactiveStatus = async () => {
@@ -570,9 +599,13 @@ const CustomerCommunicationManagement = () => {
   const activeIndustryDomain = businessDomains.find(
     (domain) => domain.DomainCode === activeDomainCode,
   );
-  const industryDomains = businessDomains.filter(
-    (domain) => domain.ParentDomainCode === "Industries",
-  );
+  const industryDomains = businessDomains
+    .filter((domain) => domain.ParentDomainCode === "Industries")
+    .filter(
+      (domain, index, list) =>
+        list.findIndex((entry) => entry.DomainCode === domain.DomainCode) ===
+        index,
+    );
   const activeIndustryMeta = activeDomainCode
     ? getIndustryByDomainCode(activeDomainCode)
     : null;
@@ -603,35 +636,144 @@ const CustomerCommunicationManagement = () => {
         ? []
         : activeService.features;
 
-  const submittedCapabilities = useMemo(() => {
-    const merged = mergeSubmittedCapabilities({
+  const mergedCapabilities = useMemo(
+    () =>
+      mergeSubmittedCapabilities({
+        apiCapabilities,
+        pendingCapabilities,
+        activeServiceId: activeDomainCode ? null : activeService.id,
+        activeDomainCode,
+      }),
+    [
       apiCapabilities,
       pendingCapabilities,
-      activeServiceId: activeService.id,
+      activeService.id,
       activeDomainCode,
-    });
+    ],
+  );
 
+  const mergedCapabilityIdsKey = mergedCapabilities
+    .map((item) => item.id)
+    .join("|");
+
+  useEffect(() => {
+    setOrderedCapabilityIds(mergedCapabilities.map((item) => item.id));
+    setDragOverCapabilityId(null);
+    setReorderFeedback(null);
+    // Sync from server list when category or membership changes (not on local drag).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: key tracks id set/order from API
+  }, [exploreCategoryKey, mergedCapabilityIdsKey]);
+
+  const submittedCapabilities = useMemo(() => {
     const getNumericId = (capability) => {
       const match = String(capability.id || "").match(/(\d+)$/);
       return match ? Number(match[1]) : 0;
     };
 
-    return [...merged].sort((left, right) => {
+    let list = exploreCategoryKey
+      ? applyCapabilityOrder(mergedCapabilities, orderedCapabilityIds)
+      : [...mergedCapabilities].sort(
+          (left, right) => getNumericId(right) - getNumericId(left),
+        );
+
+    if (highlightId == null) {
+      return list;
+    }
+
+    return [...list].sort((left, right) => {
       const leftIsHighlighted =
-        highlightId != null &&
-        (left.id === `api-${highlightId}` ||
-          left.id === `api-pending-${highlightId}`);
+        left.id === `api-${highlightId}` ||
+        left.id === `api-pending-${highlightId}`;
       const rightIsHighlighted =
-        highlightId != null &&
-        (right.id === `api-${highlightId}` ||
-          right.id === `api-pending-${highlightId}`);
+        right.id === `api-${highlightId}` ||
+        right.id === `api-pending-${highlightId}`;
 
       if (leftIsHighlighted && !rightIsHighlighted) return -1;
       if (rightIsHighlighted && !leftIsHighlighted) return 1;
-
-      return getNumericId(right) - getNumericId(left);
+      return 0;
     });
-  }, [apiCapabilities, pendingCapabilities, activeService.id, activeDomainCode, highlightId]);
+  }, [
+    exploreCategoryKey,
+    mergedCapabilities,
+    orderedCapabilityIds,
+    highlightId,
+  ]);
+
+  const persistCapabilityOrder = useCallback(
+    async (nextOrderedCapabilities) => {
+      if (!canReorderCards || !exploreCategoryKey) {
+        return;
+      }
+
+      const previousIds = orderedCapabilityIds;
+      const nextIds = nextOrderedCapabilities.map((item) => item.id);
+      const solutionIds = nextOrderedCapabilities
+        .map((item) => extractNumericSolutionId(item))
+        .filter((id) => id != null);
+
+      setOrderedCapabilityIds(nextIds);
+      setIsSavingOrder(true);
+      setReorderFeedback({
+        type: "saving",
+        message: "Saving card order...",
+      });
+
+      try {
+        await reorderUseCasesForCategory({
+          categoryKey: exploreCategoryKey,
+          solutionIds,
+        });
+        setReorderFeedback({
+          type: "success",
+          message: "Card order saved.",
+        });
+      } catch (error) {
+        setOrderedCapabilityIds(previousIds);
+        setReorderFeedback({
+          type: "error",
+          message: error.message || "Failed to save card order.",
+        });
+      } finally {
+        setIsSavingOrder(false);
+      }
+    },
+    [canReorderCards, exploreCategoryKey, orderedCapabilityIds],
+  );
+
+  const handleReorderByIndex = useCallback(
+    (fromIndex, toIndex) => {
+      if (!canReorderCards || isSavingOrder) return;
+      const nextList = moveItemInList(
+        submittedCapabilities,
+        fromIndex,
+        toIndex,
+      );
+      if (nextList === submittedCapabilities) return;
+      void persistCapabilityOrder(nextList);
+    },
+    [
+      canReorderCards,
+      isSavingOrder,
+      persistCapabilityOrder,
+      submittedCapabilities,
+    ],
+  );
+
+  const handleCapabilityDrop = useCallback(
+    (fromId, toId) => {
+      setDragOverCapabilityId(null);
+      if (!fromId || !toId || fromId === toId) return;
+      const fromIndex = submittedCapabilities.findIndex(
+        (item) => item.id === fromId,
+      );
+      const toIndex = submittedCapabilities.findIndex(
+        (item) => item.id === toId,
+      );
+      if (fromIndex < 0 || toIndex < 0) return;
+      handleReorderByIndex(fromIndex, toIndex);
+    },
+    [handleReorderByIndex, submittedCapabilities],
+  );
 
   useEffect(() => {
     if (!solutionQueryId) {
@@ -981,6 +1123,15 @@ const CustomerCommunicationManagement = () => {
             </div>
           )}
 
+          {canReorderCards && reorderFeedback ? (
+            <p
+              className={`ccm_dashboard__reorder-feedback ccm_dashboard__reorder-feedback--${reorderFeedback.type}`}
+              role="status"
+            >
+              {reorderFeedback.message}
+            </p>
+          ) : null}
+
           {submittedCapabilities.length > 0 && (
             <div className="ccm_dashboard__grid ccm_dashboard__grid--submitted is-loaded">
               {submittedCapabilities.map((capability) => (
@@ -994,6 +1145,18 @@ const CustomerCommunicationManagement = () => {
                   }
                   onRequestDemo={handleRequestDemo}
                   onNavigate={handleCapabilityNavigate}
+                  reorderEnabled={canReorderCards}
+                  isReordering={isSavingOrder}
+                  isDragOver={dragOverCapabilityId === capability.id}
+                  onDragStart={() => setDragOverCapabilityId(null)}
+                  onDragOver={(id) => setDragOverCapabilityId(id)}
+                  onDragLeave={(id) => {
+                    setDragOverCapabilityId((current) =>
+                      current === id ? null : current,
+                    );
+                  }}
+                  onDrop={handleCapabilityDrop}
+                  onDragEnd={() => setDragOverCapabilityId(null)}
                 />
               ))}
             </div>

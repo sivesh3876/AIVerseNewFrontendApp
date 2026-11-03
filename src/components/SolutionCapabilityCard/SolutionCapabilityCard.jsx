@@ -43,11 +43,30 @@ const parseAiFoundationItems = (client = "") =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const DragHandleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <circle cx="9" cy="7" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="7" r="1.5" fill="currentColor" />
+    <circle cx="9" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="9" cy="17" r="1.5" fill="currentColor" />
+    <circle cx="15" cy="17" r="1.5" fill="currentColor" />
+  </svg>
+);
+
 const SolutionCapabilityCard = ({
   capability,
   isHighlighted = false,
   onRequestDemo,
   onNavigate,
+  reorderEnabled = false,
+  isReordering = false,
+  isDragOver = false,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
 }) => {
   const CardIcon = resolveCapabilityIcon(capability);
   const hasRecordedDemo = Boolean(capability.recordedDemoLink);
@@ -72,8 +91,36 @@ const SolutionCapabilityCard = ({
 
   return (
     <article
-      className={`ccm_dashboard__capability${isHighlighted ? " is-highlighted" : ""}${isSubmitted ? " is-submitted" : ""}${onNavigate ? " is-clickable" : ""}`}
+      className={`ccm_dashboard__capability${isHighlighted ? " is-highlighted" : ""}${isSubmitted ? " is-submitted" : ""}${onNavigate ? " is-clickable" : ""}${reorderEnabled ? " is-reorderable" : ""}${isDragOver ? " is-drag-over" : ""}${isReordering ? " is-reordering" : ""}`}
       data-solution-id={capability.id}
+      draggable={reorderEnabled && !isReordering}
+      onDragStart={(event) => {
+        if (!reorderEnabled) return;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", String(capability.id));
+        onDragStart?.(capability.id);
+      }}
+      onDragOver={(event) => {
+        if (!reorderEnabled) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        onDragOver?.(capability.id);
+      }}
+      onDragLeave={() => {
+        if (!reorderEnabled) return;
+        onDragLeave?.(capability.id);
+      }}
+      onDrop={(event) => {
+        if (!reorderEnabled) return;
+        event.preventDefault();
+        const fromId =
+          event.dataTransfer.getData("text/plain") || null;
+        onDrop?.(fromId, capability.id);
+      }}
+      onDragEnd={() => {
+        if (!reorderEnabled) return;
+        onDragEnd?.();
+      }}
       onClick={() => {
         if (!onNavigate) return;
         onNavigate(capability);
@@ -89,6 +136,22 @@ const SolutionCapabilityCard = ({
       role={onNavigate ? "button" : undefined}
       tabIndex={onNavigate ? 0 : undefined}
     >
+      {reorderEnabled ? (
+        <div
+          className="ccm_dashboard__reorder-controls"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <span
+            className="ccm_dashboard__drag-handle"
+            title="Drag to reorder"
+            aria-hidden="true"
+          >
+            <DragHandleIcon />
+          </span>
+        </div>
+      ) : null}
+
       <div className="ccm_dashboard__capability-head">
         <span className="ccm_dashboard__capability-icon" aria-hidden="true">
           <CardIcon />

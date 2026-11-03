@@ -87,6 +87,18 @@
         cursor: progress;
       }
     }
+
+    &--views {
+      cursor: default;
+      pointer-events: none;
+      color: #475569;
+
+      &:hover {
+        background: #fff;
+        border-color: rgba(13, 30, 50, 0.12);
+        color: #475569;
+      }
+    }
   }
 
   &__stat {
@@ -95,9 +107,9 @@
     gap: 6px;
     min-height: 34px;
     padding: 6px 10px;
-    border: 1px solid rgba(13, 30, 50, 0.08);
+    border: 1px solid rgba(13, 30, 50, 0.12);
     border-radius: 999px;
-    background: rgba(248, 250, 252, 0.9);
+    background: #fff;
     color: #64748b;
     font-size: 12px;
     font-weight: 600;
@@ -138,7 +150,6 @@
     flex-wrap: nowrap;
     position: relative;
 
-    .solution_engagement__stat,
     .solution_engagement__btn {
       justify-content: center;
       width: 100%;
@@ -149,24 +160,24 @@
       font-size: 11px;
       box-sizing: border-box;
       overflow: hidden;
-    }
-
-    .solution_engagement__btn {
       position: relative;
       z-index: 1;
-      cursor: pointer;
 
       > * {
         pointer-events: none;
       }
+
+      &:not(.solution_engagement__btn--views) {
+        cursor: pointer;
+      }
     }
 
-    .solution_engagement__btn--share {
+    .solution_engagement__btn--share,
+    .solution_engagement__btn--views {
       width: 100%;
       min-width: 0;
     }
 
-    .solution_engagement__stat strong,
     .solution_engagement__btn strong {
       min-width: 14px;
       padding: 0 4px;

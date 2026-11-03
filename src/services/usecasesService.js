@@ -25,14 +25,25 @@ const appendBusinessDomainFields = (formData, solution) => {
 
 export const getUsecasesApiBaseUrl = () => getApiBaseUrl();
 
-export const fetchAllUseCases = async ({ includeInactive = false } = {}) => {
-  const response = await fetch(
-    buildApiPath(
-      "get-usecases",
-      includeInactive ? { include_inactive: "true" } : {},
-    ),
-    { headers: getAdminAuthHeaders() },
-  );
+export const fetchAllUseCases = async ({
+  includeInactive = false,
+  service = null,
+  businessDomain = null,
+} = {}) => {
+  const query = {};
+  if (includeInactive) {
+    query.include_inactive = "true";
+  }
+  if (service) {
+    query.service = service;
+  }
+  if (businessDomain) {
+    query.businessDomain = businessDomain;
+  }
+
+  const response = await fetch(buildApiPath("get-usecases", query), {
+    headers: getAdminAuthHeaders(),
+  });
   const result = await response.json();
 
   if (!response.ok || result.status !== "success" || !Array.isArray(result.data)) {
@@ -40,6 +51,48 @@ export const fetchAllUseCases = async ({ includeInactive = false } = {}) => {
   }
 
   return applyInactiveSolutionOverrides(result.data);
+};
+
+/**
+ * Persist Explore Solutions card order for one service/industry category.
+ * Requires admin Bearer + solutions.edit (enforced by backend).
+ */
+export const reorderUseCasesForCategory = async ({
+  categoryKey,
+  solutionIds,
+} = {}) => {
+  const response = await fetch(buildApiPath("reorder-usecases"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAdminAuthHeaders(),
+    },
+    body: JSON.stringify({
+      categoryKey,
+      solutionIds,
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok || result.status !== "success") {
+    if (response.status === 404) {
+      throw new Error(
+        "Reorder API is not available on this backend. Point VITE_API_BASE_URL to a host that has reorder-usecases (local :7071), or deploy the latest backend.",
+      );
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        result.message ||
+          "Admin login with solutions.edit is required to reorder cards.",
+      );
+    }
+    throw new Error(
+      result.message ||
+        `Failed to save solution card order (HTTP ${response.status}).`,
+    );
+  }
+
+  return result.data;
 };
 
 export const fetchTopOrderedSolutions = async (
