@@ -389,7 +389,7 @@ export const refreshBlogsFromApi = async ({ includeUnpublished = true } = {}) =>
 
 export const loadAdminBlogs = () => {
   const storage = readStorage();
-  const deleted = new Set(storage.deletedIds);
+  const deleted = new Set((storage.deletedIds || []).map(String));
   const apiById = new Map(apiBlogsCache.map((blog) => [String(blog.id), blog]));
   const apiBySeed = new Map(
     apiBlogsCache
@@ -398,7 +398,7 @@ export const loadAdminBlogs = () => {
   );
 
   const seedBlogs = getResourcesByCategory("blogs")
-    .filter((resource) => !deleted.has(resource.id))
+    .filter((resource) => !deleted.has(String(resource.id)))
     .map((resource) => {
       const fromApi =
         apiBySeed.get(String(resource.id)) || apiById.get(String(resource.id));
@@ -414,7 +414,8 @@ export const loadAdminBlogs = () => {
   const apiCustoms = apiBlogsCache.filter(
     (blog) =>
       !seedIds.has(String(blog.id)) &&
-      !deleted.has(blog.id) &&
+      !deleted.has(String(blog.id)) &&
+      !(blog.seedKey && deleted.has(String(blog.seedKey))) &&
       !blog.seedKey,
   );
 
@@ -422,7 +423,7 @@ export const loadAdminBlogs = () => {
     .filter(
       (blog) =>
         blog?.id &&
-        !deleted.has(blog.id) &&
+        !deleted.has(String(blog.id)) &&
         !apiById.has(String(blog.id)) &&
         !seedIds.has(String(blog.id)),
     )
@@ -525,28 +526,54 @@ export const updateAdminBlogRecord = async (blogId, updates = {}) => {
 
 export const deleteAdminBlogRecord = async (blogId) => {
   const existing = loadAdminBlogs().find((blog) => String(blog.id) === String(blogId));
-  const apiId =
-    existing?.apiId ??
-    apiBlogsCache.find((blog) => String(blog.id) === String(blogId))?.apiId;
+  const apiMatch =
+    apiBlogsCache.find(
+      (blog) =>
+        String(blog.id) === String(blogId) ||
+        String(blog.seedKey) === String(blogId) ||
+        String(blog.apiId) === String(blogId).replace(/^blog-/, ""),
+    ) || null;
+  const apiId = existing?.apiId ?? apiMatch?.apiId;
 
   try {
     if (apiId != null) {
       await deleteBlogApi(apiId);
-      await refreshBlogsFromApi({ includeUnpublished: true });
-      return true;
     }
   } catch (apiError) {
     console.warn("Blog API delete failed; applying local delete.", apiError);
   }
 
+  // Always record local deletion so seed/static blogs cannot reappear on public pages.
   const storage = readStorage();
-  storage.customBlogs = storage.customBlogs.filter((blog) => blog.id !== blogId);
-  if (!storage.deletedIds.includes(blogId)) {
-    storage.deletedIds = [...storage.deletedIds, blogId];
-  }
-  delete storage.overrides[blogId];
+  const idsToMark = new Set(
+    [blogId, existing?.id, existing?.seedKey, apiMatch?.id, apiMatch?.seedKey]
+      .filter((value) => value != null && value !== "")
+      .map(String),
+  );
+
+  storage.customBlogs = storage.customBlogs.filter(
+    (blog) => !idsToMark.has(String(blog.id)),
+  );
+  storage.deletedIds = [
+    ...new Set([...(storage.deletedIds || []).map(String), ...idsToMark]),
+  ];
+  idsToMark.forEach((id) => {
+    delete storage.overrides[id];
+  });
   writeStorage(storage);
+
+  try {
+    await refreshBlogsFromApi({ includeUnpublished: true });
+  } catch (refreshError) {
+    console.warn("Blog API refresh after delete failed.", refreshError);
+  }
+
   return true;
+};
+
+export const getDeletedBlogIdSet = () => {
+  const storage = readStorage();
+  return new Set((storage.deletedIds || []).map(String));
 };
 
 export const getBlogTrackOptions = () => {

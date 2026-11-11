@@ -15,11 +15,7 @@ import BlogResourceLink from "../BlogResourceLink/BlogResourceLink";
 import "./LearnExplore.scss";
 
 const ResourceCard = ({ resource }) => (
-  <BlogResourceLink
-    resource={resource}
-    className="learn_explore__card learn_explore__card--link"
-    id={`resource-${resource.id}`}
-  >
+  <article className="learn_explore__card" id={`resource-${resource.id}`}>
     <span
       className="learn_explore__card-badge"
       style={{ background: resource.badgeColor }}
@@ -31,8 +27,13 @@ const ResourceCard = ({ resource }) => (
     <p>{resource.description}</p>
     <time dateTime={resource.date}>{resource.date}</time>
 
-    <span className="learn_explore__card-link">Read More &gt;</span>
-  </BlogResourceLink>
+    <BlogResourceLink
+      resource={resource}
+      className="learn_explore__card-link"
+    >
+      Read More &gt;
+    </BlogResourceLink>
+  </article>
 );
 
 const LearnExplore = () => {
@@ -133,7 +134,7 @@ const LearnExplore = () => {
 
       <main className="learn_explore__main">
         <header className="learn_explore__header">
-          <h1>Learn &amp; Explore</h1>
+        <h1>Learn &amp; Explore</h1>
           <p>Explore the solutions</p>
         </header>
 

@@ -94,10 +94,9 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
           ) : (
             <div className="resources_hub__grid">
               {orderedResources.map((resource) => (
-                <BlogResourceLink
+                <article
                   key={resource.id}
                   id={`resource-${resource.id}`}
-                  resource={resource}
                   className={`resources_hub__card${
                     articleId === resource.id
                       ? " resources_hub__card--highlight"
@@ -113,8 +112,13 @@ const ResourcesHub = ({ title, description, category, eyebrow }) => {
                   <h2>{resource.title}</h2>
                   <p>{resource.description}</p>
                   <time dateTime={resource.date}>{resource.date}</time>
-                  <span className="resources_hub__link">Read More &gt;</span>
-                </BlogResourceLink>
+                  <BlogResourceLink
+                    resource={resource}
+                    className="resources_hub__link"
+                  >
+                    Read More &gt;
+                  </BlogResourceLink>
+                </article>
               ))}
             </div>
           )}
