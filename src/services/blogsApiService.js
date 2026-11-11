@@ -1,4 +1,5 @@
 import { buildApiPath } from "./apiConfig";
+import { getAdminAuthHeaders } from "./adminApiHeaders";
 
 const parseJson = async (response) => {
   try {
@@ -14,6 +15,7 @@ export const fetchBlogs = async ({ includeUnpublished = false } = {}) => {
       "get-blogs",
       includeUnpublished ? { include_unpublished: "true" } : {},
     ),
+    { headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
 
@@ -27,7 +29,7 @@ export const fetchBlogs = async ({ includeUnpublished = false } = {}) => {
 export const createBlog = async (payload = {}) => {
   const response = await fetch(buildApiPath("save-blog"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -42,7 +44,7 @@ export const createBlog = async (payload = {}) => {
 export const updateBlog = async (payload = {}) => {
   const response = await fetch(buildApiPath("update-blog"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   const result = await parseJson(response);
@@ -57,7 +59,7 @@ export const updateBlog = async (payload = {}) => {
 export const deleteBlog = async (blogId) => {
   const response = await fetch(
     buildApiPath("delete-blog", { id: blogId }),
-    { method: "DELETE" },
+    { method: "DELETE", headers: getAdminAuthHeaders() },
   );
   const result = await parseJson(response);
 
