@@ -25,9 +25,8 @@ import {
   REGISTRATION_COMPLETED_EVENT,
 } from "../utils/registrationStatusStorage";
 
-/** Automatic Registration reminder delay (2 minutes). */
-// Temporarily disabled: auto popup after 2 minutes.
-// const REMINDER_DELAY_MS = 120000;
+/** Automatic Registration reminder interval for unregistered guests (3 minutes). */
+const REMINDER_INTERVAL_MS = 180000;
 
 const BLOCKED_NORMAL_TARGETS = new Set([
   "/login",
@@ -74,11 +73,13 @@ export const RegistrationReminderProvider = ({ children }) => {
   const timerRef = useRef(null);
   const isOpenRef = useRef(false);
   const registeredRef = useRef(hasSyncAppAccess());
+  const hideRegisterModalRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isLoginRoute = location.pathname === "/login";
   const hideRegisterModal = isAdminRoute || isLoginRoute;
+  hideRegisterModalRef.current = hideRegisterModal;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -149,6 +150,7 @@ export const RegistrationReminderProvider = ({ children }) => {
   const openRegisterModal = useCallback(
     (nextSource = "Hero Registration") => {
       if (isOpenRef.current) return;
+      if (hideRegisterModalRef.current) return;
       clearTimer();
       setSource(nextSource);
       setIsOpen(true);
@@ -156,6 +158,30 @@ export const RegistrationReminderProvider = ({ children }) => {
     },
     [clearTimer],
   );
+
+  // Recurring 3-minute reminder for unregistered guests (not on admin/login).
+  // Restarts from close so dismiss does not immediately re-open.
+  useEffect(() => {
+    if (isAppAccessGranted || hideRegisterModal || isOpen) {
+      clearTimer();
+      return undefined;
+    }
+
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      if (registeredRef.current || hasSyncAppAccess()) return;
+      if (hideRegisterModalRef.current || isOpenRef.current) return;
+      openRegisterModal("Timed reminder");
+    }, REMINDER_INTERVAL_MS);
+
+    return () => clearTimer();
+  }, [
+    isAppAccessGranted,
+    hideRegisterModal,
+    isOpen,
+    openRegisterModal,
+    clearTimer,
+  ]);
 
   const closeRegisterModal = useCallback(() => {
     setIsOpen(false);

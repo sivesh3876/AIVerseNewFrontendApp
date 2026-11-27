@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import RequestDemoModal from "../CustomerCommunicationManagement/RequestDemoModal";
 import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
-import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 import "./Footer.scss";
 
 import linkdIn from "../../assets/images/linkdIn.svg";
@@ -13,7 +12,7 @@ import { footerSections } from "./footerData";
 const Footer = () => {
   const navigate = useNavigate();
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
-  const { isAppAccessGranted, openRegisterModal } = useRegistrationReminder();
+  const { isAppAccessGranted } = useRegistrationReminder();
 
   const handleInternalLinkClick = (event, to) => {
     // Public Login uses /login — never send users to Admin Portal from site chrome.
@@ -24,21 +23,10 @@ const Footer = () => {
         return;
       }
       navigate("/login");
-      return;
     }
-
-    if (isAppAccessGranted) return;
-    event.preventDefault();
-    setRegistrationReturnUrl(to || "/");
-    openRegisterModal("Footer gate");
   };
 
   const handleContactClick = () => {
-    if (!isAppAccessGranted) {
-      setRegistrationReturnUrl("/");
-      openRegisterModal("Footer gate");
-      return;
-    }
     setIsContactFormOpen(true);
   };
 

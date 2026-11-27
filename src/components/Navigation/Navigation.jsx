@@ -9,43 +9,31 @@ import {
 } from "../../utils/homeSections";
 import CallbackScheduleModal from "../CallbackSchedule/CallbackScheduleModal";
 import { useRegistrationReminder } from "../../context/RegistrationReminderContext";
-import { setRegistrationReturnUrl } from "../../utils/registrationReturnUrl";
 
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const {
     isAppAccessGranted,
-    openRegisterModal,
     logoutAppUser,
   } = useRegistrationReminder();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [callbackOpen, setCallbackOpen] = useState(false);
 
-  const requireAccess = (returnUrl, action) => {
-    if (isAppAccessGranted) {
-      action();
+  const handleSectionNav = (sectionId) => {
+    if (!isAppAccessGranted) return;
+
+    setMobileMenu(false);
+
+    if (location.pathname === "/") {
+      scrollToHomeSection(sectionId);
+      updateHomeHash(sectionId);
       return;
     }
-    setRegistrationReturnUrl(returnUrl || "/");
-    openRegisterModal("Navigation gate");
-  };
 
-  const handleSectionNav = (sectionId) => {
-    requireAccess(`/#${sectionId}`, () => {
-      setMobileMenu(false);
-
-      if (location.pathname === "/") {
-        scrollToHomeSection(sectionId);
-        updateHomeHash(sectionId);
-        return;
-      }
-
-      navigate("/", {
-        state: { scrollToSection: sectionId },
-      });
+    navigate("/", {
+      state: { scrollToSection: sectionId },
     });
-    setMobileMenu(false);
   };
 
   return (
@@ -65,6 +53,8 @@ const Navigation = () => {
               <li key={item.sectionId}>
                 <button
                   type="button"
+                  disabled={!isAppAccessGranted}
+                  aria-disabled={!isAppAccessGranted}
                   onClick={() => handleSectionNav(item.sectionId)}
                 >
                   {item.label}
@@ -72,19 +62,7 @@ const Navigation = () => {
               </li>
             ))}
             <li>
-              <Link
-                to="/about-us"
-                onClick={(event) => {
-                  if (isAppAccessGranted) {
-                    setMobileMenu(false);
-                    return;
-                  }
-                  event.preventDefault();
-                  setMobileMenu(false);
-                  setRegistrationReturnUrl("/about-us");
-                  openRegisterModal("Navigation gate");
-                }}
-              >
+              <Link to="/about-us" onClick={() => setMobileMenu(false)}>
                 About Us
               </Link>
             </li>

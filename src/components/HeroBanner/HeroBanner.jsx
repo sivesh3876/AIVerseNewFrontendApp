@@ -16,29 +16,11 @@ const heroSlide = {
 
 const HeroBannerSlider = () => {
   const navigate = useNavigate();
-  const { openRegisterModal, isAppAccessGranted } = useRegistrationReminder();
+  const { openRegisterModal } = useRegistrationReminder();
 
   const openCreateAccount = () => {
     setRegistrationReturnUrl("/");
     openRegisterModal("Hero Registration");
-  };
-
-  const handlePublicGateCapture = (event) => {
-    if (isAppAccessGranted) return;
-    if (event.target.closest?.('[data-allow-public="true"]')) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    const anchor = event.target.closest?.("a[href]");
-    const href = anchor?.getAttribute("href") || "";
-    if (href.startsWith("/")) {
-      setRegistrationReturnUrl(href);
-    } else {
-      setRegistrationReturnUrl("/");
-    }
-
-    openRegisterModal("Public landing gate");
   };
 
   const handleReadinessClick = () => {
@@ -49,8 +31,6 @@ const HeroBannerSlider = () => {
     <section
       className="hero_slider"
       style={{ backgroundImage: `url(${heroSlide.image})` }}
-      onClickCapture={handlePublicGateCapture}
-      onSubmitCapture={handlePublicGateCapture}
     >
       <div className="hero_slider__overlay" aria-hidden="true" />
 
