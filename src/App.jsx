@@ -143,14 +143,7 @@ const AppShell = () => {
             </RequireRegisteredRoute>
           }
         />
-        <Route
-          path="/ai-capabilities"
-          element={
-            <RequireRegisteredRoute>
-              <AICapabilitiesPage />
-            </RequireRegisteredRoute>
-          }
-        />
+        <Route path="/ai-capabilities" element={<AICapabilitiesPage />} />
 
         <Route
           path="/ai-readiness-assessment"
@@ -165,30 +158,9 @@ const AppShell = () => {
             </ProtectedAdminRoute>
           }
         />
-        <Route
-          path="/about-us"
-          element={
-            <RequireRegisteredRoute>
-              <AboutUsPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/clients"
-          element={
-            <RequireRegisteredRoute>
-              <ClientsPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/industry-solutions"
-          element={
-            <RequireRegisteredRoute>
-              <IndustrySolutionsPage />
-            </RequireRegisteredRoute>
-          }
-        />
+        <Route path="/about-us" element={<AboutUsPage />} />
+        <Route path="/clients" element={<ClientsPage />} />
+        <Route path="/industry-solutions" element={<IndustrySolutionsPage />} />
         <Route
           path="/solutions"
           element={
@@ -229,54 +201,12 @@ const AppShell = () => {
             </RequireRegisteredRoute>
           }
         />
-        <Route
-          path="/contact"
-          element={
-            <RequireRegisteredRoute>
-              <ContactPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/careers"
-          element={
-            <RequireRegisteredRoute>
-              <CareersPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/blogs"
-          element={
-            <RequireRegisteredRoute>
-              <BlogsPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/whitepapers"
-          element={
-            <RequireRegisteredRoute>
-              <WhitepapersPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/case-studies"
-          element={
-            <RequireRegisteredRoute>
-              <CaseStudiesPage />
-            </RequireRegisteredRoute>
-          }
-        />
-        <Route
-          path="/success-stories"
-          element={
-            <RequireRegisteredRoute>
-              <SuccessStoriesPage />
-            </RequireRegisteredRoute>
-          }
-        />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/blogs" element={<BlogsPage />} />
+        <Route path="/whitepapers" element={<WhitepapersPage />} />
+        <Route path="/case-studies" element={<CaseStudiesPage />} />
+        <Route path="/success-stories" element={<SuccessStoriesPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route
           path="/admin"

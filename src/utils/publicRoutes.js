@@ -8,6 +8,16 @@ const PUBLIC_EXACT = new Set([
   "/login",
   "/admin/login",
   "/ai-readiness-assessment",
+  "/about-us",
+  "/careers",
+  "/contact",
+  "/ai-capabilities",
+  "/industry-solutions",
+  "/blogs",
+  "/whitepapers",
+  "/success-stories",
+  "/case-studies",
+  "/clients",
 ]);
 
 /** Prefixes that are public including nested paths (e.g. /explore-solutions/:id). */
